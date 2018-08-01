@@ -46,7 +46,9 @@ find_package(catkin REQUIRED)
 add_message_files(
   FILES
   BoundingBox.msg
-  ObjectDetection.msg
+  DetectedFaces.msg
+  ObjectDescription.msg
+  RecognizedObjects.msg
 )
 
 ## Generate services in the 'srv' folder
