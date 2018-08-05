@@ -6,6 +6,7 @@ import json
 
 from cv_bridge import CvBridge
 from os import path
+from vision_system_msgs.msg import BoundingBox
 
 BRIDGE = CvBridge()
 
@@ -41,10 +42,23 @@ class OpenfaceROS:
 
     def getAllFaceBoundingBoxes(self, ros_msg):
         cv_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
-        face_bbs = self.align.getAllFaceBoundingBoxes(cv_image)
-        return face_bbs
+        faces_rect = self.align.getAllFaceBoundingBoxes(cv_image)
+        bounding_boxes = []
+        bounding_box = BoundingBox()
+        for rect in faces_rect:
+            bounding_box.minX = rect.tl_corner().x
+            bounding_box.minY = rect.tl_corner().y
+            bounding_box.width = rect.width()
+            bounding_box.height = rect.height()
+            bounding_boxes.append(bounding_box)
+        return bounding_boxes
     
     def getLargestFaceBoundingBox(self, ros_msg):
-        cv_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="CV_8UC3")
-        face_bb = self.align.getAllFaceBoundingBoxes(cv_image)
-        return face_bb
+        cv_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
+        face_rect = self.align.getAllFaceBoundingBoxes(cv_image)
+        bounding_box = BoundingBox()
+        bounding_box.minX = face_rect.tl_corner().x
+        bounding_box.minY = face_rect.tl_corner().y
+        bounding_box.width = face_rect.width()
+        bounding_box.height = face_rect.height()
+        return bounding_box
