@@ -46,8 +46,9 @@ find_package(catkin REQUIRED COMPONENTS std_msgs genmsg)
 add_message_files(
   FILES
   BoundingBox.msg
-  DetectedFaces.msg
+  FaceDescription.msg
   ObjectDescription.msg
+  RecognizedFaces.msg
   RecognizedObjects.msg
 )
 

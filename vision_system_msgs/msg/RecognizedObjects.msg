@@ -1,2 +1,2 @@
 Header header
-ObjectDescription[] object_description
+ObjectDescription[] objects_description

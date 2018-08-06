@@ -72,8 +72,8 @@ cv_bridge
 generate_messages(
   DEPENDENCIES
   #vision_system_msgs  # Or other packages containing msgs
-  std_msgs
-  sensor_msgs
+  #std_msgs
+  #sensor_msgs
 )
 
 ################################################
@@ -163,7 +163,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
-  scripts/face_detection.py
+  scripts/face_recognition_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
