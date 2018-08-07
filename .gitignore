@@ -1,0 +1,7 @@
+.vscode
+*.pyc
+*.pkl
+*.t7
+*.lua
+*.csv
+*.dat

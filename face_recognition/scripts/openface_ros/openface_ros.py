@@ -3,7 +3,8 @@ import cv2
 import openface
 import rospy
 import json
-import numpy
+import numpy as np
+import pickle
 
 from cv_bridge import CvBridge
 from os import path
@@ -15,10 +16,8 @@ class OpenfaceROS:
     def __init__(self):
         self.dlibmodel_dir = ''
         self.netmodel_dir = ''
-
+        self.classifymodel_dir = ''
         self.image_dimension = 0
-
-        self.rgb_image = None
 
         self.align = None
         self.net = None
@@ -33,6 +32,7 @@ class OpenfaceROS:
 
         self.dlibmodel_dir = path.join(dir, 'models', 'dlib', config_data['dlib_model'])
         self.netmodel_dir = path.join(dir, 'models', 'openface', config_data['net_model'])
+        self.classifymodel_dir = path.join(dir, 'models', 'openface'. config_data['classify_model'])
         self.image_dimension = config_data['image_dimension']
 
     def createDlibAlign(self):
@@ -40,9 +40,6 @@ class OpenfaceROS:
 
     def createTorchNeuralNet(self):
         self.net = openface.TorchNeuralNet(self.netmodel_dir, self.image_dimension)
-
-    def carryImage(self, ros_msg):
-        self.rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
 
     def dlibRectangle2RosBoundingBox(self, rect):
         bounding_box = BoundingBox()
@@ -56,46 +53,64 @@ class OpenfaceROS:
         vector = array.tolist()
         return vector
 
-    def getAllFaceBoundingBoxes(self):
-        faces_rect = self.align.getAllFaceBoundingBoxes(self.rgb_image)
+    def getAllFaceBoundingBoxes(self, image):
+        faces_rect = self.align.getAllFaceBoundingBoxes(image)
         return faces_rect
     
-    def getLargestFaceBoundingBox(self):
-        face_rect = self.align.getAllFaceBoundingBoxes(self.rgb_image)
+    def getLargestFaceBoundingBox(self, image):
+        face_rect = self.align.getAllFaceBoundingBoxes(image)
         return face_rect
 
-    def alignFace(self, rect):
-        aligned_face = self.align.align(self.image_dimension, self.rgb_image, rect, landmarkIndices = openface.AlignDlib.OUTER_EYES_AND_NOSE)
+    def alignFace(self, image, rect):
+        aligned_face = self.align.align(self.image_dimension, image, rect, landmarkIndices = openface.AlignDlib.OUTER_EYES_AND_NOSE)
         return aligned_face
 
     def extractFeaturesFromImage(self, image):
         feature_vector = self.net.forward(image)
         return feature_vector
 
-    def clustering(self, array):
-        return 'Unknow'
+    #funcao adaptada das demos do openface
+    def classify(self, array):
+        with open(self.classifymodel_dir, 'rb') as model_file:
+            if sys.version_info[0] < 3:
+                (le, clf) = pickle.load(model_file)
+            else:
+                (le, clf) = pickle.load(model_file, encoding='latin1')
+
+        rep = array.reshape(1, -1)
+        predictions = clf.predict_proba(rep).ravel()
+        maxI = np.argmax(predictions)
+        person = le.inverse_transform(maxI)
+        confidence = predictions[maxI]
+        return (person.decode('utf-8'), confidence)
+
+    def trainClassifier(self):
+        pass
 
     def recognitionProcess(self, ros_msg):
-        self.carryImage(ros_msg)
+        rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
 
         self.createDlibAlign()
         self.createTorchNeuralNet()
 
-        face_rects = self.getAllFaceBoundingBoxes()
+        face_rects = self.getAllFaceBoundingBoxes(rgb_image)
         faces_description = []
         face_description = FaceDescription()
         if len(face_rects) == 0:
             return None
         for face_rect in face_rects:
-            aligned_face = self.alignFace(face_rect)
+            aligned_face = self.alignFace(rgb_image, face_rect)
             features_array = self.extractFeaturesFromImage(aligned_face)
-            label_class = self.clustering(features_array)
+            classification = self.classify(features_array)
+            label_class = classification[0]
+            confidence = classification[1]
             
             bounding_box = self.dlibRectangle2RosBoundingBox(face_rect)
             features = self.numpyArray2RosVector(features_array)
 
             face_description.label_class = label_class
             face_description.features = features
+            face_description.probability = confidence
             face_description.bounding_box = bounding_box
 
             faces_description.append(face_description)

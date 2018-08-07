@@ -1,5 +1,6 @@
 {
     "dlib_model": "shape_predictor_68_face_landmarks.dat",
     "net_model": "nn4.small2.v1.t7",
+    "classify_model": "celeb-classifier.nn4.small2.v1",
     "image_dimension": 96
 }
