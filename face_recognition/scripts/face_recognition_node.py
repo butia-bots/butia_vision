@@ -15,13 +15,14 @@ def imageListener(image_msg):
 
 openface = OpenfaceROS()
 openface.createDlibAlign()
+openface.createTorchNeuralNet()
 
 publisher = None
 
 if __name__ == '__main__':
     rospy.init_node('face_recognition_node', anonymous = True)
 
-    rospy.Subscriber('/cv_camera/image_raw', Image, imageListener)
+    rospy.Subscriber('/usb_cam/image_raw', Image, imageListener)
 
     publisher = rospy.Publisher('/vision_system/fr/face_recognition', RecognizedFaces, queue_size = 100)
 

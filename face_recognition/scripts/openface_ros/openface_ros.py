@@ -7,8 +7,10 @@ import numpy as np
 import pickle
 
 from cv_bridge import CvBridge
+from sys import version_info
 from os import path
 from vision_system_msgs.msg import BoundingBox, FaceDescription, RecognizedFaces
+from sklearn.preprocessing import LabelEncoder
 
 BRIDGE = CvBridge()
 
@@ -18,6 +20,7 @@ class OpenfaceROS:
         self.netmodel_dir = ''
         self.classifymodel_dir = ''
         self.image_dimension = 0
+        self.threshold = 0.0
 
         self.align = None
         self.net = None
@@ -32,8 +35,9 @@ class OpenfaceROS:
 
         self.dlibmodel_dir = path.join(dir, 'models', 'dlib', config_data['dlib_model'])
         self.netmodel_dir = path.join(dir, 'models', 'openface', config_data['net_model'])
-        self.classifymodel_dir = path.join(dir, 'models', 'openface'. config_data['classify_model'])
+        self.classifymodel_dir = path.join(dir, 'models', 'openface', config_data['classify_model'])
         self.image_dimension = config_data['image_dimension']
+        self.threshold = config_data['threshold']
 
     def createDlibAlign(self):
         self.align = openface.AlignDlib(self.dlibmodel_dir)
@@ -72,7 +76,7 @@ class OpenfaceROS:
     #funcao adaptada das demos do openface
     def classify(self, array):
         with open(self.classifymodel_dir, 'rb') as model_file:
-            if sys.version_info[0] < 3:
+            if version_info[0] < 3:
                 (le, clf) = pickle.load(model_file)
             else:
                 (le, clf) = pickle.load(model_file, encoding='latin1')
@@ -82,16 +86,16 @@ class OpenfaceROS:
         maxI = np.argmax(predictions)
         person = le.inverse_transform(maxI)
         confidence = predictions[maxI]
-        return (person.decode('utf-8'), confidence)
+        if confidence > self.threshold:
+            return (person.decode('utf-8'), confidence)
+        else:
+            return ('Unknow', 0)
 
     def trainClassifier(self):
         pass
 
     def recognitionProcess(self, ros_msg):
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
-
-        self.createDlibAlign()
-        self.createTorchNeuralNet()
 
         face_rects = self.getAllFaceBoundingBoxes(rgb_image)
         faces_description = []
