@@ -1,14 +1,14 @@
 #! /usr/bin/env python
 import cv2
-import openface
-import rospy
 import json
 import numpy as np
+import os
+import openface
 import pickle
+import rospy
 
 from cv_bridge import CvBridge
 from sys import version_info
-from os import path
 from vision_system_msgs.msg import BoundingBox, FaceDescription, RecognizedFaces
 from sklearn.preprocessing import LabelEncoder
 
@@ -17,33 +17,54 @@ BRIDGE = CvBridge()
 class OpenfaceROS:
     def __init__(self):
         self.dlibmodel_dir = ''
+        self.dlibmodel = ''
         self.netmodel_dir = ''
+        self.netmodel = ''
         self.classifymodel_dir = ''
+        self.classifymodel = ''
+        self.dataset_dir = '' 
         self.image_dimension = 0
         self.threshold = 0.0
 
         self.align = None
         self.net = None
+        self.cl_label = None
+        self.classifier = None
 
         self.load()
 
     def load(self):
-        dir = path.dirname(path.realpath(__file__))
+        dir = os.path.dirname(os.path.realpath(__file__))
 
-        config_file = open(path.join(dir, 'config.json'), 'r')
+        config_file = open(os.path.join(dir, 'config.json'), 'r')
         config_data = json.load(config_file)
 
-        self.dlibmodel_dir = path.join(dir, 'models', 'dlib', config_data['dlib_model'])
-        self.netmodel_dir = path.join(dir, 'models', 'openface', config_data['net_model'])
-        self.classifymodel_dir = path.join(dir, 'models', 'openface', config_data['classify_model'])
+        self.dlibmodel_dir = os.path.join(dir, 'models', 'dlib')
+        self.dlibmodel = config_data['dlib_model']
+        self.netmodel_dir = os.path.join(dir, 'models', 'openface')
+        self.netmodel = config_data['net_model']
+        self.classifymodel_dir = os.path.join(dir, 'models', 'openface')
+        self.classifymodel = config_data['classify_model']
+        self.dataset_dir = os.path.join(dir, config_data['dataset_relative_dir'])
         self.image_dimension = config_data['image_dimension']
         self.threshold = config_data['threshold']
 
+        self.createDlibAlign()
+        self.createTorchNeuralNet()
+        self.createClassifier()
+
     def createDlibAlign(self):
-        self.align = openface.AlignDlib(self.dlibmodel_dir)
+        self.align = openface.AlignDlib(os.path.join(self.dlibmodel_dir, self.dlibmodel))
 
     def createTorchNeuralNet(self):
-        self.net = openface.TorchNeuralNet(self.netmodel_dir, self.image_dimension)
+        self.net = openface.TorchNeuralNet(os.path.join(self.netmodel_dir, self.netmodel), self.image_dimension)
+
+    def createClassifier(self):
+        with open(os.path.join(self.classifymodel_dir, self.classifymodel), 'rb') as model_file:
+            if version_info[0] < 3:
+                (self.cl_label, self.classifier) = pickle.load(model_file)
+            else:
+                (self.cl_label, self.classifier) = pickle.load(model_file, encoding='latin1')
 
     def dlibRectangle2RosBoundingBox(self, rect):
         bounding_box = BoundingBox()
@@ -75,24 +96,36 @@ class OpenfaceROS:
 
     #funcao adaptada das demos do openface
     def classify(self, array):
-        with open(self.classifymodel_dir, 'rb') as model_file:
-            if version_info[0] < 3:
-                (le, clf) = pickle.load(model_file)
-            else:
-                (le, clf) = pickle.load(model_file, encoding='latin1')
-
         rep = array.reshape(1, -1)
-        predictions = clf.predict_proba(rep).ravel()
+        predictions = self.classifier.predict_proba(rep).ravel()
         maxI = np.argmax(predictions)
-        person = le.inverse_transform(maxI)
+        person = self.cl_label.inverse_transform(maxI)
         confidence = predictions[maxI]
         if confidence > self.threshold:
             return (person.decode('utf-8'), confidence)
         else:
             return ('Unknow', 0)
 
-    def trainClassifier(self):
-        pass
+    def trainClassifier(self, classifier_type):
+        labels = next(os.walk(self.dataset_dir))[1]
+
+        if classifier_type == 'lsvm':
+            pass
+        elif classifier_type == 'rsvm':
+            pass
+        elif classifier_type == 'gssvm':
+            pass
+        elif classifier_type == 'gmm':
+            pass
+        elif classifier_type == 'dt':
+            pass
+        elif classifier_type == 'gnb':
+            pass
+        elif classifier_type == 'dbn':
+            pass
+        else:
+            pass
+
 
     def recognitionProcess(self, ros_msg):
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")

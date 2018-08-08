@@ -6,11 +6,9 @@ from openface_ros import OpenfaceROS
 from vision_system_msgs.srv import FaceClassifierTraining
 
 def classifierTraining(request):
-    pass
+    openface.trainClassifier(request.classifier_type)
 
 openface = OpenfaceROS()
-openface.createDlibAlign()
-openface.createTorchNeuralNet()
 
 if __name__ == '__main__':
     rospy.init_node('classifier_training_node', anonymous = True)
