@@ -57,7 +57,7 @@ class OpenfaceROS:
         self.align = openface.AlignDlib(os.path.join(self.dlibmodel_dir, self.dlibmodel))
 
     def createTorchNeuralNet(self):
-        self.net = openface.TorchNeuralNet(os.path.join(self.netmodel_dir, self.netmodel), self.image_dimension)
+        self.net = openface.TorchNeuralNet(os.path.join(self.netmodel_dir, self.netmodel), self.image_dimension, cuda=True)
 
     def createClassifier(self):
         with open(os.path.join(self.classifymodel_dir, self.classifymodel), 'rb') as model_file:
@@ -105,6 +105,28 @@ class OpenfaceROS:
             return (person.decode('utf-8'), confidence)
         else:
             return ('Unknow', 0)
+
+    def alignDataset(self):
+        raw_dir = path.join(self.dataset_dir, 'raw'))
+        raw_aligned_dir = path.join(self.dataset_dir, 'raw_aligned')
+        
+        raw_labels = next(os.walk(raw_dir))[1]
+        for lb in raw_labels:
+            openface.helper.mkdirP(path.join(raw_aligned_dir, lb))
+
+        raw_images = openface.data.iterImgs(raw_dir)
+        raw_aligned_images = openface.data.iterImgs(raw_aligned_dir)
+
+        images = []
+        for ri in raw_images:
+            for rai in raw_aligned_images:
+                if ri.name != rai.name or ri.cls != rai.cls:
+                    images.append(ri)
+
+        for image in images:
+            rect = self.getLargestFaceBoundingBox(image.getRGB())
+            aligned_face = self.alignFace(image.getRGB(), rect)
+            cv2.imwrite(path.join(raw_aligned_dir, image.cls, image.name, '.jpg'), aligned_face)
 
     def trainClassifier(self, classifier_type):
         labels = next(os.walk(self.dataset_dir))[1]
