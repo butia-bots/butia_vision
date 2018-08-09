@@ -128,6 +128,16 @@ class OpenfaceROS:
             aligned_face = self.alignFace(image.getRGB(), rect)
             cv2.imwrite(path.join(raw_aligned_dir, image.cls, image.name, '.jpg'), aligned_face)
 
+     def generateDatasetFeatures(self):
+        raw_aligned_dir = path.join(self.dataset_dir, 'raw_aligned')
+        features_dir = path.join(self.dataset_dir, 'features')
+        raw_aligned_images = openface.data.iterImgs(raw_aligned_dir)
+
+        features_file = open(os.path.join(features_dir, 'features.json'), 'rw')
+        features_data = json.load(features_file)
+
+        
+
     def trainClassifier(self, classifier_type):
         labels = next(os.walk(self.dataset_dir))[1]
 
