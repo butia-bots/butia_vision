@@ -1,2 +1,2 @@
 Header header
-CV_8UC3[] people_images
+Image[] people_images
