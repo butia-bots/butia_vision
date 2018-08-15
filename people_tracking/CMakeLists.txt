@@ -5,8 +5,6 @@ add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED)
 
-catkin_python_setup()
-
 # add_message_files(
 #   FILES
 #   Message1.msg
@@ -40,9 +38,9 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
-add_library(${PROJECT_NAME}
-    src/people_tracking.cpp
-)
+#add_library(${PROJECT_NAME}
+ #   src/people_tracking.cpp
+#)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
