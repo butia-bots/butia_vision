@@ -185,7 +185,6 @@ class OpenfaceROS:
                     images.append(rai)
 
         for image in images:
-            print image
             label = image.cls
             name = image.name
             features = self.extractFeaturesFromImage(image.getRGB())
@@ -246,7 +245,7 @@ class OpenfaceROS:
             pass
 
         clf.fit(embeddings, labels_num)
-        fName = "{}/classifier.pkl".format(self.openfacemodel_dir)
+        fName = "{}/classifier.pkl".format(self.classifymodel_dir)
         with open(fName, 'w') as f:
             pickle.dump((le, clf), f)
 
