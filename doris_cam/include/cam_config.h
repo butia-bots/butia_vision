@@ -1,3 +1,7 @@
+#ifndef CAM_CONFIG_H
+#define CAM_CONFIG_H
+
+
 #include <sstream>
 #include <opencv2/opencv.hpp>
 
@@ -6,7 +10,8 @@
 typedef struct {
     uint width;
     uint height;
-    float bytes_per_frame;
+    uint bytes_per_frame;
+    uint frames_per_second;
 } Image_Config;
 
 typedef struct {
@@ -22,11 +27,14 @@ class DorisCam {
 
     public:
         Buffer img_server;
+        cv::VideoCapture cap;
 
         DorisCam();
-        DorisCam(uint larg, uint alt, float bpf);
-        ~DorisCam();
+        DorisCam(uint larg, uint alt, uint fps);
         int startRecording();
         int stopRecording();
         bool isRecording();
 };
+
+
+#endif
