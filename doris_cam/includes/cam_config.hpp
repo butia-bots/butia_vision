@@ -6,7 +6,7 @@
 typedef struct {
     uint width;
     uint height;
-    int bytes_per_frame;
+    float bytes_per_frame;
 } Image_Config;
 
 typedef struct {
@@ -24,7 +24,7 @@ class DorisCam {
         Buffer img_server;
 
         DorisCam();
-        DorisCam(uint larg, uint alt, int bpf);
+        DorisCam(uint larg, uint alt, float bpf);
         ~DorisCam();
         int startRecording();
         int stopRecording();
