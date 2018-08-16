@@ -1,7 +1,8 @@
-*.vscode*
+/.vscode
 *.pyc
 *.pkl
 *.t7
 *.lua
 *.csv
 *.dat
+test.py
