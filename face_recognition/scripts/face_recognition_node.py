@@ -6,7 +6,7 @@ import rospy
 from cv_bridge import CvBridge
 from openface_ros import OpenfaceROS
 from sensor_msgs.msg import Image
-from vision_system_msgs.msg import RecognizedFaces
+from vision_system_msgs.msg import RecognizedFaces, ClassifierReload
 
 BRIDGE = CvBridge()
 
@@ -39,6 +39,10 @@ def imageListener(image_msg):
     pub_image_msg = recognizedFaces2ViewImage(image_msg, pub_msg)
     view_publisher.publish(pub_image_msg)
 
+def classifierReload(ros_msg):
+    print('Loading ' + ros_msg.classifier_name + '.')
+    openface.createClassifier(ros_msg.classifier_name)
+    print('Loaded.')
 
 openface = OpenfaceROS()
 
@@ -49,6 +53,8 @@ if __name__ == '__main__':
     rospy.init_node('face_recognition_node', anonymous = True)
 
     rospy.Subscriber('/usb_cam/image_raw', Image, imageListener)
+
+    rospy.Subscriber('/vision_system/fr/classifier_reload', ClassifierReload, classifierReload)
 
     publisher = rospy.Publisher('/vision_system/fr/face_recognition', RecognizedFaces, queue_size = 100)
 
