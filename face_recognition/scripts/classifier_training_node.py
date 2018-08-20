@@ -39,17 +39,18 @@ if __name__ == '__main__':
         help='The type of classifier to use.',
         default='lsvm')
 
-    args = parser.parse_args()
-    if(args.train):
-        ros_srv = FaceClassifierTraining()
-        ros_srv.classifier_type = args.classifierType
-        ros_srv.classifier_name = args.classifierName
-        classifierTraining(ros_srv)
 
     rospy.init_node('classifier_training_node', anonymous = True)
 
     training_server = rospy.Service('/vision_system/fr/classifier_training', FaceClassifierTraining, classifierTraining)
 
     classifier_reload = rospy.Publisher('/vision_system/fr/classifier_reload', ClassifierReload, queue_size = 100)
+
+    args = parser.parse_args()
+    if(args.train):
+        ros_srv = FaceClassifierTraining()
+        ros_srv.classifier_type = args.classifierType
+        ros_srv.classifier_name = args.classifierName
+        classifierTraining(ros_srv)
 
     rospy.spin()

@@ -198,6 +198,7 @@ class OpenfaceROS:
         le = LabelEncoder()
         le.fit(labels)
         labels_num = le.transform(labels)
+        num_classes = len(le.classes_)
 
         if classifier_type == 'lsvm':
             clf = SVC(C=1, kernel='linear', probability=True)
@@ -213,7 +214,7 @@ class OpenfaceROS:
             ]
             clf = GridSearchCV(SVC(C=1, probability=True), param_grid, cv=5)
         elif classifier_type == 'gmm':
-            pass
+            clf = GMM(n_components=num_classes)
         elif classifier_type == 'dt':
             clf = DecisionTreeClassifier(max_depth=20)
         elif classifier_type == 'gnb':
