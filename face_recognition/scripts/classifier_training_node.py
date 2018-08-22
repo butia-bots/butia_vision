@@ -51,6 +51,6 @@ if __name__ == '__main__':
         ros_srv = FaceClassifierTraining()
         ros_srv.classifier_type = args.classifierType
         ros_srv.classifier_name = args.classifierName
-        classifierTraining(ros_srv)
+        classifierTraining(ros_srv) 
 
     rospy.spin()

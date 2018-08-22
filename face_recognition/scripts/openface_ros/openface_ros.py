@@ -7,10 +7,11 @@ import openface
 import pickle
 import rospy
 
+from time import sleep
 from cv_bridge import CvBridge
 from sys import version_info
 from vision_system_msgs.msg import BoundingBox, FaceDescription, RecognizedFaces
-from vision_system_msgs.srv import FaceClassifierTraining
+from vision_system_msgs.srv import FaceClassifierTraining, PeopleIntroducing
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.preprocessing import LabelEncoder
@@ -22,7 +23,6 @@ from sklearn.naive_bayes import GaussianNB
 
 BRIDGE = CvBridge()
 DIR = os.path.dirname(os.path.realpath(__file__))
-
 
 class OpenfaceROS:
     def __init__(self):
@@ -239,6 +239,14 @@ class OpenfaceROS:
         fName = self.models_dir + '/classifier/' + classifier_name
         with open(fName, 'w') as f:
             pickle.dump((le, clf), f)
+
+    def introducingProcess(self, ros_srv):
+        name = ros_srv.name
+        num = ros_srv.num_pictures
+        #make folder
+        i = 1
+        while i <= num:
+            
 
     def trainingProcess(self, ros_srv):
         self.alignDataset()
