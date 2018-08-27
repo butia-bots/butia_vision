@@ -9,8 +9,7 @@ class DarknetROS{
     public:
         DarknetROS(ros::NodeHandle _nh);
 
-        void darknetRosCallback();
-        void objectRecognitionPublish();
+        void darknetRosCallback(darknet_ros_msgs::BoundingBoxes bbs);
 
     private:
         ros::NodeHandle nh;
