@@ -7,11 +7,12 @@ import openface
 import pickle
 import rospy
 
-from time import sleep
 from cv_bridge import CvBridge
 from sys import version_info
-from vision_system_msgs.msg import BoundingBox, FaceDescription, RecognizedFaces
-from vision_system_msgs.srv import FaceClassifierTraining, PeopleIntroducing
+from sensor_msgs.msg import Image
+from vision_system_msgs.msg import BoundingBox, FaceDescription, RecognizedFaces, ClassifierReload
+from vision_system_msgs.srv import FaceClassifierTraining
+
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.preprocessing import LabelEncoder
@@ -98,7 +99,6 @@ class OpenfaceROS:
         feature_vector = self.net.forward(image)
         return feature_vector
 
-    #funcao adaptada das demos do openface
     def classify(self, array):
         rep = array.reshape(1, -1)
         predictions = self.classifier.predict_proba(rep).ravel()
@@ -240,14 +240,6 @@ class OpenfaceROS:
         with open(fName, 'w') as f:
             pickle.dump((le, clf), f)
 
-    def introducingProcess(self, ros_srv):
-        name = ros_srv.name
-        num = ros_srv.num_pictures
-        #make folder
-        i = 1
-        while i <= num:
-            
-
     def trainingProcess(self, ros_srv):
         self.alignDataset()
         self.generateDatasetFeatures()
@@ -280,8 +272,9 @@ class OpenfaceROS:
             faces_description.append(face_description)
 
         recognized_faces = RecognizedFaces()
-        recognized_faces.header = ros_msg.header
-        recognized_faces.header.stamp = rospy.get_rostime()
+        recognized_faces.image_header = ros_msg.header
+
+        recognized_faces.recognition_header.stamp = rospy.get_rostime()
 
         recognized_faces.faces_description = faces_description
 
