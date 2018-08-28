@@ -10,7 +10,7 @@ import rospy
 from cv_bridge import CvBridge
 from sys import version_info
 from sensor_msgs.msg import Image
-from vision_system_msgs.msg import BoundingBox, FaceDescription, RecognizedFaces, ClassifierReload
+from vision_system_msgs.msg import BoundingBox, FaceDescription
 from vision_system_msgs.srv import FaceClassifierTraining
 
 from sklearn.pipeline import Pipeline
@@ -219,19 +219,6 @@ class OpenfaceROS:
             clf = DecisionTreeClassifier(max_depth=20)
         elif classifier_type == 'gnb':
             clf = GaussianNB()
-        elif classifier_type == 'dbn':
-            from nolearn.dbn import DBN
-            clf = DBN([embeddings.shape[1], 500, labelsNum[-1:][0] + 1],  # i/p nodes, hidden nodes, o/p nodes
-                learn_rates=0.3,
-                # Smaller steps mean a possibly more accurate result, but the
-                # training will take longer
-                learn_rate_decays=0.9,
-                # a factor the initial learning rate will be multiplied by
-                # after each iteration of the training
-                epochs=300,  # no of iternation
-                # dropouts = 0.25, # Express the percentage of nodes that
-                # will be randomly dropped as a decimal.
-                verbose=1)
         else:
             pass
 

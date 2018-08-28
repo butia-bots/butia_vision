@@ -4,7 +4,6 @@ string GRID_SEARCH_SVM = 'gssvm'
 string GAUSSIAN_MIXTURE_MODELS = 'gmm'
 string DECISION_TREE = 'dt'
 string GAUSSIAN_NAIVE_BAYES = 'gnb'
-string DEEP_BELIEF_NETWORK = 'dbn'
 string classifier_type
 string classifier_name
 ---

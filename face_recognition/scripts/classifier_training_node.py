@@ -34,8 +34,7 @@ if __name__ == '__main__':
             'gmm',
             'rsvm',
             'dt',
-            'gnb',
-            'dbn'],
+            'gnb'],
         help='The type of classifier to use.',
         default='lsvm')
 
