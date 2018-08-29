@@ -5,14 +5,14 @@ import argparse
 
 from openface_ros import OpenfaceROS
 from vision_system_msgs.msg import ClassifierReload
-from vision_system_msgs.srv import FaceClassifierTraining
+from vision_system_msgs.srv import FaceClassifierTraining, FaceClassifierTrainingResponse
 
 def classifierTraining(request):
     print('Training ' + request.classifier_name + ' of ' + request.classifier_type + ' type.')
     sucess = openface.trainingProcess(request)
     classifier_reload.publish(ClassifierReload(request.classifier_name))
     print('Trained.')
-    ##return FaceClassifierTrainingResponse(sucess)
+    return FaceClassifierTrainingResponse(sucess)
 
 openface = OpenfaceROS()
 classifier_reload = None

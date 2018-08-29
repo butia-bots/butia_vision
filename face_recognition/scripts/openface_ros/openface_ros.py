@@ -10,7 +10,7 @@ import rospy
 from cv_bridge import CvBridge
 from sys import version_info
 from sensor_msgs.msg import Image
-from vision_system_msgs.msg import BoundingBox, FaceDescription
+from vision_system_msgs.msg import BoundingBox, FaceDescription, RecognizedFaces
 from vision_system_msgs.srv import FaceClassifierTraining
 
 from sklearn.pipeline import Pipeline
