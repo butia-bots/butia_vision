@@ -7,7 +7,7 @@ project(vision_system_msgs)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS std_msgs genmsg)
+find_package(catkin REQUIRED COMPONENTS std_msgs sensor_msgs genmsg message_generation)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -54,8 +54,12 @@ add_message_files(
 
 ## Generate services in the 'srv' folder
 add_service_files(
+  DIRECTORY
+  srv
+
   FILES
   FaceClassifierTraining.srv
+  ImageRequest.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -68,7 +72,8 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  std_msgs  # Or other packages containing msgs
+  std_msgs
+  sensor_msgs
 )
 
 ################################################
@@ -103,7 +108,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES vision_system_msgs
-#  CATKIN_DEPENDS other_catkin_pkg
+   CATKIN_DEPENDS sensor_msgs message_runtime
 #  DEPENDS system_lib
 )
 
@@ -126,7 +131,7 @@ include_directories(
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context

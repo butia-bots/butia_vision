@@ -1,14 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(img_server)
 
-find_package(catkin REQUIRED COMPONENTS roscpp image_transport std_msgs sensor_msgs std_srvs cv_bridge)
+find_package(catkin REQUIRED COMPONENTS roscpp image_transport std_msgs sensor_msgs std_srvs cv_bridge vision_system_msgs)
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED)
 
-catkin_package(
-    INCLUDE_DIRS include
-    CATKIN_DEPENDS roscpp image_transport std_msgs std_srvs sensor_msgs cv_bridge
-)
+catkin_package(CATKIN_DEPENDS roscpp image_transport std_msgs std_srvs sensor_msgs cv_bridge vision_system_msgs)
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
