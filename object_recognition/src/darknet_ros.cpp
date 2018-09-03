@@ -2,7 +2,12 @@
 
 DarknetROS::DarknetROS(ros::NodeHandle _nh) : nh(_nh)
 {
-    setParameters();
+    loadParameters();
 
-    bounding_boxes_sub = ros::Subscriber()
+    bounding_boxes_sub = nh.subscribe();
+}
+
+void DarknetROS::loadParameters()
+{
+    
 }

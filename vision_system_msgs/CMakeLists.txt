@@ -48,8 +48,10 @@ add_message_files(
   BoundingBox.msg
   FaceDescription.msg
   ObjectDescription.msg
+  PeopleDescription.msg
   RecognizedFaces.msg
   RecognizedObjects.msg
+  RecognizedPeople.msg
 )
 
 ## Generate services in the 'srv' folder
