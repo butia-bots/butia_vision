@@ -1,3 +1,3 @@
 Header image_header
 Header recognition_header
-PeopleDescription[] people_description
+PersonDescription[] people_description
