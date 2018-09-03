@@ -9,19 +9,30 @@ import rospy
 
 from cv_bridge import CvBridge
 from sys import version_info
+from sensor_msgs.msg import Image
 from vision_system_msgs.msg import BoundingBox, FaceDescription, RecognizedFaces
+from vision_system_msgs.srv import FaceClassifierTraining
+
+from sklearn.pipeline import Pipeline
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.preprocessing import LabelEncoder
+from sklearn.svm import SVC
+from sklearn.grid_search import GridSearchCV
+from sklearn.mixture import GMM
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
 
 BRIDGE = CvBridge()
+DIR = os.path.dirname(os.path.realpath(__file__))
 
 class OpenfaceROS:
     def __init__(self):
         self.dlibmodel_dir = ''
         self.dlibmodel = ''
-        self.netmodel_dir = ''
-        self.netmodel = ''
-        self.classifymodel_dir = ''
-        self.classifymodel = ''
+        self.openfacemodel_dir = ''
+        self.openfacemodel = ''
+        self.classifiermodel_dir = ''
+        self.classifiermodel = ''
         self.dataset_dir = '' 
         self.image_dimension = 0
         self.threshold = 0.0
@@ -34,33 +45,27 @@ class OpenfaceROS:
         self.load()
 
     def load(self):
-        dir = os.path.dirname(os.path.realpath(__file__))
-
-        config_file = open(os.path.join(dir, 'config.json'), 'r')
+        config_file = open(os.path.join(DIR, 'config.json'), 'r')
         config_data = json.load(config_file)
 
-        self.dlibmodel_dir = os.path.join(dir, 'models', 'dlib')
-        self.dlibmodel = config_data['dlib_model']
-        self.netmodel_dir = os.path.join(dir, 'models', 'openface')
-        self.netmodel = config_data['net_model']
-        self.classifymodel_dir = os.path.join(dir, 'models', 'openface')
-        self.classifymodel = config_data['classify_model']
-        self.dataset_dir = os.path.join(dir, config_data['dataset_relative_dir'])
+        self.models_dir = os.path.join(DIR, 'models')
+        self.dataset_dir = os.path.join(DIR, config_data['dataset_relative_dir'])
+
         self.image_dimension = config_data['image_dimension']
         self.threshold = config_data['threshold']
 
-        self.createDlibAlign()
-        self.createTorchNeuralNet()
-        self.createClassifier()
+        self.createDlibAlign(config_data['dlib_model'])
+        self.createTorchNeuralNet(config_data['openface_model'])
+        self.createClassifier(config_data['classifier_model'])
 
-    def createDlibAlign(self):
-        self.align = openface.AlignDlib(os.path.join(self.dlibmodel_dir, self.dlibmodel))
+    def createDlibAlign(self, dlib_model):
+        self.align = openface.AlignDlib(os.path.join(self.models_dir, 'dlib', dlib_model))
 
-    def createTorchNeuralNet(self):
-        self.net = openface.TorchNeuralNet(os.path.join(self.netmodel_dir, self.netmodel), self.image_dimension)
+    def createTorchNeuralNet(self, openface_model):
+        self.net = openface.TorchNeuralNet(os.path.join(self.models_dir, 'openface', openface_model), self.image_dimension, cuda=True)
 
-    def createClassifier(self):
-        with open(os.path.join(self.classifymodel_dir, self.classifymodel), 'rb') as model_file:
+    def createClassifier(self, classifier_model):
+        with open(os.path.join(self.models_dir, 'classifier', classifier_model), 'rb') as model_file:
             if version_info[0] < 3:
                 (self.cl_label, self.classifier) = pickle.load(model_file)
             else:
@@ -83,7 +88,7 @@ class OpenfaceROS:
         return faces_rect
     
     def getLargestFaceBoundingBox(self, image):
-        face_rect = self.align.getAllFaceBoundingBoxes(image)
+        face_rect = self.align.getLargestFaceBoundingBox(image)
         return face_rect
 
     def alignFace(self, image, rect):
@@ -94,7 +99,6 @@ class OpenfaceROS:
         feature_vector = self.net.forward(image)
         return feature_vector
 
-    #funcao adaptada das demos do openface
     def classify(self, array):
         rep = array.reshape(1, -1)
         predictions = self.classifier.predict_proba(rep).ravel()
@@ -106,26 +110,128 @@ class OpenfaceROS:
         else:
             return ('Unknow', 0)
 
-    def trainClassifier(self, classifier_type):
-        labels = next(os.walk(self.dataset_dir))[1]
+    def alignDataset(self):
+        raw_dir = os.path.join(self.dataset_dir, 'raw')
+        raw_aligned_dir = os.path.join(self.dataset_dir, 'raw_aligned')
+        raw_labels = next(os.walk(raw_dir))[1]
+        for lb in raw_labels:
+            openface.helper.mkdirP(os.path.join(raw_aligned_dir, lb))
+
+        raw_images = openface.data.iterImgs(raw_dir)
+        raw_aligned_images = openface.data.iterImgs(raw_aligned_dir)
+
+        ris = []
+        rais = []
+
+        for ri in raw_images:
+            ris.append(ri)
+        for rai in raw_aligned_images:
+            rais.append(rai)
+
+        images = []
+        for ri in ris:
+            found = False
+            for rai in rais:
+                if ri.name == rai.name and ri.cls == rai.cls:
+                    found = True
+            if not found:        
+                images.append(ri)
+
+        for image in images:
+            rect = self.getLargestFaceBoundingBox(image.getRGB())
+            aligned_face = self.alignFace(image.getRGB(), rect)
+            bgr_image = cv2.cvtColor(aligned_face, cv2.COLOR_RGB2BGR)
+            print(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'))
+            cv2.imwrite(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'), bgr_image)
+
+    def generateDatasetFeatures(self):
+        raw_aligned_dir = os.path.join(self.dataset_dir, 'raw_aligned')
+        features_dir = os.path.join(self.dataset_dir, 'features')
+        raw_aligned_images = openface.data.iterImgs(raw_aligned_dir)
+
+        try:
+            features_file = open(os.path.join(features_dir, 'features.json'), 'r+')
+            features_data = json.load(features_file)
+            features_file.truncate(0)
+            features_file.close()
+        except (OSError, IOError) as e:
+            features_data = {}
+    
+        features_file = open(os.path.join(features_dir, 'features.json'), 'w')
+
+        images = []
+        for rai in raw_aligned_images:
+            label = rai.cls
+            name = rai.name
+            if(label not in features_data.keys()):
+                images.append(rai)
+                features_data[label] = {}
+            else:
+                found = False
+                for key in features_data[label].keys():
+                    if(name == key):
+                        found = True
+                if(not found):
+                    images.append(rai)
+
+        for image in images:
+            label = image.cls
+            name = image.name
+            features = self.extractFeaturesFromImage(image.getRGB())
+            features_data[label][name] = self.numpyArray2RosVector(features)
+
+        json.dump(features_data, features_file)
+        
+    def trainClassifier(self, classifier_type, classifier_name):
+        features_dir = os.path.join(self.dataset_dir, 'features')
+        features_file = open(os.path.join(features_dir, 'features.json'), 'rw')
+        features_data = json.load(features_file)
+
+        labels = []
+        embeddings = []
+        for key in features_data.keys():
+            labels += len(features_data[key].keys()) * [key]
+            embeddings += features_data[key].values()
+
+        embeddings = np.array(embeddings)
+
+        le = LabelEncoder()
+        le.fit(labels)
+        labels_num = le.transform(labels)
+        num_classes = len(le.classes_)
 
         if classifier_type == 'lsvm':
-            pass
+            clf = SVC(C=1, kernel='linear', probability=True)
         elif classifier_type == 'rsvm':
-            pass
+            clf = SVC(C=1, kernel='rbf', probability=True, gamma=2)
         elif classifier_type == 'gssvm':
-            pass
+            param_grid = [
+            {'C': [1, 10, 100, 1000],
+             'kernel': ['linear']},
+            {'C': [1, 10, 100, 1000],
+             'gamma': [0.001, 0.0001],
+             'kernel': ['rbf']}
+            ]
+            clf = GridSearchCV(SVC(C=1, probability=True), param_grid, cv=5)
         elif classifier_type == 'gmm':
-            pass
+            clf = GMM(n_components=num_classes)
         elif classifier_type == 'dt':
-            pass
+            clf = DecisionTreeClassifier(max_depth=20)
         elif classifier_type == 'gnb':
-            pass
-        elif classifier_type == 'dbn':
-            pass
+            clf = GaussianNB()
         else:
             pass
 
+        clf.fit(embeddings, labels_num)
+        fName = self.models_dir + '/classifier/' + classifier_name
+        with open(fName, 'w') as f:
+            pickle.dump((le, clf), f)
+
+    def trainingProcess(self, ros_srv):
+        self.alignDataset()
+        self.generateDatasetFeatures()
+        self.trainClassifier(ros_srv.classifier_type, ros_srv.classifier_name)
+        return True
 
     def recognitionProcess(self, ros_msg):
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
@@ -153,8 +259,9 @@ class OpenfaceROS:
             faces_description.append(face_description)
 
         recognized_faces = RecognizedFaces()
-        recognized_faces.header = ros_msg.header
-        recognized_faces.header.stamp = rospy.get_rostime()
+        recognized_faces.image_header = ros_msg.header
+
+        recognized_faces.recognition_header.stamp = rospy.get_rostime()
 
         recognized_faces.faces_description = faces_description
 

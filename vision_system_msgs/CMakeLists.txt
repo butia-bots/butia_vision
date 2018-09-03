@@ -51,7 +51,7 @@ add_message_files(
   PeopleDescription.msg
   RecognizedFaces.msg
   RecognizedObjects.msg
-  RecognizedPeople.msg
+  ClassifierReload.msg
 )
 
 ## Generate services in the 'srv' folder
