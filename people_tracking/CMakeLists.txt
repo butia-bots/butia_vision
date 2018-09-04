@@ -3,14 +3,13 @@ project(people_tracking)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED COMPONENTS roscpp vision_system_msgs img_server)
+find_package(OpenCV REQUIRED)
 
-catkin_package()
+catkin_package(CATKIN_DEPENDS roscpp vision_system_msgs img_server)
 
-include_directories(${catkin_INCLUDE_DIRS})
-
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+include_directories(${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 add_executable(${PROJECT_NAME}_node src/people_tracking_node.cpp)
 
-target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})

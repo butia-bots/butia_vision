@@ -48,9 +48,10 @@ add_message_files(
   BoundingBox.msg
   FaceDescription.msg
   ObjectDescription.msg
-  PeopleDescription.msg
+  PersonDescription.msg
   RecognizedFaces.msg
   RecognizedObjects.msg
+  RecognizedPeople.msg
   ClassifierReload.msg
 )
 
