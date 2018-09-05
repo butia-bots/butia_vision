@@ -1,0 +1,11 @@
+dlib:
+  model: shape_predictor_68_face_landmarks.dat
+
+openface:
+  model: nn4.small2.v1.t7
+  image_dimension: 96
+  cuda: True
+
+classifier:
+  model: classifier.pkl
+  threshold: 0.7

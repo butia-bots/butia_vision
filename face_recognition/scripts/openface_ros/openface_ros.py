@@ -6,6 +6,7 @@ import os
 import openface
 import pickle
 import rospy
+import rospkg
 
 from cv_bridge import CvBridge
 from sys import version_info
@@ -23,49 +24,51 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 
 BRIDGE = CvBridge()
-DIR = os.path.dirname(os.path.realpath(__file__))
+PACK_DIR = rospkg.RosPack().get_path('face_recognition')
 
 class OpenfaceROS:
     def __init__(self):
-        self.dlibmodel_dir = ''
-        self.dlibmodel = ''
-        self.openfacemodel_dir = ''
-        self.openfacemodel = ''
-        self.classifiermodel_dir = ''
-        self.classifiermodel = ''
-        self.dataset_dir = '' 
+        self.models_dir = os.path.join(PACK_DIR, 'models')
+
+        self.dlib_model = ''
+        self.openface_model = ''
+        self.classifier_model = ''
+
+        self.dataset_dir = os.path.join(PACK_DIR, 'dataset')
         self.image_dimension = 0
         self.threshold = 0.0
+        self.cuda = False
 
         self.align = None
         self.net = None
         self.cl_label = None
         self.classifier = None
 
-        self.load()
+        self.num_recognitions = 0
 
-    def load(self):
-        config_file = open(os.path.join(DIR, 'config.json'), 'r')
-        config_data = json.load(config_file)
+        self.readParameters()
+        self.createDlibAlign()
+        self.createTorchNeuralNet()
+        self.createClassifier()
 
-        self.models_dir = os.path.join(DIR, 'models')
-        self.dataset_dir = os.path.join(DIR, config_data['dataset_relative_dir'])
+    def readParameters(self):
+        self.dlib_model = rospy.get_param('/face_recognition/dlib/model', 'shape_predictor_68_face_landmarks.dat')
 
-        self.image_dimension = config_data['image_dimension']
-        self.threshold = config_data['threshold']
+        self.openface_model = rospy.get_param('/face_recognition/openface/model', 'nn4.small2.v1.t7')
+        self.cuda = rospy.get_param('/face_recognition/openface/cuda', False)
+        self.image_dimension = rospy.get_param('/face_recognition/dlib/image_dimension', 96)
 
-        self.createDlibAlign(config_data['dlib_model'])
-        self.createTorchNeuralNet(config_data['openface_model'])
-        self.createClassifier(config_data['classifier_model'])
+        self.classifier_model = rospy.get_param('/face_recognition/classifier/model', 'classifier.pkl')
+        self.threshold = rospy.get_param('/face_recognition/classifier/threshold', 0.5)
 
-    def createDlibAlign(self, dlib_model):
-        self.align = openface.AlignDlib(os.path.join(self.models_dir, 'dlib', dlib_model))
+    def createDlibAlign(self):
+        self.align = openface.AlignDlib(os.path.join(self.models_dir, 'dlib', self.dlib_model))
 
-    def createTorchNeuralNet(self, openface_model):
-        self.net = openface.TorchNeuralNet(os.path.join(self.models_dir, 'openface', openface_model), self.image_dimension, cuda=True)
+    def createTorchNeuralNet(self):
+        self.net = openface.TorchNeuralNet(os.path.join(self.models_dir, 'openface', self.openface_model), self.image_dimension, cuda = self.cuda)
 
-    def createClassifier(self, classifier_model):
-        with open(os.path.join(self.models_dir, 'classifier', classifier_model), 'rb') as model_file:
+    def createClassifier(self):
+        with open(os.path.join(self.models_dir, 'classifier', self.classifier_model), 'rb') as model_file:
             if version_info[0] < 3:
                 (self.cl_label, self.classifier) = pickle.load(model_file)
             else:
@@ -220,18 +223,19 @@ class OpenfaceROS:
         elif classifier_type == 'gnb':
             clf = GaussianNB()
         else:
-            pass
+            return False
 
         clf.fit(embeddings, labels_num)
         fName = self.models_dir + '/classifier/' + classifier_name
         with open(fName, 'w') as f:
             pickle.dump((le, clf), f)
+        return True
 
     def trainingProcess(self, ros_srv):
         self.alignDataset()
         self.generateDatasetFeatures()
-        self.trainClassifier(ros_srv.classifier_type, ros_srv.classifier_name)
-        return True
+        ans = self.trainClassifier(ros_srv.classifier_type, ros_srv.classifier_name)
+        return ans
 
     def recognitionProcess(self, ros_msg):
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
@@ -261,8 +265,12 @@ class OpenfaceROS:
         recognized_faces = RecognizedFaces()
         recognized_faces.image_header = ros_msg.header
 
+        recognized_faces.recognition_header.seq = self.num_recognitions
         recognized_faces.recognition_header.stamp = rospy.get_rostime()
+        recognized_faces.recognition_header.frame_id = "face_recognition"
 
         recognized_faces.faces_description = faces_description
+
+        self.num_recognitions += 1
 
         return recognized_faces

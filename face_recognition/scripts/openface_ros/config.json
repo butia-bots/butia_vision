@@ -1,8 +1,0 @@
-{
-    "dlib_model": "shape_predictor_68_face_landmarks.dat",
-    "openface_model": "nn4.small2.v1.t7",
-    "classifier_model": "classifier.pkl",
-    "dataset_relative_dir": "../../dataset",
-    "threshold": 0.7,
-    "image_dimension": 96
-}

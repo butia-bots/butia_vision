@@ -51,16 +51,28 @@ view_publisher = None
 if __name__ == '__main__':
     rospy.init_node('face_recognition_node', anonymous = True)
 
-    rospy.Subscriber('/vision_system/fr/classifier_reload', ClassifierReload, classifierReloadCallback, queue_size = 1)
+    camera_read_topic = rospy.get_param("/face_recognition/subscribers/camera_reading/topic", "/usb_cam/image_raw")
+    camera_read_qs = rospy.get_param("/face_recognition/subscribers/camera_reading/queue_size", 1)
 
-    recognition_publisher = rospy.Publisher('/vision_system/fr/face_recognition', RecognizedFaces, queue_size = 1)
+    classifier_reload_topic = rospy.get_param("/face_recognition/subscribers/classifier_reload/topic", "/vision_system/fr/classifier_reload")
+    classifier_reload_qs = rospy.get_param("/face_recognition/subscribers/classifier_reload/queue_size", 1)
 
-    view_publisher = rospy.Publisher('/vision_system/fr/face_recognition_view', Image, queue_size = 1)
+    face_recognition_topic = rospy.get_param("/face_recognition/publishers/face_recognition/topic", "/vision_system/fr/face_recognition")
+    face_recognition_qs = rospy.get_param("/face_recognition/publishers/face_recognition/queue_size", 1)
+
+    face_recognition_view_topic = rospy.get_param("/face_recognition/publishers/face_recognition_view/topic", "/vision_system/fr/face_recognition_view")
+    face_recognition_view_qs = rospy.get_param("/face_recognition/publishers/face_recognition_view/queue_size", 1)
+
+    rospy.Subscriber(classifier_reload_topic, ClassifierReload, classifierReloadCallback, queue_size = classifier_reload_qs)
+
+    recognition_publisher = rospy.Publisher(face_recognition_topic, RecognizedFaces, queue_size = face_recognition_qs)
+
+    view_publisher = rospy.Publisher(face_recognition_view_topic, Image, queue_size = face_recognition_view_topic)
 
     while not rospy.is_shutdown():
         image_msg = None
         try:
-            image_msg = rospy.wait_for_message('/usb_cam/image_raw', Image, 0.1)
+            image_msg = rospy.wait_for_message(camera_read_topic, Image, 0.1)
             imageCallback(image_msg)
         except rospy.exceptions.ROSException as e:
             print(e.message)
