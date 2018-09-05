@@ -9,3 +9,7 @@ publishers:
   object_recognition:
     topic: /vision_system/or/recognized_objects
     queue_size: 1
+
+  people_recognition:
+    topic: /vision_system/or/recognized_people
+    queue_size: 1
