@@ -59,14 +59,14 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
 
 void YoloRecognition::readParameters()
 {
-    node_handle.param("/subscribers/bounding_boxes/topic", bounding_boxes_topic, std::string("/darknet_ros/bounding_boxes"));
-    node_handle.param("/subscribers/bounding_boxes/queue_size", bounding_boxes_qs, 1);
+    node_handle.param("/object_recognition/subscribers/bounding_boxes/topic", bounding_boxes_topic, std::string("/darknet_ros/bounding_boxes"));
+    node_handle.param("/object_recognition/subscribers/bounding_boxes/queue_size", bounding_boxes_qs, 1);
 
-    node_handle.param("/publishers/object_recognition/topic", object_recognition_topic, std::string("/vision_system/or/recognized_objects"));
-    node_handle.param("/publishers/object_recognition/queue_size", object_recognition_qs, 1);
+    node_handle.param("/object_recognition/publishers/object_recognition/topic", object_recognition_topic, std::string("/vision_system/or/object_recognition"));
+    node_handle.param("/object_recognition/publishers/object_recognition/queue_size", object_recognition_qs, 1);
 
-    node_handle.param("/publishers/people_recognition/topic", people_recognition_topic, std::string("/vision_system/or/recognized_people"));
-    node_handle.param("/publishers/people_recognition/queue_size", people_recognition_qs, 1);
+    node_handle.param("/object_recognition/publishers/people_recognition/topic", people_recognition_topic, std::string("/vision_system/or/people_detection"));
+    node_handle.param("/object_recognition/publishers/people_recognition/queue_size", people_recognition_qs, 1);
 
-    node_handle.param("/person/identifier", person_identifier, std::string("person"));
+    node_handle.param("/object_recognition/person/identifier", person_identifier, std::string("person"));
 }

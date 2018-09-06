@@ -7,11 +7,11 @@ subscribers:
 publishers:
 
   object_recognition:
-    topic: /vision_system/or/recognized_objects
+    topic: /vision_system/or/object_recognition
     queue_size: 1
 
   people_recognition:
-    topic: /vision_system/or/recognized_people
+    topic: /vision_system/or/people_detection
     queue_size: 1
 
   person:
