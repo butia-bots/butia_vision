@@ -1,4 +1,4 @@
-#include "yolo_recognition.h"
+#include "object_recognition/yolo_recognition.h"
 
 YoloRecognition::YoloRecognition(ros::NodeHandle _nh) : node_handle(_nh)
 {
@@ -21,7 +21,7 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
     std::vector<darknet_ros_msgs::BoundingBox>::iterator it;
 
     for(it = bounding_boxes.begin() ; it != bounding_boxes.end() ; it++) {
-        if(it->Class == "Person") {
+        if(it->Class == person_identifier) {
             vision_system_msgs::PersonDescription person;
             person.probability = it->probability;
             person.bounding_box.minX = it->xmin;
@@ -67,4 +67,6 @@ void YoloRecognition::readParameters()
 
     node_handle.param("/publishers/people_recognition/topic", people_recognition_topic, std::string("/vision_system/or/recognized_people"));
     node_handle.param("/publishers/people_recognition/queue_size", people_recognition_qs, 1);
+
+    node_handle.param("/person/identifier", person_identifier, std::string("person"));
 }

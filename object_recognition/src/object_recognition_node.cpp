@@ -1,6 +1,6 @@
 #include "ros/ros.h"
 
-#include "yolo_recognition.h"
+#include "object_recognition/yolo_recognition.h"
 
 #include "darknet_ros_msgs/BoundingBoxes.h"
 #include "vision_system_msgs/RecognizedObjects.h"

@@ -99,8 +99,8 @@ find_package(catkin REQUIRED roscpp darknet_ros_msgs vision_system_msgs)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include/${PROJECT_NAME}
-#  LIBRARIES object_recognition
+  INCLUDE_DIRS include/${PROJECT_NAME}
+  LIBRARIES object_recognition
   CATKIN_DEPENDS roscpp vision_system_msgs darknet_ros_msgs
 #  DEPENDS system_lib
 )
@@ -142,9 +142,10 @@ add_executable(${PROJECT_NAME}_node src/object_recognition_node.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+  ${PROJECT_NAME}
+)
 
 #############
 ## Install ##

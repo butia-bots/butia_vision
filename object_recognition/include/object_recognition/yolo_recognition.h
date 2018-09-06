@@ -32,5 +32,7 @@ class YoloRecognition{
         std::string people_recognition_topic;
         int people_recognition_qs;
 
+        std::string person_identifier;
+
         void readParameters();
 };
