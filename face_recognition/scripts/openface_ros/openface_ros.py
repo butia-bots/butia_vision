@@ -111,7 +111,7 @@ class OpenfaceROS:
         if confidence > self.threshold:
             return (person.decode('utf-8'), confidence)
         else:
-            return ('Unknow', 0)
+            return ('Unknow', confidence)
 
     def alignDataset(self):
         raw_dir = os.path.join(self.dataset_dir, 'raw')
@@ -242,10 +242,10 @@ class OpenfaceROS:
 
         face_rects = self.getAllFaceBoundingBoxes(rgb_image)
         faces_description = []
-        face_description = FaceDescription()
         if len(face_rects) == 0:
             return None
         for face_rect in face_rects:
+            face_description = FaceDescription()
             aligned_face = self.alignFace(rgb_image, face_rect)
             features_array = self.extractFeaturesFromImage(aligned_face)
             classification = self.classify(features_array)

@@ -37,13 +37,17 @@ def recognizedFaces2ViewImage(image_msg, recognized_faces_msg):
     for fd in faces_description:
         bb = fd.bounding_box
         label = fd.label_class + ' - ' + ('%.2f' % fd.probability)
-        cv2.rectangle(cv_image, (bb.minX, bb.minY), (bb.minX + bb.width, bb.minY + bb.height), (255, 0, 0), 2)
-        cv2.putText(cv_image, label, (bb.minX, bb.minY + bb.height + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+        color = ((1-fd.probability)*255, fd.probability*255, 0)
+        cv2.rectangle(cv_image, (bb.minX, bb.minY), (bb.minX + bb.width, bb.minY + bb.height), color, 2)
+        cv2.putText(cv_image, label, (bb.minX, bb.minY + bb.height + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
     
     image_view_msg = BRIDGE.cv2_to_imgmsg(cv_image, encoding = 'rgb8')
     return image_view_msg
 
 openface = OpenfaceROS()
+
+#image_subscriber = None
+reload_subscriber = None
 
 recognition_publisher = None
 view_publisher = None
@@ -63,7 +67,9 @@ if __name__ == '__main__':
     face_recognition_view_topic = rospy.get_param("/face_recognition/publishers/face_recognition_view/topic", "/vision_system/fr/face_recognition_view")
     face_recognition_view_qs = rospy.get_param("/face_recognition/publishers/face_recognition_view/queue_size", 1)
 
-    rospy.Subscriber(classifier_reload_topic, ClassifierReload, classifierReloadCallback, queue_size = classifier_reload_qs)
+#    image_subscriber = rospy.Subscriber(camera_read_topic, Image, imageCallback, queue_size = camera_read_qs)
+
+    reload_subscriber = rospy.Subscriber(classifier_reload_topic, ClassifierReload, classifierReloadCallback, queue_size = classifier_reload_qs)
 
     recognition_publisher = rospy.Publisher(face_recognition_topic, RecognizedFaces, queue_size = face_recognition_qs)
 
