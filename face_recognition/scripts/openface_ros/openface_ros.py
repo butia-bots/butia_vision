@@ -82,7 +82,10 @@ class OpenfaceROS:
     def createTorchNeuralNet(self):
         self.net = openface.TorchNeuralNet(os.path.join(self.models_dir, 'openface', self.openface_model), self.image_dimension, cuda = self.cuda)
 
-    def createClassifier(self):
+    def createClassifier(self, classifier_name = ''):
+        if classifier_name != '':
+            self.classifier_model = classifier_name
+            rospy.set_param('/face_recognition/classifier/model', classifier_name)
         with open(os.path.join(self.models_dir, 'classifier', self.classifier_model), 'rb') as model_file:
             if version_info[0] < 3:
                 (self.cl_label, self.classifier) = pickle.load(model_file)
@@ -117,14 +120,14 @@ class OpenfaceROS:
         rospy.loginfo("Face detection took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
         return faces_rect
     
-    #esse metodo ainda nao esta coerente para o caso de usar opencv
+    #esse metodo sempre usa dlib (tem que ser refeito)
     def getLargestFaceBoundingBox(self, image):
         now_s = rospy.get_rostime().to_sec()
-        if(self.detection_lib == 'opencv'):
-            face_rect = self.opencv_cascade.detectMultiScale(image, 1.3, 5)
-            face_rect = self.numpyndArray2dlibRectangles(face_rect)
-        elif(self.detection_lib == 'dlib'):
-            face_rect = self.align.getLargestFaceBoundingBox(image)
+        #if(self.detection_lib == 'opencv'):
+        #    face_rect = self.opencv_cascade.detectMultiScale(image, 1.3, 5)
+        #    face_rect = self.numpyndArray2dlibRectangles(face_rect)
+        #elif(self.detection_lib == 'dlib'):
+        face_rect = self.align.getLargestFaceBoundingBox(image)
         rospy.loginfo("Face detection took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
         return face_rect
 
