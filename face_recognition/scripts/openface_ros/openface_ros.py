@@ -7,6 +7,7 @@ import openface
 import pickle
 import rospy
 import rospkg
+from dlib import rectangle, rectangles
 
 from cv_bridge import CvBridge
 from sys import version_info
@@ -30,9 +31,12 @@ class OpenfaceROS:
     def __init__(self):
         self.models_dir = os.path.join(PACK_DIR, 'models')
 
+        self.detection_lib = ''
+
         self.dlib_model = ''
         self.openface_model = ''
         self.classifier_model = ''
+        self.opencv_cascade_model = ''
 
         self.dataset_dir = os.path.join(PACK_DIR, 'dataset')
         self.image_dimension = 0
@@ -41,18 +45,26 @@ class OpenfaceROS:
 
         self.align = None
         self.net = None
+        self.opencv_cascade = None
         self.cl_label = None
         self.classifier = None
 
         self.num_recognitions = 0
 
         self.readParameters()
+        self.createOpencvCascade()
         self.createDlibAlign()
         self.createTorchNeuralNet()
         self.createClassifier()
 
     def readParameters(self):
-        self.dlib_model = rospy.get_param('/face_recognition/dlib/model', 'shape_predictor_68_face_landmarks.dat')
+        self.detection_lib = rospy.get_param('/face_recognition/detection/lib', 'dlib')
+
+        self.opencv_cascade_model = rospy.get_param('/face_recognition/detection/opencv/model', 'haarcascade_frontalface_default.xml')
+        if(rospy.get_param('/face_recognition/detection/opencv/cuda', True)):
+            self.opencv_cascade_model = 'cuda/' + self.opencv_cascade_model
+
+        self.dlib_model = rospy.get_param('/face_recognition/detection/dlib/model', 'shape_predictor_68_face_landmarks.dat')
 
         self.openface_model = rospy.get_param('/face_recognition/openface/model', 'nn4.small2.v1.t7')
         self.cuda = rospy.get_param('/face_recognition/openface/cuda', False)
@@ -63,6 +75,9 @@ class OpenfaceROS:
 
     def createDlibAlign(self):
         self.align = openface.AlignDlib(os.path.join(self.models_dir, 'dlib', self.dlib_model))
+
+    def createOpencvCascade(self):
+        self.opencv_cascade = cv2.CascadeClassifier(os.path.join(self.models_dir, 'opencv', self.opencv_cascade_model))
 
     def createTorchNeuralNet(self):
         self.net = openface.TorchNeuralNet(os.path.join(self.models_dir, 'openface', self.openface_model), self.image_dimension, cuda = self.cuda)
@@ -82,32 +97,57 @@ class OpenfaceROS:
         bounding_box.height = rect.height()
         return bounding_box
 
+    def numpyndArray2dlibRectangles(self, array):
+        rects = rectangles()
+        for (x,y,w,h) in array:
+            rects.append(rectangle(x, y, x + w, y + h))
+        return rects
+
     def numpyArray2RosVector(self, array):
         vector = array.tolist()
         return vector
 
     def getAllFaceBoundingBoxes(self, image):
-        faces_rect = self.align.getAllFaceBoundingBoxes(image)
+        now_s = rospy.get_rostime().to_sec()
+        if(self.detection_lib == 'opencv'):
+            faces_rect = self.opencv_cascade.detectMultiScale(image, 1.3, 5)
+            faces_rect = self.numpyndArray2dlibRectangles(faces_rect)
+        elif(self.detection_lib == 'dlib'):
+            faces_rect = self.align.getAllFaceBoundingBoxes(image)
+        rospy.loginfo("Face detection took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
         return faces_rect
     
+    #esse metodo ainda nao esta coerente para o caso de usar opencv
     def getLargestFaceBoundingBox(self, image):
-        face_rect = self.align.getLargestFaceBoundingBox(image)
+        now_s = rospy.get_rostime().to_sec()
+        if(self.detection_lib == 'opencv'):
+            face_rect = self.opencv_cascade.detectMultiScale(image, 1.3, 5)
+            face_rect = self.numpyndArray2dlibRectangles(face_rect)
+        elif(self.detection_lib == 'dlib'):
+            face_rect = self.align.getLargestFaceBoundingBox(image)
+        rospy.loginfo("Face detection took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
         return face_rect
 
     def alignFace(self, image, rect):
+        now_s = rospy.get_rostime().to_sec()
         aligned_face = self.align.align(self.image_dimension, image, rect, landmarkIndices = openface.AlignDlib.OUTER_EYES_AND_NOSE)
+        rospy.loginfo("Face alignment took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
         return aligned_face
 
     def extractFeaturesFromImage(self, image):
+        now_s = rospy.get_rostime().to_sec()
         feature_vector = self.net.forward(image)
+        rospy.loginfo("Feature extraction took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
         return feature_vector
 
     def classify(self, array):
+        now_s = rospy.get_rostime().to_sec()
         rep = array.reshape(1, -1)
         predictions = self.classifier.predict_proba(rep).ravel()
         maxI = np.argmax(predictions)
         person = self.cl_label.inverse_transform(maxI)
         confidence = predictions[maxI]
+        rospy.loginfo("Face classification took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
         if confidence > self.threshold:
             return (person.decode('utf-8'), confidence)
         else:
@@ -239,7 +279,6 @@ class OpenfaceROS:
 
     def recognitionProcess(self, ros_msg):
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
-
         face_rects = self.getAllFaceBoundingBoxes(rgb_image)
         faces_description = []
         if len(face_rects) == 0:

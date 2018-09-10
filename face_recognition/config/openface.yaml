@@ -1,5 +1,11 @@
-dlib:
-  model: shape_predictor_68_face_landmarks.dat
+detection:
+    lib: opencv
+    opencv:
+      model: haarcascade_frontalface_default.xml
+      cuda: True
+
+    dlib:
+      model: shape_predictor_68_face_landmarks.dat
 
 openface:
   model: nn4.small2.v1.t7
