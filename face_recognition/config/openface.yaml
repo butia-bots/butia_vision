@@ -1,7 +1,7 @@
 detection:
     lib: opencv
     opencv:
-      model: haarcascade_frontalface_default.xml
+      model: haarcascade_frontalface_alt.xml
       cuda: True
 
     dlib:
