@@ -15,19 +15,10 @@ from sensor_msgs.msg import Image
 from vision_system_msgs.msg import BoundingBox, FaceDescription, RecognizedFaces
 from vision_system_msgs.srv import FaceClassifierTraining
 
-from sklearn.pipeline import Pipeline
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.preprocessing import LabelEncoder
-from sklearn.svm import SVC
-from sklearn.grid_search import GridSearchCV
-from sklearn.mixture import GMM
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.naive_bayes import GaussianNB
-
 BRIDGE = CvBridge()
 PACK_DIR = rospkg.RosPack().get_path('face_recognition')
 
-class OpenfaceROS:
+class FaceRecognitionROS():
     def __init__(self):
         self.models_dir = os.path.join(PACK_DIR, 'models')
 
@@ -73,24 +64,9 @@ class OpenfaceROS:
         self.classifier_model = rospy.get_param('/face_recognition/classifier/model', 'classifier.pkl')
         self.threshold = rospy.get_param('/face_recognition/classifier/threshold', 0.5)
 
-    def createDlibAlign(self):
-        self.align = openface.AlignDlib(os.path.join(self.models_dir, 'dlib', self.dlib_model))
-
-    def createOpencvCascade(self):
-        self.opencv_cascade = cv2.CascadeClassifier(os.path.join(self.models_dir, 'opencv', self.opencv_cascade_model))
 
     def createTorchNeuralNet(self):
         self.net = openface.TorchNeuralNet(os.path.join(self.models_dir, 'openface', self.openface_model), self.image_dimension, cuda = self.cuda)
-
-    def createClassifier(self, classifier_name = ''):
-        if classifier_name != '':
-            self.classifier_model = classifier_name
-            rospy.set_param('/face_recognition/classifier/model', classifier_name)
-        with open(os.path.join(self.models_dir, 'classifier', self.classifier_model), 'rb') as model_file:
-            if version_info[0] < 3:
-                (self.cl_label, self.classifier) = pickle.load(model_file)
-            else:
-                (self.cl_label, self.classifier) = pickle.load(model_file, encoding='latin1')
 
     def dlibRectangle2RosBoundingBox(self, rect):
         bounding_box = BoundingBox()
@@ -110,51 +86,12 @@ class OpenfaceROS:
         vector = array.tolist()
         return vector
 
-    def getAllFaceBoundingBoxes(self, image):
-        now_s = rospy.get_rostime().to_sec()
-        if(self.detection_lib == 'opencv'):
-            faces_rect = self.opencv_cascade.detectMultiScale(image, 1.3, 5)
-            faces_rect = self.numpyndArray2dlibRectangles(faces_rect)
-        elif(self.detection_lib == 'dlib'):
-            faces_rect = self.align.getAllFaceBoundingBoxes(image)
-        rospy.loginfo("Face detection took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
-        return faces_rect
-    
-    #esse metodo sempre usa dlib (tem que ser refeito)
-    def getLargestFaceBoundingBox(self, image):
-        now_s = rospy.get_rostime().to_sec()
-        #if(self.detection_lib == 'opencv'):
-        #    face_rect = self.opencv_cascade.detectMultiScale(image, 1.3, 5)
-        #    face_rect = self.numpyndArray2dlibRectangles(face_rect)
-        #elif(self.detection_lib == 'dlib'):
-        face_rect = self.align.getLargestFaceBoundingBox(image)
-        rospy.loginfo("Face detection took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
-        return face_rect
-
-    def alignFace(self, image, rect):
-        now_s = rospy.get_rostime().to_sec()
-        aligned_face = self.align.align(self.image_dimension, image, rect, landmarkIndices = openface.AlignDlib.OUTER_EYES_AND_NOSE)
-        rospy.loginfo("Face alignment took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
-        return aligned_face
 
     def extractFeaturesFromImage(self, image):
         now_s = rospy.get_rostime().to_sec()
         feature_vector = self.net.forward(image)
         rospy.loginfo("Feature extraction took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
         return feature_vector
-
-    def classify(self, array):
-        now_s = rospy.get_rostime().to_sec()
-        rep = array.reshape(1, -1)
-        predictions = self.classifier.predict_proba(rep).ravel()
-        maxI = np.argmax(predictions)
-        person = self.cl_label.inverse_transform(maxI)
-        confidence = predictions[maxI]
-        rospy.loginfo("Face classification took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
-        if confidence > self.threshold:
-            return (person.decode('utf-8'), confidence)
-        else:
-            return ('Unknow', confidence)
 
     def alignDataset(self):
         raw_dir = os.path.join(self.dataset_dir, 'raw')
@@ -227,52 +164,6 @@ class OpenfaceROS:
             features_data[label][name] = self.numpyArray2RosVector(features)
 
         json.dump(features_data, features_file)
-        
-    def trainClassifier(self, classifier_type, classifier_name):
-        features_dir = os.path.join(self.dataset_dir, 'features')
-        features_file = open(os.path.join(features_dir, 'features.json'), 'rw')
-        features_data = json.load(features_file)
-
-        labels = []
-        embeddings = []
-        for key in features_data.keys():
-            labels += len(features_data[key].keys()) * [key]
-            embeddings += features_data[key].values()
-
-        embeddings = np.array(embeddings)
-
-        le = LabelEncoder()
-        le.fit(labels)
-        labels_num = le.transform(labels)
-        num_classes = len(le.classes_)
-
-        if classifier_type == 'lsvm':
-            clf = SVC(C=1, kernel='linear', probability=True)
-        elif classifier_type == 'rsvm':
-            clf = SVC(C=1, kernel='rbf', probability=True, gamma=2)
-        elif classifier_type == 'gssvm':
-            param_grid = [
-            {'C': [1, 10, 100, 1000],
-             'kernel': ['linear']},
-            {'C': [1, 10, 100, 1000],
-             'gamma': [0.001, 0.0001],
-             'kernel': ['rbf']}
-            ]
-            clf = GridSearchCV(SVC(C=1, probability=True), param_grid, cv=5)
-        elif classifier_type == 'gmm':
-            clf = GMM(n_components=num_classes)
-        elif classifier_type == 'dt':
-            clf = DecisionTreeClassifier(max_depth=20)
-        elif classifier_type == 'gnb':
-            clf = GaussianNB()
-        else:
-            return False
-
-        clf.fit(embeddings, labels_num)
-        fName = self.models_dir + '/classifier/' + classifier_name
-        with open(fName, 'w') as f:
-            pickle.dump((le, clf), f)
-        return True
 
     def trainingProcess(self, ros_srv):
         self.alignDataset()

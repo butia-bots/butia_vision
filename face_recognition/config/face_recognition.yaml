@@ -1,13 +1,13 @@
-detection:
+detector:
     lib: opencv
     opencv:
       model: haarcascade_frontalface_alt.xml
       cuda: True
 
-    dlib:
-      model: shape_predictor_68_face_landmarks.dat
+aligner:
+  model: shape_predictor_68_face_landmarks.dat
 
-openface:
+embosser:
   model: nn4.small2.v1.t7
   image_dimension: 96
   cuda: True
