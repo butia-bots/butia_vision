@@ -1,16 +1,18 @@
 detector:
-    lib: opencv
-    opencv:
-      model: haarcascade_frontalface_alt.xml
-      cuda: True
+  lib: opencv
+  opencv:
+    model: haarcascade_frontalface_alt.xml
+    cuda: True
 
 aligner:
-  model: shape_predictor_68_face_landmarks.dat
+  dlib:
+    model: shape_predictor_68_face_landmarks.dat
 
 embosser:
-  model: nn4.small2.v1.t7
-  image_dimension: 96
-  cuda: True
+  facenet:
+    model: nn4.small2.v1.t7
+    image_dimension: 96
+    cuda: True
 
 classifier:
   model: classifier.pkl

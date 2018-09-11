@@ -16,7 +16,7 @@ class FaceClassifier():
     def __init__(self, threshold = 0.5):
         self.threshold = threshold
 
-    def loadClassifier(self, classifier_name = 'classifier.pkl'):
+    def loadClassifierModel(self, classifier_name = 'classifier.pkl'):
         #rospy.set_param('/face_recognition/classifier/model', classifier_name)
         with open(os.path.join(self.models_dir, 'classifier', self.classifier_model), 'rb') as model_file:
             (self.cl_label, self.classifier_model) = pickle.load(model_file)

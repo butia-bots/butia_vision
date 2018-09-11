@@ -34,39 +34,27 @@ class FaceRecognitionROS():
         self.threshold = 0.0
         self.cuda = False
 
-        self.align = None
-        self.net = None
-        self.opencv_cascade = None
-        self.cl_label = None
-        self.classifier = None
-
         self.num_recognitions = 0
 
         self.readParameters()
-        self.createOpencvCascade()
-        self.createDlibAlign()
-        self.createTorchNeuralNet()
-        self.createClassifier()
 
     def readParameters(self):
-        self.detection_lib = rospy.get_param('/face_recognition/detection/lib', 'dlib')
+        self.detector_lib = rospy.get_param('/face_recognition/detector/lib', 'opencv')
 
-        self.opencv_cascade_model = rospy.get_param('/face_recognition/detection/opencv/model', 'haarcascade_frontalface_default.xml')
-        if(rospy.get_param('/face_recognition/detection/opencv/cuda', True)):
-            self.opencv_cascade_model = 'cuda/' + self.opencv_cascade_model
+        self.opencv_detector_model = rospy.get_param('/face_recognition/detector/opencv/model', 'haarcascade_frontalface_default.xml')
+        self.opencv_detector_cuda = rospy.get_param('/face_recognition/detector/opencv/cuda', True)
 
-        self.dlib_model = rospy.get_param('/face_recognition/detection/dlib/model', 'shape_predictor_68_face_landmarks.dat')
+        self.dlib_aligner_model = rospy.get_param('/face_recognition/aligner/dlib/model', 'shape_predictor_68_face_landmarks.dat')
 
-        self.openface_model = rospy.get_param('/face_recognition/openface/model', 'nn4.small2.v1.t7')
-        self.cuda = rospy.get_param('/face_recognition/openface/cuda', False)
-        self.image_dimension = rospy.get_param('/face_recognition/dlib/image_dimension', 96)
+        self.facenet_embosser_model = rospy.get_param('/face_recognition/embosser/facenet/model', 'nn4.small2.v1.t7')
+        self.facenet_embosser_cuda = rospy.get_param('/face_recognition/embosser/facenet/cuda', False)
+        self.image_dimension = rospy.get_param('/face_recognition/embosser/facenet/image_dimension', 96)
 
         self.classifier_model = rospy.get_param('/face_recognition/classifier/model', 'classifier.pkl')
-        self.threshold = rospy.get_param('/face_recognition/classifier/threshold', 0.5)
+        self.classifier_threshold = rospy.get_param('/face_recognition/classifier/threshold', 0.5)
 
 
-    def createTorchNeuralNet(self):
-        self.net = openface.TorchNeuralNet(os.path.join(self.models_dir, 'openface', self.openface_model), self.image_dimension, cuda = self.cuda)
+    
 
     def dlibRectangle2RosBoundingBox(self, rect):
         bounding_box = BoundingBox()
@@ -85,13 +73,6 @@ class FaceRecognitionROS():
     def numpyArray2RosVector(self, array):
         vector = array.tolist()
         return vector
-
-
-    def extractFeaturesFromImage(self, image):
-        now_s = rospy.get_rostime().to_sec()
-        feature_vector = self.net.forward(image)
-        rospy.loginfo("Feature extraction took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
-        return feature_vector
 
     def alignDataset(self):
         raw_dir = os.path.join(self.dataset_dir, 'raw')

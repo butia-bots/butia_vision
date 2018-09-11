@@ -5,22 +5,21 @@ import openface
 from dlib import rectangles
 
 class FaceDetector():
-    def __init__(self, detection_lib = 'opencv', image_dimension = 96):
+    def __init__(self, detection_lib = 'opencv'):
         self.detection_lib = detection_lib
-
-        self.image_dimension = image_dimension
 
         self.detectors_dict = {}
 
-    def loadOpencvDetector(self, opencv_model = 'haarcascade_frontalface_alt.xml', opencv_cuda = True, (scale_factor = 1.3, min_neighbors = 5)):
+    def loadOpencvModels(self, opencv_model = 'haarcascade_frontalface_alt.xml', opencv_cuda = True, (scale_factor = 1.3, min_neighbors = 5)):
         self.opencv_args = (scale_factor, min_neighbors)
         if(opencv_cuda):
             opencv_model = 'cuda/' + opencv_model
         self.opencv_detector = cv2.CascadeClassifier(os.path.join(self.models_dir, 'opencv', opencv_model))
         self.detectors_dict['opencv'] = getAllFaceBoundingBoxesOpencv
 
-    def loadDlibDetector(self, dlib_model = 'shape_predictor_68_face_landmarks.dat'):
-        self.dlib_detector = openface.AlignDlib(os.path.join(self.models_dir, 'dlib', dlib_model))
+    def loadDlibModels(self, dlib_model = 'shape_predictor_68_face_landmarks.dat', image_dimension = 96):
+        self.image_dimension = image_dimension
+        self.dlib_aligner = openface.AlignDlib(os.path.join(self.models_dir, 'dlib', dlib_model))
         self.detectors_dict['dlib'] = getAllFaceBoundingBoxesDlib
 
     def getAllFaceBoundingBoxesOpencv(self, image):
@@ -29,7 +28,7 @@ class FaceDetector():
         return faces
 
     def getAllFaceBoundingBoxesDlib(self, image):
-        faces = self.align.getAllFaceBoundingBoxes(image)
+        faces = self.dlib_aligner.getAllFaceBoundingBoxes(image)
         return faces
 
     def getAllFaceBoundingBoxes(self, image):
@@ -53,7 +52,7 @@ class FaceDetector():
 
     def alignFace(self, image, rect):
         #now_s = rospy.get_rostime().to_sec()
-        aligned_face = self.dlib_detector.align(self.image_dimension, image, rect, landmarkIndices = openface.AlignDlib.OUTER_EYES_AND_NOSE)
+        aligned_face = self.dlib_aligner.align(self.image_dimension, image, rect, landmarkIndices = openface.AlignDlib.OUTER_EYES_AND_NOSE)
         #rospy.loginfo("Face alignment took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
         return aligned_face
 
