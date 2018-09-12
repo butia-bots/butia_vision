@@ -3,12 +3,16 @@ detector:
   opencv:
     model: haarcascade_frontalface_alt.xml
     cuda: True
+  dlib:
+    model: default
 
 aligner:
-  dlib:
+  lib: dlib
+  dlib: 
     model: shape_predictor_68_face_landmarks.dat
 
 embosser:
+  lib: facenet
   facenet:
     model: nn4.small2.v1.t7
     image_dimension: 96

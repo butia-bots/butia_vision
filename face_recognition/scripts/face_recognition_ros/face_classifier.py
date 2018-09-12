@@ -1,6 +1,4 @@
 #! /usr/bin/env python
-import cv2
-import openface
 import pickle
 
 from sklearn.pipeline import Pipeline

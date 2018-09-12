@@ -4,9 +4,11 @@ import json
 import numpy as np
 import os
 import openface
-import pickle
 import rospy
 import rospkg
+import face_detector
+import face_embosser
+import face_classifier
 from dlib import rectangle, rectangles
 
 from cv_bridge import CvBridge
@@ -21,22 +23,14 @@ PACK_DIR = rospkg.RosPack().get_path('face_recognition')
 class FaceRecognitionROS():
     def __init__(self):
         self.models_dir = os.path.join(PACK_DIR, 'models')
-
-        self.detection_lib = ''
-
-        self.dlib_model = ''
-        self.openface_model = ''
-        self.classifier_model = ''
-        self.opencv_cascade_model = ''
-
         self.dataset_dir = os.path.join(PACK_DIR, 'dataset')
-        self.image_dimension = 0
-        self.threshold = 0.0
-        self.cuda = False
-
+       
         self.num_recognitions = 0
 
         self.readParameters()
+        self.face_detector = FaceDetector(self.detector_lib, self.aligner_lib)
+        self.face_embosser = FaceEmbosser(self.embosser_lib)
+        self.face_classifier = FaceClassifier(self.detector_lib)
 
     def readParameters(self):
         self.detector_lib = rospy.get_param('/face_recognition/detector/lib', 'opencv')
@@ -44,7 +38,13 @@ class FaceRecognitionROS():
         self.opencv_detector_model = rospy.get_param('/face_recognition/detector/opencv/model', 'haarcascade_frontalface_default.xml')
         self.opencv_detector_cuda = rospy.get_param('/face_recognition/detector/opencv/cuda', True)
 
+
+        self.aligner_lib = rospy.get_param('/face_recognition/aligner/lib', 'dlib')
+
         self.dlib_aligner_model = rospy.get_param('/face_recognition/aligner/dlib/model', 'shape_predictor_68_face_landmarks.dat')
+
+
+        self.embosser_lib = rospy.get_param('/face_recognition/embosser/lib', 'facenet')
 
         self.facenet_embosser_model = rospy.get_param('/face_recognition/embosser/facenet/model', 'nn4.small2.v1.t7')
         self.facenet_embosser_cuda = rospy.get_param('/face_recognition/embosser/facenet/cuda', False)
@@ -52,9 +52,6 @@ class FaceRecognitionROS():
 
         self.classifier_model = rospy.get_param('/face_recognition/classifier/model', 'classifier.pkl')
         self.classifier_threshold = rospy.get_param('/face_recognition/classifier/threshold', 0.5)
-
-
-    
 
     def dlibRectangle2RosBoundingBox(self, rect):
         bounding_box = BoundingBox()
