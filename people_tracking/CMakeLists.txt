@@ -13,6 +13,6 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
-add_executable(${PROJECT_NAME}_node src/people_tracking_node.cpp)
+add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
 
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
