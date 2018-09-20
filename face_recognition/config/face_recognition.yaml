@@ -2,22 +2,26 @@ detector:
   lib: opencv
   opencv:
     model: haarcascade_frontalface_alt.xml
+    scale_factor: 1.3
+    min_neighbors: 5
     cuda: True
   dlib:
-    model: default
+    model: 
 
 aligner:
   lib: dlib
   dlib: 
     model: shape_predictor_68_face_landmarks.dat
+    image_dimension: 96
 
 embosser:
   lib: facenet
   facenet:
     model: nn4.small2.v1.t7
-    image_dimension: 96
     cuda: True
 
 classifier:
-  model: classifier.pkl
-  threshold: 0.5
+  lib: sklearn
+  sklearn:
+    model: classifier.pkl
+    threshold: 0.5

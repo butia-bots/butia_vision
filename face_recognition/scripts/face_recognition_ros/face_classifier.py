@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 import pickle
+import decorators
 
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
@@ -10,29 +11,29 @@ from sklearn.mixture import GMM
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 
-class FaceClassifier():
-    def __init__(self, threshold = 0.5):
-        self.threshold = threshold
+@load(lib_name='sklearn')
+@debug
+def loadSklearnModels(models_dir, model='classifier.pkl'):
+    with open(os.path.join(models_dir, 'classifier', model), 'rb') as model_file:
+        (cl_label, classifier_model) = pickle.load(model_file)
+        return (cl_label, classifier_model)
 
-    def loadClassifierModel(self, classifier_name = 'classifier.pkl'):
-        #rospy.set_param('/face_recognition/classifier/model', classifier_name)
-        with open(os.path.join(self.models_dir, 'classifier', self.classifier_model), 'rb') as model_file:
-            (self.cl_label, self.classifier_model) = pickle.load(model_file)
+@action(action_name='classify')
+@debug
+def classifySklearn(classifier, array, threshold=0.5):
+    classifier_model, cl_label = classifier
+    rep = array.reshape(1, -1)
+    predictions = classifier_model.predict_proba(rep).ravel()
+    maxI = np.argmax(predictions)
+    person = cl_label.inverse_transform(maxI)
+    confidence = predictions[maxI]
+    if confidence > threshold:
+        return (person.decode('utf-8'), confidence)
+    else:
+        return ('Unknow', confidence)
 
-    def classify(self, array):
-        #now_s = rospy.get_rostime().to_sec()
-        rep = array.reshape(1, -1)
-        predictions = self.classifier_model.predict_proba(rep).ravel()
-        maxI = np.argmax(predictions)
-        person = self.cl_label.inverse_transform(maxI)
-        confidence = predictions[maxI]
-        #rospy.loginfo("Face classification took: " + str(rospy.get_rostime().to_sec() - now_s) + " seconds.")
-        if confidence > self.threshold:
-            return (person.decode('utf-8'), confidence)
-        else:
-            return ('Unknow', confidence)
-
-    def trainClassifier(self, classifier_type, classifier_name, feature_data):
+@debug
+def trainClassifier(classifier_type, classifier_name, feature_data):
         #features_dir = os.path.join(self.dataset_dir, 'features')
         #features_file = open(os.path.join(features_dir, 'features.json'), 'rw')
         #features_data = json.load(features_file)
@@ -78,3 +79,13 @@ class FaceClassifier():
         with open(fName, 'w') as f:
             pickle.dump((label_encoder, classifier), f)
         return True
+
+class FaceClassifier():
+    def __init__(self, threshold = 0.5):
+        self.threshold = threshold
+
+    
+
+    
+
+    
