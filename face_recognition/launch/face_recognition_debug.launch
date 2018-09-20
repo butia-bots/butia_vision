@@ -1,6 +1,6 @@
 <launch>
   <rosparam command="load" ns="face_recognition" file="$(find face_recognition)/config/ros.yaml"/>
-  <rosparam command="load" ns="face_recognition" file="$(find face_recognition)/config/openface.yaml"/>
+  <rosparam command="load" ns="face_recognition" file="$(find face_recognition)/config/face_recognition.yaml"/>
 
   <node name="face_recognition_node" pkg="face_recognition" type="face_recognition_node.py" output="screen"/>
 

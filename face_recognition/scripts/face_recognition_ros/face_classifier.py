@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import pickle
 import decorators
+import os
 
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
@@ -13,14 +14,14 @@ from sklearn.naive_bayes import GaussianNB
 
 @load(lib_name='sklearn')
 @debug
-def loadSklearnModels(models_dir, model='classifier.pkl'):
+def loadSklearnModels(models_dir, model='classifier.pkl', debug=False):
     with open(os.path.join(models_dir, 'classifier', model), 'rb') as model_file:
         (cl_label, classifier_model) = pickle.load(model_file)
         return (cl_label, classifier_model)
 
 @action(action_name='classify')
 @debug
-def classifySklearn(classifier, array, threshold=0.5):
+def classifySklearn(classifier, array, threshold=0.5, verbose=True, debug=False):
     classifier_model, cl_label = classifier
     rep = array.reshape(1, -1)
     predictions = classifier_model.predict_proba(rep).ravel()
@@ -33,7 +34,7 @@ def classifySklearn(classifier, array, threshold=0.5):
         return ('Unknow', confidence)
 
 @debug
-def trainClassifier(classifier_type, classifier_name, feature_data):
+def trainClassifier(classifier_type, classifier_name, feature_data, debug=False):
         #features_dir = os.path.join(self.dataset_dir, 'features')
         #features_file = open(os.path.join(features_dir, 'features.json'), 'rw')
         #features_data = json.load(features_file)
@@ -78,14 +79,4 @@ def trainClassifier(classifier_type, classifier_name, feature_data):
         fName = self.models_dir + '/classifier/' + classifier_name
         with open(fName, 'w') as f:
             pickle.dump((label_encoder, classifier), f)
-        return True
-
-class FaceClassifier():
-    def __init__(self, threshold = 0.5):
-        self.threshold = threshold
-
-    
-
-    
-
-    
+        return True  
