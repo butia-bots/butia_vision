@@ -4,7 +4,7 @@ import cv2
 import rospy
 
 from cv_bridge import CvBridge
-from openface_ros import OpenfaceROS
+from face_recognition_ros import FaceRecognitionROS
 
 from sensor_msgs.msg import Image
 
@@ -12,7 +12,7 @@ from vision_system_msgs.msg import RecognizedFaces, ClassifierReload
 
 BRIDGE = CvBridge()
 
-openface = OpenfaceROS()
+face_recognition_ros = FaceRecognitionROS()
 
 image_subscriber = None
 reload_subscriber = None
@@ -20,23 +20,16 @@ reload_subscriber = None
 recognition_publisher = None
 view_publisher = None
 
-now_s = 0.0
-
 def imageCallback(image_msg):
-    global now_s
-    pub_msg = openface.recognitionProcess(image_msg)
+    pub_msg = face_recognition_ros.recognitionProcess(image_msg)
     if pub_msg != None:
         recognition_publisher.publish(pub_msg)
-        
     pub_image_msg = recognizedFaces2ViewImage(image_msg, pub_msg)
     view_publisher.publish(pub_image_msg)
-    rospy.loginfo("FPS: " + str(1/(rospy.get_rostime().to_sec() - now_s)) + " Hz.")
-    now_s = rospy.get_rostime().to_sec()
-
 
 def classifierReloadCallback(ros_msg):
     print('Loading ' + ros_msg.classifier_name + '.')
-    openface.createClassifier(ros_msg.classifier_name)
+    face_recognition_ros.createClassifier(ros_msg.classifier_name)
     print('Loaded.')
 
 def recognizedFaces2ViewImage(image_msg, recognized_faces_msg):
@@ -72,20 +65,12 @@ if __name__ == '__main__':
     face_recognition_view_topic = rospy.get_param("/face_recognition/publishers/face_recognition_view/topic", "/vision_system/fr/face_recognition_view")
     face_recognition_view_qs = rospy.get_param("/face_recognition/publishers/face_recognition_view/queue_size", 1)
 
-    now_s = rospy.get_rostime().to_sec()
-    image_subscriber = rospy.Subscriber(camera_read_topic, Image, imageCallback, queue_size = camera_read_qs)
+    image_subscriber = rospy.Subscriber(camera_read_topic, Image, imageCallback, queue_size=camera_read_qs, buff_size=2**24)
 
-    reload_subscriber = rospy.Subscriber(classifier_reload_topic, ClassifierReload, classifierReloadCallback, queue_size = classifier_reload_qs)
+    reload_subscriber = rospy.Subscriber(classifier_reload_topic, ClassifierReload, classifierReloadCallback, queue_size=classifier_reload_qs)
 
-    recognition_publisher = rospy.Publisher(face_recognition_topic, RecognizedFaces, queue_size = face_recognition_qs)
+    recognition_publisher = rospy.Publisher(face_recognition_topic, RecognizedFaces, queue_size=face_recognition_qs)
 
-    view_publisher = rospy.Publisher(face_recognition_view_topic, Image, queue_size = face_recognition_view_topic)
+    view_publisher = rospy.Publisher(face_recognition_view_topic, Image, queue_size=face_recognition_view_topic)
 
     rospy.spin()
-    '''while not rospy.is_shutdown():
-        image_msg = None
-        try:
-            image_msg = rospy.wait_for_message(camera_read_topic, Image, 0.1)
-            imageCallback(image_msg)
-        except rospy.exceptions.ROSException as e:
-            print(e.message)'''

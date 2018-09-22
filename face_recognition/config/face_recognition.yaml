@@ -1,27 +1,28 @@
+verbose: False
+debug: False
+
 detector:
-  lib: opencv
+  lib: opencv #opencv or dlib
   opencv:
-    model: haarcascade_frontalface_alt.xml
+    model: haarcascade_frontalface_default.xml
     scale_factor: 1.3
     min_neighbors: 5
-    cuda: True
-  dlib:
-    model: 
+    cuda: False
 
 aligner:
-  lib: dlib
+  lib: dlib #dlib
   dlib: 
     model: shape_predictor_68_face_landmarks.dat
     image_dimension: 96
 
 embosser:
-  lib: facenet
+  lib: facenet #facenet
   facenet:
     model: nn4.small2.v1.t7
-    cuda: True
+    cuda: False
 
 classifier:
-  lib: sklearn
+  lib: sklearn #sklearn
   sklearn:
     model: classifier.pkl
     threshold: 0.5

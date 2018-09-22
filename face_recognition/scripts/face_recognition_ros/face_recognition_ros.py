@@ -6,9 +6,9 @@ import os
 import openface
 import rospy
 import rospkg
-import face_detector
-import face_embosser
-import face_classifier
+from face_detector import *
+from face_embosser import *
+from face_classifier import *
 from dlib import rectangle, rectangles
 
 from cv_bridge import CvBridge
@@ -26,6 +26,8 @@ class FaceRecognitionROS():
        
         self.num_recognitions = 0
 
+        self.last_recognition = 0.0
+
         self.detector_lib = ''
         self.aligner_lib = ''
         self.embosser_lib = ''
@@ -38,12 +40,16 @@ class FaceRecognitionROS():
         self.classifiers_dict = {}
 
         self.readParameters()
-        self.face_detector = self.loads_dict[self.detector_lib]
-        self.face_aligner = self.loads_dict[self.aligner_lib]
-        self.face_embosser = self.loads_dict[self.embosser_lib]
-        self.face_classifier = self.loads_dict[self.classifer_lib]
 
+        self.loadDetector()
+        self.loadAligner()
+        self.loadEmbosser()
+        self.loadClassifier()
+        
     def readParameters(self):
+        self.verbose = rospy.get_param('/face_recognition/verbose', True)
+        self.debug = rospy.get_param('/face_recognition/debug', False)
+
         self.detector_lib = rospy.get_param('/face_recognition/detector/lib', 'opencv')
 
         opencv_detector_model = rospy.get_param('/face_recognition/detector/opencv/model', 'haarcascade_frontalface_default.xml')
@@ -53,21 +59,28 @@ class FaceRecognitionROS():
 
         self.loads_dict['opencv'] = {
             'function' : loadOpencvModels,
-            'args' : (self.models_dir),
+            'args' : (self.models_dir,),
             'kwargs' : {
                 'model' : opencv_detector_model,
-                'cuda' : opencv_detector_cuda    
+                'cuda' : opencv_detector_cuda,
+                'debug' : self.debug    
             }
         }
         self.detectors_dict['opencv'] = {
             'function' : detectFacesOpencv,
             'args' : (),
-            'kwargs' : {}
+            'kwargs' : {
+                'debug' : self.debug,
+                'verbose' : self.verbose
+            }
         }
         self.detectors_dict['dlib'] = {
             'function' : detectFacesDlib,
             'args' : (),
-            'kwargs' : {}
+            'kwargs' : {
+                'debug' : self.debug,
+                'verbose' : self.verbose
+            }
         }
         
 
@@ -78,16 +91,19 @@ class FaceRecognitionROS():
 
         self.loads_dict['dlib'] = {
             'function' : loadDlibModels,
-            'args' : (self.models_dir),
+            'args' : (self.models_dir,),
             'kwargs' : {
-                'model' : dlib_aligner_model   
+                'model' : dlib_aligner_model,
+                'debug' : self.debug   
             }
         }
         self.aligners_dict['dlib'] = {
-            'function' : alignFace,
+            'function' : alignFaceDlib,
             'args' : (),
             'kwargs' : {
-                'image_dimension' : dlib_aligner_image_dimension
+                'image_dimension' : dlib_aligner_image_dimension,
+                'debug' : self.debug,
+                'verbose' : self.verbose
             }
         }
 
@@ -100,18 +116,23 @@ class FaceRecognitionROS():
 
         self.loads_dict['facenet'] = {
             'function' : loadFacenetModels,
-            'args' : (self.models_dir),
+            'args' : (self.models_dir,),
             'kwargs' : {
                 'model' : facenet_embosser_model,
                 'image_dimension' : facenet_embosser_image_dimension,
-                'cuda' : facenet_embosser_cuda 
+                'cuda' : facenet_embosser_cuda,
+                'debug' : self.debug 
             }
         }
         self.embossers_dict['facenet'] = {
             'function' : extractFeaturesFacenet,
             'args' : (),
-            'kwargs' : {}
+            'kwargs' : {
+                'debug' : self.debug,
+                'verbose' : self.verbose
+            }
         }
+
 
         self.classifier_lib = rospy.get_param('/face_recognition/classifier/lib', 'sklearn')
 
@@ -120,16 +141,19 @@ class FaceRecognitionROS():
 
         self.loads_dict['sklearn'] = {
             'function' : loadSklearnModels,
-            'args' : (self.models_dir),
+            'args' : (self.models_dir,),
             'kwargs' : {
-                'model' : sklearn_classifier_model 
+                'model' : sklearn_classifier_model,
+                'debug' : self.debug 
             }
         }
         self.classifiers_dict['sklearn'] = {
             'function' : classifySklearn,
             'args' : (),
             'kwargs' : {
-                'threshold' : sklearn_classifier_threshold
+                'threshold' : sklearn_classifier_threshold,
+                'debug' : self.debug,
+                'verbose' : self.verbose
             }
         }
 
@@ -151,10 +175,63 @@ class FaceRecognitionROS():
     def numpyArray2RosVector(self, array):
         vector = array.tolist()
         return vector
+    '''
+    def trainingProcess(self, ros_srv):
+        alignDataset(self.dataset_dir)
+        generateDatasetFeatures()
+        ans = trainClassifier(ros_srv.classifier_type, ros_srv.classifier_name)
+        return ans
+    '''
 
-    def alignDataset(self):
-        raw_dir = os.path.join(self.dataset_dir, 'raw')
-        raw_aligned_dir = os.path.join(self.dataset_dir, 'raw_aligned')
+
+    def loadDetector(self):
+        detector_dict = self.loads_dict[self.detector_lib]
+        self.face_detector = detector_dict['function'](*detector_dict['args'], **detector_dict['kwargs'])
+
+    def loadAligner(self):
+        aligner_dict = self.loads_dict[self.aligner_lib]
+        self.face_aligner = aligner_dict['function'](*aligner_dict['args'], **aligner_dict['kwargs'])
+
+    def loadEmbosser(self):
+        embosser_dict = self.loads_dict[self.embosser_lib]
+        self.face_embosser = embosser_dict['function'](*embosser_dict['args'], **embosser_dict['kwargs'])
+
+    def loadClassifier(self):
+        classifier_dict = self.loads_dict[self.classifier_lib]
+        self.face_classifier = classifier_dict['function'](*classifier_dict['args'], **classifier_dict['kwargs'])
+
+    def detectFaces(self, rgb_image):
+        detector_dict = self.detectors_dict[self.detector_lib]
+        face_rects = detector_dict['function'](self.face_detector, rgb_image, *detector_dict['args'], **detector_dict['kwargs'])
+        return face_rects
+
+    def detectLargestFace(self, rgb_image):
+        faces = self.detectFaces(rgb_image)
+        if len(faces) > 0:
+            return max(faces, key=lambda rect: rect.width() * rect.height())
+        else:
+            return None
+    
+    def alignFace(self, rgb_image, face_rect):
+        aligner_dict = self.aligners_dict[self.aligner_lib]
+        aligned_face = aligner_dict['function'](self.face_aligner, rgb_image, face_rect, *aligner_dict['args'], **aligner_dict['kwargs'])
+        return aligned_face
+
+    def extractFeatures(self, aligned_face):
+        embosser_dict = self.embossers_dict[self.embosser_lib]
+        features_array = embosser_dict['function'](self.face_embosser, aligned_face, *embosser_dict['args'], **embosser_dict['kwargs']) 
+        return features_array
+
+    def classify(self, features_array):
+        classifier_dict = self.classifiers_dict[self.classifier_lib]
+        classification = classifier_dict['function'](self.face_classifier, features_array, *classifier_dict['args'], **classifier_dict['kwargs'])
+        return classification
+
+    '''
+    @debug
+    def alignDataset(self, dataset_dir):
+        raw_dir = os.path.join(dataset_dir, 'raw')
+        raw_aligned_dir = os.path.join(dataset_dir, 'raw_aligned')
         raw_labels = next(os.walk(raw_dir))[1]
         for lb in raw_labels:
             openface.helper.mkdirP(os.path.join(raw_aligned_dir, lb))
@@ -180,77 +257,33 @@ class FaceRecognitionROS():
                 images.append(ri)
 
         for image in images:
-            rect = self.getLargestFaceBoundingBox(image.getRGB())
+            rect = getLargestFaceBoundingBox(image.getRGB())
             aligned_face = self.alignFace(image.getRGB(), rect)
             bgr_image = cv2.cvtColor(aligned_face, cv2.COLOR_RGB2BGR)
             print(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'))
             cv2.imwrite(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'), bgr_image)
-
-    def generateDatasetFeatures(self):
-        raw_aligned_dir = os.path.join(self.dataset_dir, 'raw_aligned')
-        features_dir = os.path.join(self.dataset_dir, 'features')
-        raw_aligned_images = openface.data.iterImgs(raw_aligned_dir)
-
-        try:
-            features_file = open(os.path.join(features_dir, 'features.json'), 'r+')
-            features_data = json.load(features_file)
-            features_file.truncate(0)
-            features_file.close()
-        except (OSError, IOError) as e:
-            features_data = {}
-    
-        features_file = open(os.path.join(features_dir, 'features.json'), 'w')
-
-        images = []
-        for rai in raw_aligned_images:
-            label = rai.cls
-            name = rai.name
-            if(label not in features_data.keys()):
-                images.append(rai)
-                features_data[label] = {}
-            else:
-                found = False
-                for key in features_data[label].keys():
-                    if(name == key):
-                        found = True
-                if(not found):
-                    images.append(rai)
-
-        for image in images:
-            label = image.cls
-            name = image.name
-            features = self.extractFeaturesFromImage(image.getRGB())
-            features_data[label][name] = self.numpyArray2RosVector(features)
-
-        json.dump(features_data, features_file)
-
-    def trainingProcess(self, ros_srv):
-        self.alignDataset()
-        self.generateDatasetFeatures()
-        ans = trainClassifier(ros_srv.classifier_type, ros_srv.classifier_name)
-        return ans
+    '''
 
     def recognitionProcess(self, ros_msg):
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
 
-        detector_dict = self.detectors_dict[self.detector_lib]
-        face_rects = detector_dict['function'](self.face_detector, rgb_image, *detector_dict['args'], **detector_dict['kwargs'])
-        faces_description = []
+        face_rects = self.detectFaces(rgb_image)
         if len(face_rects) == 0:
+            rospy.loginfo("Recognition FPS: {:.2f} Hz.".format((1/(rospy.get_rostime().to_sec() - self.last_recognition))))
+            self.last_recognition = rospy.get_rostime().to_sec()
             return None
+
+        faces_description = []
         for face_rect in face_rects:
             face_description = FaceDescription()
 
-            aligner_dict = self.aligners_dict[self.aligner_lib]
-            aligned_face = aligner_dict['function'](rgb_image, face_rect, *aligner_dict['args'], **aligner_dict['kwargs'])
+            aligned_face = self.alignFace(rgb_image, face_rect)
 
-            embosser_dict = self.embossers_dict[self.embosser_lib]
-            features_array = embosser_dict['function'](aligned_face, *embosser_dict['args'], **embosser_dict['kwargs'])
+            features_array = self.extractFeatures(aligned_face)
 
-            classifier_dict = self.classifiers_dict[self.classifier_lib]
-            classification = classifier_dict['function'](features_array, *classifier_dict['args'], **classifier_dict['kwargs'])
-            label_class = classification[0]
-            confidence = classification[1]
+            classification = self.classify(features_array)
+
+            label_class, confidence = classification
             
             bounding_box = self.dlibRectangle2RosBoundingBox(face_rect)
             features = self.numpyArray2RosVector(features_array)
@@ -259,7 +292,6 @@ class FaceRecognitionROS():
             face_description.features = features
             face_description.probability = confidence
             face_description.bounding_box = bounding_box
-
             faces_description.append(face_description)
 
         recognized_faces = RecognizedFaces()
@@ -272,5 +304,8 @@ class FaceRecognitionROS():
         recognized_faces.faces_description = faces_description
 
         self.num_recognitions += 1
+
+        rospy.loginfo("Recognition FPS: {:.2f} Hz.".format((1/(rospy.get_rostime().to_sec() - self.last_recognition))))
+        self.last_recognition = rospy.get_rostime().to_sec()
 
         return recognized_faces

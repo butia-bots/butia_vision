@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 import pickle
-import decorators
+from decorators import *
 import os
+import numpy as np
 
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
@@ -22,7 +23,7 @@ def loadSklearnModels(models_dir, model='classifier.pkl', debug=False):
 @action(action_name='classify')
 @debug
 def classifySklearn(classifier, array, threshold=0.5, verbose=True, debug=False):
-    classifier_model, cl_label = classifier
+    cl_label, classifier_model = classifier
     rep = array.reshape(1, -1)
     predictions = classifier_model.predict_proba(rep).ravel()
     maxI = np.argmax(predictions)
