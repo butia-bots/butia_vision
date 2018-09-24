@@ -8,9 +8,9 @@ from vision_system_msgs.srv import FaceClassifierTraining, FaceClassifierTrainin
 
 def classifierTraining(ros_srv):
         ans = face_recognition_ros.trainingProcess(ros_srv)
-        #if(ans):
-        #    classifier_reload.publish(ClassifierReload(ros_srv.classifier_name))
-        #return ans
+        if(ans):
+            classifier_reload.publish(ClassifierReload(ros_srv.classifier_name))
+        return ans
 
 face_recognition_ros = FaceRecognitionROS()
 classifier_reload = None

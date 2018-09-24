@@ -4,10 +4,10 @@ debug: False
 detector:
   lib: opencv #opencv or dlib
   opencv:
-    model: haarcascade_frontalface_default.xml
+    model: haarcascade_frontalface_alt.xml
     scale_factor: 1.3
     min_neighbors: 5
-    cuda: False
+    cuda: True
 
 aligner:
   lib: dlib #dlib
@@ -19,7 +19,7 @@ embosser:
   lib: facenet #facenet
   facenet:
     model: nn4.small2.v1.t7
-    cuda: False
+    cuda: True
 
 classifier:
   lib: sklearn #sklearn

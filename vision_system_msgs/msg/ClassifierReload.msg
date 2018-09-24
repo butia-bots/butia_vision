@@ -1,2 +1,1 @@
-string lib_name
 string model_name

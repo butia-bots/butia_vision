@@ -262,7 +262,6 @@ class FaceRecognitionROS():
         raw_aligned_dir = os.path.join(self.dataset_dir, 'raw_aligned')
         features_dir = os.path.join(self.dataset_dir, 'features')
         raw_aligned_images = openface.data.iterImgs(raw_aligned_dir)
-
         try:
             features_file = open(os.path.join(features_dir, 'features.json'), 'r+')
             features_data = json.load(features_file)
@@ -292,7 +291,7 @@ class FaceRecognitionROS():
             label = image.cls
             name = image.name
             features = self.extractFeatures(image.getRGB())
-            features_data[label][name] = numpyArray2RosVector(features)
+            features_data[label][name] = self.numpyArray2RosVector(features)
 
         json.dump(features_data, features_file)
 
