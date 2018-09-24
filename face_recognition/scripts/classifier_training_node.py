@@ -2,17 +2,17 @@
 
 import rospy
 
-from openface_ros import OpenfaceROS
+from face_recognition_ros import FaceRecognitionROS
 from vision_system_msgs.msg import ClassifierReload
 from vision_system_msgs.srv import FaceClassifierTraining, FaceClassifierTrainingResponse
 
 def classifierTraining(ros_srv):
-        ans = openface.trainingProcess(ros_srv)
-        if(ans):
-            classifier_reload.publish(ClassifierReload(ros_srv.classifier_name))
-        return ans
+        ans = face_recognition_ros.trainingProcess(ros_srv)
+        #if(ans):
+        #    classifier_reload.publish(ClassifierReload(ros_srv.classifier_name))
+        #return ans
 
-openface = OpenfaceROS()
+face_recognition_ros = FaceRecognitionROS()
 classifier_reload = None
 training_server = None
 

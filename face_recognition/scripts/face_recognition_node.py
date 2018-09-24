@@ -25,12 +25,10 @@ def imageCallback(image_msg):
     if pub_msg != None:
         recognition_publisher.publish(pub_msg)
     pub_image_msg = recognizedFaces2ViewImage(image_msg, pub_msg)
-    view_publisher.publish(pub_image_msg)
-
+    view_publisher.publish(pub_image_msg)   
+    
 def classifierReloadCallback(ros_msg):
-    print('Loading ' + ros_msg.classifier_name + '.')
-    face_recognition_ros.createClassifier(ros_msg.classifier_name)
-    print('Loaded.')
+    face_recognition_ros.loadClassifier(ros_msg.model_name)
 
 def recognizedFaces2ViewImage(image_msg, recognized_faces_msg):
     cv_image = BRIDGE.imgmsg_to_cv2(image_msg, desired_encoding = 'passthrough')

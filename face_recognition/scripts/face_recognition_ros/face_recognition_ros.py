@@ -175,13 +175,6 @@ class FaceRecognitionROS():
     def numpyArray2RosVector(self, array):
         vector = array.tolist()
         return vector
-    '''
-    def trainingProcess(self, ros_srv):
-        alignDataset(self.dataset_dir)
-        generateDatasetFeatures()
-        ans = trainClassifier(ros_srv.classifier_type, ros_srv.classifier_name)
-        return ans
-    '''
 
 
     def loadDetector(self):
@@ -196,9 +189,13 @@ class FaceRecognitionROS():
         embosser_dict = self.loads_dict[self.embosser_lib]
         self.face_embosser = embosser_dict['function'](*embosser_dict['args'], **embosser_dict['kwargs'])
 
-    def loadClassifier(self):
+    def loadClassifier(self, model=''):
+        if(model != ''):
+            rospy.set_param('/face_recognition/classifier/lib/{}/model'.format(model), model)
+            self.loads_dict[self.classifier_lib]['kwargs']['model'] = model
         classifier_dict = self.loads_dict[self.classifier_lib]
         self.face_classifier = classifier_dict['function'](*classifier_dict['args'], **classifier_dict['kwargs'])
+
 
     def detectFaces(self, rgb_image):
         detector_dict = self.detectors_dict[self.detector_lib]
@@ -227,11 +224,9 @@ class FaceRecognitionROS():
         classification = classifier_dict['function'](self.face_classifier, features_array, *classifier_dict['args'], **classifier_dict['kwargs'])
         return classification
 
-    '''
-    @debug
-    def alignDataset(self, dataset_dir):
-        raw_dir = os.path.join(dataset_dir, 'raw')
-        raw_aligned_dir = os.path.join(dataset_dir, 'raw_aligned')
+    def alignDataset(self):
+        raw_dir = os.path.join(self.dataset_dir, 'raw')
+        raw_aligned_dir = os.path.join(self.dataset_dir, 'raw_aligned')
         raw_labels = next(os.walk(raw_dir))[1]
         for lb in raw_labels:
             openface.helper.mkdirP(os.path.join(raw_aligned_dir, lb))
@@ -257,12 +252,97 @@ class FaceRecognitionROS():
                 images.append(ri)
 
         for image in images:
-            rect = getLargestFaceBoundingBox(image.getRGB())
+            rect = self.detectLargestFace(image.getRGB())
             aligned_face = self.alignFace(image.getRGB(), rect)
             bgr_image = cv2.cvtColor(aligned_face, cv2.COLOR_RGB2BGR)
             print(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'))
             cv2.imwrite(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'), bgr_image)
-    '''
+
+    def extractDatasetFeatures(self):
+        raw_aligned_dir = os.path.join(self.dataset_dir, 'raw_aligned')
+        features_dir = os.path.join(self.dataset_dir, 'features')
+        raw_aligned_images = openface.data.iterImgs(raw_aligned_dir)
+
+        try:
+            features_file = open(os.path.join(features_dir, 'features.json'), 'r+')
+            features_data = json.load(features_file)
+            features_file.truncate(0)
+            features_file.close()
+        except (OSError, IOError) as e:
+            features_data = {}
+
+        features_file = open(os.path.join(features_dir, 'features.json'), 'w')
+
+        images = []
+        for rai in raw_aligned_images:
+            label = rai.cls
+            name = rai.name
+            if(label not in features_data.keys()):
+                images.append(rai)
+                features_data[label] = {}
+            else:
+                found = False
+                for key in features_data[label].keys():
+                    if(name == key):
+                        found = True
+                if(not found):
+                    images.append(rai)
+
+        for image in images:
+            label = image.cls
+            name = image.name
+            features = self.extractFeatures(image.getRGB())
+            features_data[label][name] = numpyArray2RosVector(features)
+
+        json.dump(features_data, features_file)
+
+    def trainClassifier(self, classifier_type, classifier_name):
+        features_dir = os.path.join(self.dataset_dir, 'features')
+        features_file = open(os.path.join(features_dir, 'features.json'), 'rw')
+        features_data = json.load(features_file)
+
+        labels = []
+        embeddings = []
+        for key in features_data.keys():
+            labels += len(features_data[key].keys()) * [key]
+            embeddings += features_data[key].values()
+
+        embeddings = np.array(embeddings)
+
+        label_encoder = LabelEncoder()
+        label_encoder.fit(labels)
+        labels_num = label_encoder.transform(labels)
+        num_classes = len(label_encoder.classes_)
+
+        #tentar transformar essa cadeia de if's em um dicionario, como eh feito no FaceDetector
+        if classifier_type == 'lsvm':
+            classifier = SVC(C=1, kernel='linear', probability=True)
+        elif classifier_type == 'rsvm':
+            classifier = SVC(C=1, kernel='rbf', probability=True, gamma=2)
+        elif classifier_type == 'gssvm':
+            param_grid = [
+            {'C': [1, 10, 100, 1000],
+             'kernel': ['linear']},
+            {'C': [1, 10, 100, 1000],
+             'gamma': [0.001, 0.0001],
+             'kernel': ['rbf']}
+            ]
+            classifier = GridSearchCV(SVC(C=1, probability=True), param_grid, cv=5)
+        elif classifier_type == 'gmm':
+            classifier = GMM(n_components=num_classes)
+        elif classifier_type == 'dt':
+            classifier = DecisionTreeClassifier(max_depth=20)
+        elif classifier_type == 'gnb':
+            classifier = GaussianNB()
+        else:
+            return False
+
+        classifier.fit(embeddings, labels_num)
+        fName = self.models_dir + '/classifier/' + classifier_name
+        with open(fName, 'w') as f:
+            pickle.dump((label_encoder, classifier), f)
+        return True  
+
 
     def recognitionProcess(self, ros_msg):
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
@@ -309,3 +389,9 @@ class FaceRecognitionROS():
         self.last_recognition = rospy.get_rostime().to_sec()
 
         return recognized_faces
+
+    def trainingProcess(self, ros_srv):
+        self.alignDataset()
+        self.extractDatasetFeatures()
+        ans = self.trainClassifier(ros_srv.classifier_type, ros_srv.classifier_name)
+        return ans 
