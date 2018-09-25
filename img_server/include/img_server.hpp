@@ -15,21 +15,17 @@ class ImgServer {
         
 
     public:
-        //Constructor
-        ImgServer() {buffer.resize(150);}
-        ImgServer(int size) {buffer.resize(size);}
+        //Constructors
+        ImgServer();
+        ImgServer(int size);
 
         //Getter
-        std::vector<std::pair<sensor_msgs::ImageConstPtr, sensor_msgs::ImageConstPtr>> getBuffer() {return buffer;}
+        std::vector<std::pair<sensor_msgs::ImageConstPtr, sensor_msgs::ImageConstPtr>> getBuffer();
 
         //Server
-        bool accessQueue(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res) {
-            res.rgbd_image.rgb = *(buffer[(req.frame)%150].first);
-            res.rgbd_image.depth = *(buffer[(req.frame)%150].second);
-            return true;
-        }
+        bool accessQueue(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res);
 
         //Callbacks
-        void camCallBackRGB(const sensor_msgs::ImageConstPtr img) {buffer[(img->header.seq)%150].first = img;}
-        void camCallBackDepth(const sensor_msgs::ImageConstPtr img) {buffer[(img->header.seq)%150].second = img;}
+        void camCallBackRGB(const sensor_msgs::ImageConstPtr img);
+        void camCallBackDepth(const sensor_msgs::ImageConstPtr img);
 };
