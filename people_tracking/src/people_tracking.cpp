@@ -2,8 +2,9 @@
 
 
 
+
 //------------------------------Image Prepare's Functions------------------------------
-void ImagePreparer::peopleRecoCallBack(const vision_system_msgs::RecognizedPeopleConstPtr person) {
+void PeopleTracker::peopleRecoCallBack(const vision_system_msgs::RecognizedPeopleConstPtr person) {
     srv.request.frame = person->image_header.seq; //Getting the frame
 
     //Treating all the people in the frame
@@ -13,7 +14,8 @@ void ImagePreparer::peopleRecoCallBack(const vision_system_msgs::RecognizedPeopl
 }
 
 
-void ImagePreparer::crop(vision_system_msgs::RGBDImage rgbd_image, vision_system_msgs::BoundingBox bounding_box) {
+
+void PeopleTracker::crop(vision_system_msgs::RGBDImage rgbd_image, vision_system_msgs::BoundingBox bounding_box) {
     //Getting the images
     cv::Mat initial_rgb_image = (cv_bridge::toCvCopy(rgbd_image.rgb, rgbd_image.rgb.encoding))->image;
     cv::Mat initial_depth_image = (cv_bridge::toCvCopy(rgbd_image.depth, rgbd_image.depth.encoding))->image;

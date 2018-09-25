@@ -14,16 +14,18 @@
 
 
 
-class ImagePreparer {
+class PeopleTracker {
     private:
         vision_system_msgs::ImageRequest srv;
         std::vector<std::pair<cv::Mat, cv::Mat>> local_server;
+        std::vector<cv::Mat> segmented_images;
 
 
     public:
         //Callback
         void peopleRecoCallBack(const vision_system_msgs::RecognizedPeopleConstPtr person);
 
-        //Cropper
+        //Functions that manipulate images
         void crop(vision_system_msgs::RGBDImage rgbd_image, vision_system_msgs::BoundingBox bounding_box);
+        void segment();
 };
