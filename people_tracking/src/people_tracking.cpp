@@ -10,6 +10,7 @@ void PeopleTracker::peopleRecoCallBack(const vision_system_msgs::RecognizedPeopl
     //Treating all the people in the frame
     for (int i = 0; i < person->people_description.size(); i++)
         crop(srv.response.rgbd_image, person->people_description[i].bounding_box); //Crop the image to the size of the bounding box
+    segment();
     local_server.clear(); //Clean the local server
 }
 
@@ -32,5 +33,29 @@ void PeopleTracker::crop(vision_system_msgs::RGBDImage rgbd_image, vision_system
     final_image.first = initial_rgb_image(roi);
     final_image.second = initial_depth_image(roi);
     local_server.push_back(final_image);
+}
+
+
+
+void PeopleTracker::segment() {
+    int peak = 0;
+    const int T = 40;
+
+    for (int i = 0; i < local_server.size(); i++) {
+        for (int j = 0; j < local_server[i].second.row; j++) {
+            for (int k = 0; k < local_server[i].second.col; k++) {
+                if (local_server[i].second[j][k] > peak)
+                    peak = local_server[i].secondSize[j][k];
+            }
+        }
+        for (int j = 0; j < local_server[i].second.row; j++) {
+            for (int k = 0; k < local_server[i].second.col; k++) {
+                if (local_server[i].secondSize[j][k] < peak - T)
+                    local_server[i].secondSize[j][k] = 0;
+                else
+                    local_server[i].secondSize[j][k] = 1;
+            }
+        }
+    }
 }
 //------------------------------Image Prepare's Functions------------------------------
