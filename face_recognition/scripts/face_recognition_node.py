@@ -31,7 +31,7 @@ def classifierReloadCallback(ros_msg):
     face_recognition_ros.loadClassifier(ros_msg.model_name)
 
 def recognizedFaces2ViewImage(image_msg, recognized_faces_msg):
-    cv_image = BRIDGE.imgmsg_to_cv2(image_msg, desired_encoding = 'passthrough')
+    cv_image = BRIDGE.imgmsg_to_cv2(image_msg, desired_encoding = 'rgb8')
 
     faces_description = []
 
