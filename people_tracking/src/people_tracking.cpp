@@ -6,10 +6,11 @@
 //------------------------------People Tracker's Functions------------------------------
 void PeopleTracker::peopleRecoCallBack(const vision_system_msgs::RecognizedPeopleConstPtr person) {
     srv.request.frame = person->image_header.seq; //Getting the frame
-    std::pair<cv::Mat, cv::Mat> image;
+    std::pair<cv::Mat, cv::Mat> images; //This variable stores the rgb and the depth image, in this order
+
     //Treating all the people in the frame
     for (int i = 0; i < person->people_description.size(); i++) {
-        image = crop(srv.response.rgbd_image, person->people_description[i].bounding_box); //Crop the image to the size of the bounding box
+        images = crop(srv.response.rgbd_image, person->people_description[i].bounding_box); //Crop the image to the size of the bounding box
     }
 }
 
