@@ -19,6 +19,12 @@ class YoloRecognition{
 
         ros::Subscriber bounding_boxes_sub;
 
+        vision_system_msgs::Recognitions pub_object_msg;
+        vision_system_msgs::Recognitions pub_people_msg;
+
+        std::vector<vision_system_msgs::Description> objects;
+        std::vector<vision_system_msgs::Description> people;
+
         ros::Publisher recognized_objects_pub;
         ros::Publisher recognized_people_pub;
         
@@ -28,8 +34,8 @@ class YoloRecognition{
         std::string object_recognition_topic;
         int object_recognition_qs;
 
-        std::string people_recognition_topic;
-        int people_recognition_qs;
+        std::string people_detection_topic;
+        int people_detection_qs;
 
         std::string person_identifier;
 

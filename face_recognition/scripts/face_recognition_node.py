@@ -8,7 +8,7 @@ from face_recognition_ros import FaceRecognitionROS
 
 from sensor_msgs.msg import Image
 
-from vision_system_msgs.msg import RecognizedFaces, ClassifierReload
+from vision_system_msgs.msg import Recognitions, ClassifierReload
 
 BRIDGE = CvBridge()
 
@@ -36,7 +36,7 @@ def recognizedFaces2ViewImage(image_msg, recognized_faces_msg):
     faces_description = []
 
     if(recognized_faces_msg != None):
-        faces_description = recognized_faces_msg.faces_description
+        faces_description = recognized_faces_msg.descriptions
 
     for fd in faces_description:
         bb = fd.bounding_box
@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
     reload_subscriber = rospy.Subscriber(classifier_reload_topic, ClassifierReload, classifierReloadCallback, queue_size=classifier_reload_qs)
 
-    recognition_publisher = rospy.Publisher(face_recognition_topic, RecognizedFaces, queue_size=face_recognition_qs)
+    recognition_publisher = rospy.Publisher(face_recognition_topic, Recognitions, queue_size=face_recognition_qs)
 
     view_publisher = rospy.Publisher(face_recognition_view_topic, Image, queue_size=face_recognition_view_topic)
 
