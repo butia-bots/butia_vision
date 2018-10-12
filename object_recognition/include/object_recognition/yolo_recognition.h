@@ -4,8 +4,7 @@
 #include <string>
 
 #include "darknet_ros_msgs/BoundingBoxes.h"
-#include "vision_system_msgs/RecognizedObjects.h"
-#include "vision_system_msgs/RecognizedPeople.h"
+#include "vision_system_msgs/Recognitions.h"
 
 //A class that will set the parameters in rosparam server and make a interface of object_recognition and darknet_ros packages
 

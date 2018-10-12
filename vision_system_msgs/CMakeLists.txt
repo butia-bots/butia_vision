@@ -46,12 +46,9 @@ find_package(catkin REQUIRED COMPONENTS std_msgs genmsg)
 add_message_files(
   FILES
   BoundingBox.msg
-  FaceDescription.msg
-  ObjectDescription.msg
-  PersonDescription.msg
-  RecognizedFaces.msg
-  RecognizedObjects.msg
-  RecognizedPeople.msg
+  Description.msg
+  Recognitions.msg
+  ClassifierReload.msg
 )
 
 ## Generate services in the 'srv' folder

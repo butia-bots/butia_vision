@@ -11,11 +11,11 @@ YoloRecognition::YoloRecognition(ros::NodeHandle _nh) : node_handle(_nh)
 
 void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bbs)
 {
-    vision_system_msgs::RecognizedObjects pub_object_msg;
-    vision_system_msgs::RecognizedPeople pub_people_msg;
+    vision_system_msgs::Recognitions pub_object_msg;
+    vision_system_msgs::Recognitions pub_people_msg;
 
-    std::vector<vision_system_msgs::ObjectDescription> objects;
-    std::vector<vision_system_msgs::PersonDescription> people;
+    std::vector<vision_system_msgs::Description> objects;
+    std::vector<vision_system_msgs::Description> people;
 
     std::vector<darknet_ros_msgs::BoundingBox> bounding_boxes = bbs.bounding_boxes;
     std::vector<darknet_ros_msgs::BoundingBox>::iterator it;

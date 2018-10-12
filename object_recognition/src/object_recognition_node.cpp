@@ -2,8 +2,6 @@
 
 #include "object_recognition/yolo_recognition.h"
 
-#include "darknet_ros_msgs/BoundingBoxes.h"
-#include "vision_system_msgs/RecognizedObjects.h"
 
 int main(int argc, char **argv)
 {
