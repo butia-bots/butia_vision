@@ -164,6 +164,7 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
   scripts/face_recognition_node.py
+  scripts/classifier_training_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
