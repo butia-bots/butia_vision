@@ -50,6 +50,7 @@ add_message_files(
   ObjectDescription.msg
   RecognizedFaces.msg
   RecognizedObjects.msg
+  ClassifierReload.msg
 )
 
 ## Generate services in the 'srv' folder
