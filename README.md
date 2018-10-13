@@ -87,6 +87,7 @@ The face_recognition package uses Openface, OpenCV and scikit-learn to perform a
 #### Services
 * **`classifier_training:`** `/vision_system/fr/classifier_training` ([vision_system_msgs::ClassifierTraining])
 
+
     Ask for training of a new classifier model.
 #### Nodes
 * **`face_recognition_node`**

@@ -1,26 +1,25 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>object_recognition</name>
+  <name>image2world</name>
   <version>0.0.0</version>
-  <description>The object_recognition package</description>
+  <description>The image2world package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="igormaurell@furg.br">Igor Maurell</maintainer>
-  <maintainer email="miguelmartinsdossantos@gmail.com">Miguel Martins</maintainer>
+  <maintainer email="igormaurell@todo.todo">igormaurell</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>MIT</license>
+  <license>TODO</license>
 
 
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/object_recognition</url> -->
+  <!-- <url type="website">http://wiki.ros.org/image2world</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -50,10 +49,7 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  
-  <depend>roscpp</depend>
-  <depend>vision_system_msgs</depend>
-  <depend>darknet_ros_msgs</depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

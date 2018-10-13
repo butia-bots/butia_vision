@@ -13,7 +13,7 @@ from dlib import rectangle, rectangles
 
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
-from vision_system_msgs.msg import BoundingBox, FaceDescription, RecognizedFaces
+from vision_system_msgs.msg import BoundingBox, Description, Recognitions
 from vision_system_msgs.srv import FaceClassifierTraining
 
 BRIDGE = CvBridge()
@@ -354,7 +354,7 @@ class FaceRecognitionROS():
 
         faces_description = []
         for face_rect in face_rects:
-            face_description = FaceDescription()
+            face_description = Description()
 
             aligned_face = self.alignFace(rgb_image, face_rect)
 
@@ -368,19 +368,18 @@ class FaceRecognitionROS():
             features = self.numpyArray2RosVector(features_array)
 
             face_description.label_class = label_class
-            face_description.features = features
             face_description.probability = confidence
             face_description.bounding_box = bounding_box
             faces_description.append(face_description)
 
-        recognized_faces = RecognizedFaces()
+        recognized_faces = Recognitions()
         recognized_faces.image_header = ros_msg.header
 
         recognized_faces.recognition_header.seq = self.num_recognitions
         recognized_faces.recognition_header.stamp = rospy.get_rostime()
         recognized_faces.recognition_header.frame_id = "face_recognition"
 
-        recognized_faces.faces_description = faces_description
+        recognized_faces.descriptions = faces_description
 
         self.num_recognitions += 1
 

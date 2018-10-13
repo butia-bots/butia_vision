@@ -1,0 +1,18 @@
+subscribers:
+
+  bounding_boxes:
+    topic: /darknet_ros/bounding_boxes
+    queue_size: 1
+
+publishers:
+
+  object_recognition:
+    topic: /vision_system/or/object_recognition
+    queue_size: 1
+
+  people_detection:
+    topic: /vision_system/or/people_detection
+    queue_size: 1
+
+  person:
+    identifier: "person"
