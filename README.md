@@ -85,7 +85,8 @@ The face_recognition package uses Openface, OpenCV and scikit-learn to perform a
     Ask for change of classifier model.
     
 #### Services
-* **`classifier_training:`** `/vision_system/fr/classifier_training` ([vision_system_msgs/ClassifierTraining])
+* **`classifier_training:`** `/vision_system/fr/classifier_training` ([vision_system_msgs::ClassifierTraining])
+
 
     Ask for training of a new classifier model.
 #### Nodes
@@ -120,4 +121,28 @@ The object_recognition package uses darknet_ros information and redistribute in 
 #### Overview
 The people_tracking package uses OpenCV and object_recognition package to get the bounding boxes of the people in the frame and extract, match and register the SIFT features of the people.
 #### Topics
+##### Subscribed Topics
+* **`people_detection:`** `/vision_system/or/people_detection` ([vision_system_msgs::Recognitions])
+
+    Publishes the recognized people.
+##### Published Topics
+* **`people_tracking:`** `/vision_system/pt/person_pose` ([vision_system_msgs::PersonPose])
+
+    Publishes the position of a person in the world.
+#### Nodes
+* **`people_tracking_node`**
+
+    Tracking at real-time.
+    
+
+### img_server
+#### Overview
+The image_server package is an internal image server to support the system to get the images in real time.
 #### Services
+* **`image_request:`** `/vision_system/img_server/image_request` ([vision_system_msgs::ImageRequest])
+
+    Ask for a frame from the image server.
+#### Nodes
+* **`img_server_node`**
+
+    Updates the internal image server at real time.
