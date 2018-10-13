@@ -1,2 +1,0 @@
-float64 probability
-BoundingBox bounding_box

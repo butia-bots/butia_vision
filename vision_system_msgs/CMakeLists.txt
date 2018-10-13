@@ -6,12 +6,8 @@ find_package(catkin REQUIRED COMPONENTS std_msgs sensor_msgs genmsg message_gene
 add_message_files(
   FILES
   BoundingBox.msg
-  FaceDescription.msg
-  ObjectDescription.msg
-  PersonDescription.msg
-  RecognizedFaces.msg
-  RecognizedObjects.msg
-  RecognizedPeople.msg
+  Description.msg
+  Recognitions.msg
   ClassifierReload.msg
   RGBDImage.msg
 )

@@ -1,55 +1,31 @@
 #!/usr/bin/env python
 
 import rospy
-import argparse
 
-from openface_ros import OpenfaceROS
+from face_recognition_ros import FaceRecognitionROS
 from vision_system_msgs.msg import ClassifierReload
 from vision_system_msgs.srv import FaceClassifierTraining, FaceClassifierTrainingResponse
 
-def classifierTraining(request):
-    print('Training ' + request.classifier_name + ' of ' + request.classifier_type + ' type.')
-    sucess = openface.trainingProcess(request)
-    classifier_reload.publish(ClassifierReload(request.classifier_name))
-    print('Trained.')
-    return FaceClassifierTrainingResponse(sucess)
+def classifierTraining(ros_srv):
+        ans = face_recognition_ros.trainingProcess(ros_srv)
+        if(ans):
+            classifier_reload.publish(ClassifierReload(ros_srv.classifier_name))
+        return ans
 
-openface = OpenfaceROS()
+face_recognition_ros = FaceRecognitionROS()
 classifier_reload = None
+training_server = None
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--train', action='store_true')
-    parser.add_argument(
-        '--classifierName',
-        type=str,
-        help='Name of classifier to be stored .pkl.',
-        default='classifier.pkl')
-    parser.add_argument(
-        '--classifierType',
-        type=str,
-        choices=[
-            'lsvm',
-            'gssvm',
-            'gmm',
-            'rsvm',
-            'dt',
-            'gnb'],
-        help='The type of classifier to use.',
-        default='lsvm')
+    classifier_reload_topic = rospy.get_param('/face_recognition/publishers/classifier_reload/topic', '/vision_system/fr/classifier_reload')
+    classifier_reload_qs = rospy.get_param('/face_recognition/publishers/classifier_reload/queue_size', 1)
 
+    classifier_training_service = rospy.get_param('/face_recognition/services/classifier_training/service','/vision_system/fr/classifier_training')
 
     rospy.init_node('classifier_training_node', anonymous = True)
 
-    training_server = rospy.Service('/vision_system/fr/classifier_training', FaceClassifierTraining, classifierTraining)
+    training_server = rospy.Service(classifier_training_service, FaceClassifierTraining, classifierTraining)
 
-    classifier_reload = rospy.Publisher('/vision_system/fr/classifier_reload', ClassifierReload, queue_size = 100)
-
-    '''args = parser.parse_args()
-    if(args.train):
-        ros_srv = FaceClassifierTraining()
-        ros_srv.classifier_type = args.classifierType
-        ros_srv.classifier_name = args.classifierName
-        classifierTraining(ros_srv) '''
+    classifier_reload = rospy.Publisher(classifier_reload_topic, ClassifierReload, queue_size = classifier_reload_qs)
 
     rospy.spin()

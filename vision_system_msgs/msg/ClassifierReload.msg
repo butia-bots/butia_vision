@@ -1,1 +1,1 @@
-string classifier_name
+string model_name
