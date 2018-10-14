@@ -5,7 +5,7 @@ Image2World::Image2World(ros::NodeHandle _nh) : node_handle(_nh), width(0), heig
     readParameters();
 
     camera_info_subscriber = node_handle.subscribe(camera_info_topic, camera_info_qs, &Image2World::cameraInfoCallback, this);
-    image2world_server = node_handle.advertise<vision_system_msgs::Image2World>(image2world_server_service, &Image2World::image2worldCallback, this);
+    image2world_server = node_handle.advertiseService(image2world_server_service, &Image2World::image2worldCallback, this);
     image_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(image_client_service);
 
     camera_matrix_color = cv::Mat::zeros(3, 3, CV_64F);
@@ -15,10 +15,10 @@ void Image2World::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr cam
 {
     bool recalculate_tabels = false;
 
-    if(width != camera_info.width || height != camera_info.height){
+    if(width != camera_info->width || height != camera_info->height){
         recalculate_tabels = true;
-        width = camera_info.width;
-        height = camera_info.height;
+        width = camera_info->width;
+        height = camera_info->height;
     } 
 
     double *it = camera_matrix_color.ptr<double>(0, 0);
@@ -39,30 +39,30 @@ void Image2World::createTabels()
     float cx = camera_matrix_color.at<double>(0, 2);
     float cy = camera_matrix_color.at<double>(1, 2);
 
-    float it*;
+    float* it;
     table_x = cv::Mat(1, width, CV_32F);
-    it = tabel_x.ptr<float>();
-    for(int c = 0 ; c < width ; c++ ; it++) {
+    it = table_x.ptr<float>();
+    for(int c = 0 ; c < width ; c++, it++) {
         *it = (c - cx) * fx;
     }
 
     table_y = cv::Mat(1, height, CV_32F);
-    it = tabel_y.ptr<float>();
-    for(int r = 0 ; r < width ; r++ ; it++) {
+    it = table_y.ptr<float>();
+    for(int r = 0 ; r < width ; r++, it++) {
         *it = (r - cy) * fy;
     }
 }
 
-void Image2World::readImage(const sensor_msgs::Image::ConstPtr msgImage, cv::Mat &image)
+void Image2World::readImage(const sensor_msgs::Image::ConstPtr msg_image, cv::Mat &image)
 {
-    cv_bridge::CvImageConstPtr pCvImage;
-    pCvImage = cv_bridge::toCvShare(msgImage, msgImage->encoding);
-    pCvImage->image.copyTo(image);
+    cv_bridge::CvImageConstPtr cv_image;
+    cv_image = cv_bridge::toCvShare(msg_image, msg_image->encoding);
+    cv_image->image.copyTo(image);
 }
 
 void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud)
 {
-    vector<geometry_msgs::Point32> &points = point_cloud.points;
+    std::vector<geometry_msgs::Point32> &points = point_cloud.points;
     for(int r = 0 ; r < depth.rows ; r++) {
 
         uint16_t *it_depth = depth.ptr<uint16_t>(r);
@@ -70,7 +70,7 @@ void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::Po
 
         for(int c = 0 ; c < depth.cols ; c++, it_depth++, it_color++) {
             if(it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0){
-                Point32 point;
+                geometry_msgs::Point32 point;
                 float depth_value = *it_depth/1000.0;
 
                 point.x = depth_value * table_x.at<float>(0, c);
@@ -92,38 +92,45 @@ bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &
 
     vision_system_msgs::ImageRequest image_srv;
     image_srv.request.frame = frame_id;
-    if (!image_client.call(image_srv))
+    if (!image_client.call(image_srv)) {
         ROS_ERROR("Failed to call image_server service");
         return false;
     }
 
     cv::Mat color, depth, crop_color, crop_depth;
-    readImage(image_srv.rgb, color);
-    readImage(image_srv.depth, depth);
 
-    vector<sensor_msgs::PointCloud> clouds;
+    vision_system_msgs::RGBDImage rgbd_image = image_srv.response.rgbd_image;
 
-    vector<vision_system_msgs::Description> descriptions = recognitions.descriptions;
-    vector<vision_system_msgs::Description>::iterator it;
+    sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(rgbd_image.rgb));
+    sensor_msgs::Image::ConstPtr depth_const_ptr( new sensor_msgs::Image(rgbd_image.depth));
+
+    readImage(rgb_const_ptr, color);
+    readImage(depth_const_ptr, depth);
+
+    std::vector<sensor_msgs::PointCloud> clouds;
+
+    std::vector<vision_system_msgs::Description> descriptions = recognitions.descriptions;
+    std::vector<vision_system_msgs::Description>::iterator it;
 
     for(it = descriptions.begin() ; it != descriptions.end() ; it++) {
         sensor_msgs::PointCloud cloud;
-        int x = (*it).bounding_box.minX;
-        int y = (*it).bounding_box.minY;
-        int w = (*it).bounding_box.width;
-        int h = (*it).bounding_box.height;
-        crop_color = color[y:y+h, x:x+w];
-        crop_depth = depth[y:y+h, x:x+w];
+        cv::Rect roi;
+        roi.x = (*it).bounding_box.minX;
+        roi.y = (*it).bounding_box.minY;
+        roi.width = (*it).bounding_box.width;
+        roi.height = (*it).bounding_box.height;
+        crop_color = color(roi);
+        crop_depth = depth(roi);
 
         //segment(crop_color)
 
         rgb2PointCloud(crop_color, crop_depth, cloud);
         //botar campos que faltam na cloud
-        clouds.pushback(cloud);
+        clouds.push_back(cloud);
 
     }
 
-    respose.clouds = clouds;
+    response.clouds = clouds;
     return true;
 }
 

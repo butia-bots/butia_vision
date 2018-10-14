@@ -13,12 +13,10 @@ add_message_files(
 )
 
 add_service_files(
-  DIRECTORY
-  srv
-
   FILES
   FaceClassifierTraining.srv
   ImageRequest.srv
+  Image2World.srv
 )
 
 generate_messages(
@@ -27,6 +25,6 @@ generate_messages(
   sensor_msgs
 )
 
-catkin_package(CATKIN_DEPENDS sensor_msgs message_runtime)
+catkin_package(CATKIN_DEPENDS message_runtime)
 
 include_directories()

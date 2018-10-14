@@ -2,29 +2,32 @@
 
 #include <opencv2/opencv.hpp>
 #include <string>
+#include <vector>
 
 #include "vision_system_msgs/Image2World.h"
 #include "vision_system_msgs/ImageRequest.h"
 #include "vision_system_msgs/Recognitions.h"
 #include "vision_system_msgs/Description.h"
+#include "vision_system_msgs/RGBDImage.h"
 
 #include "sensor_msgs/Image.h"
 #include "sensor_msgs/PointCloud.h"
+#include "sensor_msgs/CameraInfo.h"
 
-#include <cv_bridge/cv_bridge>
+#include <cv_bridge/cv_bridge.h>
 
 class Image2World{
     public:
         Image2World(ros::NodeHandle _nh);
 
-        void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud)
+        void rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud);
 
-        void Image2World::readImage(const sensor_msgs::Image::ConstPtr msgImage, cv::Mat &image)
+        void readImage(const sensor_msgs::Image::ConstPtr msg_image, cv::Mat &image);
 
-        void Image2World::createTabels()
+        void createTabels();
 
-        void Image2World::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr camera_info)
-        bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &request, vision_system_msgs::Image2World::Response &response);
+        void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr camera_info);
+        bool image2worldCallback(vision_system_msgs::Image2World::Request &request, vision_system_msgs::Image2World::Response &response);
 
     private:
         ros::NodeHandle node_handle;
