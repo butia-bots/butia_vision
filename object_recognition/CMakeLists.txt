@@ -3,12 +3,12 @@ project(object_recognition)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED roscpp darknet_ros_msgs vision_system_msgs)
+find_package(catkin REQUIRED roscpp darknet_ros_msgs vision_system_msgs geometry_msgs)
 
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME}
   LIBRARIES object_recognition
-  CATKIN_DEPENDS roscpp vision_system_msgs darknet_ros_msgs
+  CATKIN_DEPENDS roscpp vision_system_msgs darknet_ros_msgs geometry_msgs
 )
 
 include_directories(

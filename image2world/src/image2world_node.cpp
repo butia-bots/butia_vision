@@ -2,7 +2,6 @@
 
 #include "image2world/image2world.h"
 
-
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "image2world_node");

@@ -26,11 +26,13 @@ bool ImgServer::accessQueue(vision_system_msgs::ImageRequest::Request &req, visi
 
 
 void ImgServer::camCallBackRGB(const sensor_msgs::ImageConstPtr img) {
+    ROS_INFO("RGB Frame ID: %d", img->header.seq);
     buffer[(img->header.seq)%150].first = img;
 }
 
 
 void ImgServer::camCallBackDepth(const sensor_msgs::ImageConstPtr img) {
+    ROS_INFO("Depth Frame ID: %d", img->header.seq);
     buffer[(img->header.seq)%150].second = img;
 }
 //------------------------------Image Prepare's Functions------------------------------

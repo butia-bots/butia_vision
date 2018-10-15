@@ -3,13 +3,35 @@
 Image2World::Image2World(ros::NodeHandle _nh) : node_handle(_nh), width(0), height(0)
 {
     readParameters();
-
+    /*
+    image_d = node_handle.subscribe("/kinect2/qhd/image_color_rect", 1, &Image2World::imageRCb, this);
+    image_r = node_handle.subscribe("/kinect2/qhd/image_depth_rect", 1, &Image2World::imageDCb, this);
+    */
     camera_info_subscriber = node_handle.subscribe(camera_info_topic, camera_info_qs, &Image2World::cameraInfoCallback, this);
     image2world_server = node_handle.advertiseService(image2world_server_service, &Image2World::image2worldCallback, this);
     image_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(image_client_service);
 
     camera_matrix_color = cv::Mat::zeros(3, 3, CV_64F);
 }
+
+/*
+void Image2World::imageDCb(const sensor_msgs::Image::ConstPtr &msg_image)
+{
+    ROS_INFO("D ID: %d", msg_image->header.seq);
+    cv::Mat image;
+    readImage(msg_image, image);
+    cv::imshow("Depth", image);
+    cv::waitKey(10);
+
+}
+void Image2World::imageRCb(const sensor_msgs::Image::ConstPtr &msg_image)
+{
+    ROS_INFO("RGB ID: %d", msg_image->header.seq);
+    cv::Mat image;
+    readImage(msg_image, image);
+    cv::imshow("RGB", image);
+    cv::waitKey(10);
+}*/
 
 void Image2World::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& camera_info)
 {
@@ -48,7 +70,7 @@ void Image2World::createTabels()
 
     table_y = cv::Mat(1, height, CV_32F);
     it = table_y.ptr<float>();
-    for(int r = 0 ; r < width ; r++, it++) {
+    for(int r = 0 ; r < height ; r++, it++) {
         *it = (r - cy) * fy;
     }
 }
@@ -87,8 +109,9 @@ void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::Po
 
 bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &request, vision_system_msgs::Image2World::Response &response)
 {
-    vision_system_msgs::Recognitions recognitions = request.recognitions;
-    int frame_id = recognitions.image_header.seq;
+    int frame_id = request.recognitions.image_header.seq;
+
+    ROS_INFO("Frame ID: %d", frame_id);
 
     vision_system_msgs::ImageRequest image_srv;
     image_srv.request.frame = frame_id;
@@ -109,7 +132,7 @@ bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &
 
     std::vector<sensor_msgs::PointCloud> clouds;
 
-    std::vector<vision_system_msgs::Description> descriptions = recognitions.descriptions;
+    std::vector<vision_system_msgs::Description> descriptions = request.recognitions.descriptions;
     std::vector<vision_system_msgs::Description>::iterator it;
 
     for(it = descriptions.begin() ; it != descriptions.end() ; it++) {
