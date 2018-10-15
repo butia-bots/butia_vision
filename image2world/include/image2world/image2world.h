@@ -22,11 +22,11 @@ class Image2World{
 
         void rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud);
 
-        void readImage(const sensor_msgs::Image::ConstPtr msg_image, cv::Mat &image);
+        void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
 
         void createTabels();
 
-        void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr camera_info);
+        void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr &camera_info);
         bool image2worldCallback(vision_system_msgs::Image2World::Request &request, vision_system_msgs::Image2World::Response &response);
 
     private:

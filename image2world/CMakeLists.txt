@@ -9,13 +9,14 @@ find_package(OpenCV REQUIRED)
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME}
   LIBRARIES image2world
-  CATKIN_DEPENDS roscpp vision_system_msgs
+  CATKIN_DEPENDS roscpp vision_system_msgs cv_bridge
 )
 
 
 include_directories(
  include
  ${catkin_INCLUDE_DIRS}
+ ${OpenCV_INCLUDE_DIRS}
 )
 
 add_library(${PROJECT_NAME}
@@ -24,6 +25,12 @@ add_library(${PROJECT_NAME}
 
 
 add_executable(${PROJECT_NAME}_node src/image2world_node.cpp)
+
+target_link_libraries(${PROJECT_NAME}
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${PROJECT_NAME}
+)
 
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}

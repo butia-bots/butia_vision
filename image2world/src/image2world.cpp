@@ -11,7 +11,7 @@ Image2World::Image2World(ros::NodeHandle _nh) : node_handle(_nh), width(0), heig
     camera_matrix_color = cv::Mat::zeros(3, 3, CV_64F);
 }
 
-void Image2World::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr camera_info)
+void Image2World::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& camera_info)
 {
     bool recalculate_tabels = false;
 
@@ -53,7 +53,7 @@ void Image2World::createTabels()
     }
 }
 
-void Image2World::readImage(const sensor_msgs::Image::ConstPtr msg_image, cv::Mat &image)
+void Image2World::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image)
 {
     cv_bridge::CvImageConstPtr cv_image;
     cv_image = cv_bridge::toCvShare(msg_image, msg_image->encoding);
