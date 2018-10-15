@@ -84,6 +84,10 @@ void Image2World::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::M
 
 void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud)
 {
+    const float bad_point = std::numeric_limits<float>::quiet_NaN();
+
+    
+
     std::vector<geometry_msgs::Point32> &points = point_cloud.points;
     for(int r = 0 ; r < depth.rows ; r++) {
 
@@ -93,6 +97,14 @@ void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::Po
         for(int c = 0 ; c < depth.cols ; c++, it_depth++, it_color++) {
             if(it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0){
                 geometry_msgs::Point32 point;
+
+                if(*it_depth == 0){
+                    point.x = -10;
+                    point.y = -10;
+                    point.z = -10;
+                    continue;
+                }
+
                 float depth_value = *it_depth/1000.0;
 
                 point.x = depth_value * table_x.at<float>(0, c);
