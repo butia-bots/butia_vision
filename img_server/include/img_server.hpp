@@ -11,17 +11,27 @@
 
 class ImgServer {
     private:
-        std::vector<std::pair<sensor_msgs::ImageConstPtr, sensor_msgs::ImageConstPtr>> buffer;
+        std::vector<sensor_msgs::ImageConstPtr> rgb_buffer;
+        std::vector<sensor_msgs::ImageConstPtr> depth_buffer;
+
+        int min_seq;
+        int max_seq;
         
+        int last_rgb;
+
+        int buffer_size;
+
+        ros::NodeHandle node_handle;
+
+        ros::Subscriber img_rgb_sub;
+        ros::Subscriber img_d_sub;
+        ros::ServiceServer service;
 
     public:
         //Constructors
-        ImgServer();
-        ImgServer(int size);
-
-        //Getter
-        std::vector<std::pair<sensor_msgs::ImageConstPtr, sensor_msgs::ImageConstPtr>> getBuffer();
-
+        ImgServer(ros::NodeHandle &nh);
+        ImgServer(ros::NodeHandle &nh, int size);
+        
         //Server
         bool accessQueue(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res);
 
