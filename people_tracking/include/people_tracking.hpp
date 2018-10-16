@@ -19,20 +19,15 @@
 class PeopleTracker {
     private:
         vision_system_msgs::ImageRequest srv; //Service that requests the rgbd images from the image server
-        std::vector<std::pair<sensor_msgs::ImageConstPtr, sensor_msgs::ImageConstPtr>> buffer;
 
 
     public:
-        PeopleTracker();
-
         //Callbacks
         void peopleDetectCallback(const vision_system_msgs::RecognitionsConstPtr person);
-        void camCallbackRGB(const sensor_msgs::ImageConstPtr img);
-        void camCallbackDepth(const sensor_msgs::ImageConstPtr img);
 
         //Functions that manipulate images
-        std::pair<cv::Mat, cv::Mat> crop(vision_system_msgs::BoundingBox bounding_box, int frame); //Crop the images
-        //cv::Mat getMask(const cv::Mat depth_image, int bounding_box_size); //Create the mask based on the depth histogram
-        //cv::Mat segment(cv::Mat rgb_image, cv::Mat mask); //Apply the mask on the rgb image
-        //int getMax(cv::Mat histogram); //Get the maximum value of the histogram*/
+        std::pair<cv::Mat, cv::Mat> crop(vision_system_msgs::RGBDImage rgbd_image, vision_system_msgs::BoundingBox bounding_box); //Crop the images
+        cv::Mat getMask(const cv::Mat depth_image, int bounding_box_size); //Create the mask based on the depth histogram
+        cv::Mat segment(cv::Mat rgb_image, cv::Mat mask); //Apply the mask on the rgb image
+        int getMax(cv::Mat histogram); //Get the maximum value of the histogram*/
 };
