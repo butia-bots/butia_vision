@@ -6,6 +6,7 @@
 #include "sensor_msgs/Image.h"
 #include "cv_bridge/cv_bridge.h"
 #include "vision_system_msgs/ImageRequest.h"
+#include "vision_system_msgs/RGBDImage.h"
 
 
 
@@ -36,6 +37,6 @@ class ImgServer {
         bool accessQueue(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res);
 
         //Callbacks
-        void camCallBackRGB(const sensor_msgs::ImageConstPtr img);
-        void camCallBackDepth(const sensor_msgs::ImageConstPtr img);
+        void camCallbackRGB(const sensor_msgs::Image::ConstPtr& img);
+        void camCallbackDepth(const sensor_msgs::Image::ConstPtr& img);
 };

@@ -19,8 +19,8 @@ void PeopleTracker::peopleDetectCallback(const vision_system_msgs::RecognitionsC
 
 std::pair<cv::Mat, cv::Mat> PeopleTracker::crop(vision_system_msgs::RGBDImage rgbd_image, vision_system_msgs::BoundingBox bounding_box) {
     //Getting the images
-    cv::Mat initial_rgb_image = (cv_bridge::toCvCopy(rgbd_image.rgb_image, rgbd_image.rgb_image.encoding))->image;
-    cv::Mat initial_depth_image = (cv_bridge::toCvCopy(rgbd_image.depth_image, rgbd_image.depth_image.encoding))->image;
+    cv::Mat initial_rgb_image = (cv_bridge::toCvCopy(rgbd_image.rgb, rgbd_image.rgb.encoding))->image;
+    cv::Mat initial_depth_image = (cv_bridge::toCvCopy(rgbd_image.depth, rgbd_image.depth.encoding))->image;
 
     //Defining the region of interest
     cv::Rect region_of_interest(bounding_box.minX, bounding_box.minY, bounding_box.width, bounding_box.height);

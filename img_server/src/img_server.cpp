@@ -7,8 +7,8 @@ ImgServer::ImgServer(ros::NodeHandle &nh) : node_handle(nh), min_seq(0), max_seq
     rgb_buffer.resize(buffer_size);
     depth_buffer.resize(buffer_size);
 
-    img_rgb_sub = nh.subscribe("/kinect2/qhd/image_color_rect", 100, &ImgServer::camCallBackRGB, this);
-    img_d_sub = nh.subscribe("/kinect2/qhd/image_depth_rect", 100, &ImgServer::camCallBackDepth, this);
+    img_rgb_sub = nh.subscribe("/kinect2/qhd/image_color_rect", 100, &ImgServer::camCallbackRGB, this);
+    img_d_sub = nh.subscribe("/kinect2/qhd/image_depth_rect", 100, &ImgServer::camCallbackDepth, this);
     service = nh.advertiseService("/vision_system/is/image_request", &ImgServer::accessQueue, this);
 }
 
@@ -17,8 +17,8 @@ ImgServer::ImgServer(ros::NodeHandle &nh, int size) : node_handle(nh), min_seq(0
     rgb_buffer.resize(buffer_size);
     depth_buffer.resize(buffer_size);
 
-    img_rgb_sub = nh.subscribe("/kinect2/qhd/image_color_rect", 100, &ImgServer::camCallBackRGB, this);
-    img_d_sub = nh.subscribe("/kinect2/qhd/image_depth_rect", 100, &ImgServer::camCallBackDepth, this);
+    img_rgb_sub = nh.subscribe("/kinect2/qhd/image_color_rect", 100, &ImgServer::camCallbackRGB, this);
+    img_d_sub = nh.subscribe("/kinect2/qhd/image_depth_rect", 100, &ImgServer::camCallbackDepth, this);
     service = nh.advertiseService("/vision_system/is/image_request", &ImgServer::accessQueue, this);
 }
 
@@ -33,7 +33,7 @@ bool ImgServer::accessQueue(vision_system_msgs::ImageRequest::Request &req, visi
     return true;
 }
 
-void ImgServer::camCallBackRGB(const sensor_msgs::Image::ConstPtr img) {
+void ImgServer::camCallbackRGB(const sensor_msgs::Image::ConstPtr& img) {
     int seq = img->header.seq;
     ROS_INFO("RGB Frame ID: %d", seq);
     rgb_buffer[seq%buffer_size] = img;
@@ -43,7 +43,7 @@ void ImgServer::camCallBackRGB(const sensor_msgs::Image::ConstPtr img) {
     last_rgb = seq%buffer_size;
 }
 
-void ImgServer::camCallBackDepth(const sensor_msgs::Image::ConstPtr img) {
+void ImgServer::camCallbackDepth(const sensor_msgs::Image::ConstPtr& img) {
     ROS_INFO("Depth Frame ID: %d", img->header.seq);
     if(last_rgb >= 0) depth_buffer[last_rgb] = img;
     last_rgb = -1;
