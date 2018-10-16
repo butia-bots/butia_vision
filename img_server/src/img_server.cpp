@@ -38,7 +38,7 @@ void ImgServer::camCallBackRGB(const sensor_msgs::Image::ConstPtr img) {
     ROS_INFO("RGB Frame ID: %d", seq);
     rgb_buffer[seq%buffer_size] = img;
     depth_buffer[seq%buffer_size] = NULL;
-    if(seq - buffer_size >= min_seq) min_seq = seq;
+    if(seq - buffer_size >= min_seq || seq < min_seq) min_seq = seq;
     max_seq = seq;
     last_rgb = seq%buffer_size;
 }
