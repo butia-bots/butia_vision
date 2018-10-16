@@ -13,6 +13,7 @@ YoloRecognition::YoloRecognition(ros::NodeHandle _nh) : node_handle(_nh)
 
 void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bbs)
 {
+    ROS_INFO("Image ID: %d", bbs.image_header.seq);
     people.clear();
     objects.clear();
 
@@ -22,6 +23,7 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
     for(it = bounding_boxes.begin() ; it != bounding_boxes.end() ; it++) {
         if(it->Class == person_identifier) {
             vision_system_msgs::Description person;
+            person.label_class = person_identifier;
             person.probability = it->probability;
             person.bounding_box.minX = it->xmin;
             person.bounding_box.minY = it->ymin;
@@ -46,23 +48,27 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
         pub_object_msg.recognition_header = bbs.header;
         pub_object_msg.descriptions = objects;
         recognized_objects_pub.publish(pub_object_msg);
+        
         //test
-        std::vector<sensor_msgs::PointCloud> clouds;
-
+        
         vision_system_msgs::Image2World image_srv;
         image_srv.request.recognitions = pub_object_msg;
-        image2world_client.call(image_srv);
+        if(!image2world_client.call(image_srv)) {
+            ROS_ERROR("Failed to call image2world service");
+        }
+        else {
+            std::vector<sensor_msgs::PointCloud> clouds;
+            clouds = image_srv.response.clouds;
 
-        clouds = image_srv.response.clouds;
+            std::vector<sensor_msgs::PointCloud>::iterator it;
+            std::vector<vision_system_msgs::Description>::iterator jt;
 
-        std::vector<sensor_msgs::PointCloud>::iterator it;
-        std::vector<vision_system_msgs::Description>::iterator jt;
+            geometry_msgs::Point32 point;
 
-        geometry_msgs::Point32 point;
-
-        for(it = clouds.begin(), jt = objects.begin() ; it!=clouds.end() && jt!=objects.end() ; it++, jt++) {
-            point = it->points[it->points.size()/2];
-            std::cout<<"<"<<jt->label_class<<", "<<point.x<<", "<<point.y<<", "<<point.z<<">"<<std::endl;
+            for(it = clouds.begin(), jt = objects.begin() ; it!=clouds.end() && jt!=objects.end() ; it++, jt++) {
+                point = it->points[(it->points).size()/2];
+                std::cout<<"<"<<jt->label_class<<", "<<point.x<<", "<<point.y<<", "<<point.z<<">"<<std::endl;
+            }
         }
         //end_test
     }

@@ -86,8 +86,6 @@ void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::Po
 {
     const float bad_point = std::numeric_limits<float>::quiet_NaN();
 
-    
-
     std::vector<geometry_msgs::Point32> &points = point_cloud.points;
     for(int r = 0 ; r < depth.rows ; r++) {
 
@@ -98,18 +96,19 @@ void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::Po
             if(it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0){
                 geometry_msgs::Point32 point;
 
-                if(*it_depth == 0){
-                    point.x = -10;
-                    point.y = -10;
-                    point.z = -10;
-                    continue;
+                if(*it_depth == 0) {
+                    point.x = bad_point;
+                    point.y = bad_point;
+                    point.z = bad_point;
                 }
 
-                float depth_value = *it_depth/1000.0;
+                else {
+                    float depth_value = *it_depth/1000.0;
 
-                point.x = depth_value * table_x.at<float>(0, c);
-                point.y = depth_value * table_y.at<float>(0, r);
-                point.z = depth_value;
+                    point.x = depth_value * table_x.at<float>(0, c);
+                    point.y = depth_value * table_y.at<float>(0, r);
+                    point.z = depth_value;
+                }
 
                 points.push_back(point);
 
@@ -162,7 +161,6 @@ bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &
         rgb2PointCloud(crop_color, crop_depth, cloud);
         //botar campos que faltam na cloud
         clouds.push_back(cloud);
-
     }
 
     response.clouds = clouds;
