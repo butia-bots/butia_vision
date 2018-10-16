@@ -4,6 +4,8 @@ YoloRecognition::YoloRecognition(ros::NodeHandle _nh) : node_handle(_nh)
 {
     readParameters();
 
+    image2world_client = node_handle.serviceClient<vision_system_msgs::Image2World>("/vision_system/iw/image2world");
+
     bounding_boxes_sub = node_handle.subscribe(bounding_boxes_topic, bounding_boxes_qs, &YoloRecognition::yoloRecognitionCallback, this);
     recognized_objects_pub = node_handle.advertise<vision_system_msgs::Recognitions>(object_recognition_topic, object_recognition_qs);
     recognized_people_pub = node_handle.advertise<vision_system_msgs::Recognitions>(people_detection_topic, people_detection_qs);
@@ -44,6 +46,25 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
         pub_object_msg.recognition_header = bbs.header;
         pub_object_msg.descriptions = objects;
         recognized_objects_pub.publish(pub_object_msg);
+        //test
+        std::vector<sensor_msgs::PointCloud> clouds;
+
+        vision_system_msgs::Image2World image_srv;
+        image_srv.request.recognitions = pub_object_msg;
+        image2world_client.call(image_srv);
+
+        clouds = image_srv.response.clouds;
+
+        std::vector<sensor_msgs::PointCloud>::iterator it;
+        std::vector<vision_system_msgs::Description>::iterator jt;
+
+        geometry_msgs::Point32 point;
+
+        for(it = clouds.begin(), jt = objects.begin() ; it!=clouds.end() && jt!=objects.end() ; it++, jt++) {
+            point = it->points[it->points.size()/2];
+            std::cout<<"<"<<jt->label_class<<", "<<point.x<<", "<<point.y<<", "<<point.z<<">"<<std::endl;
+        }
+        //end_test
     }
 
     if(people.size() > 0) {

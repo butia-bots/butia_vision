@@ -37,6 +37,6 @@ class ImgServer {
         bool accessQueue(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res);
 
         //Callbacks
-        void camCallbackRGB(const sensor_msgs::Image::ConstPtr& img);
-        void camCallbackDepth(const sensor_msgs::Image::ConstPtr& img);
+        void camCallBackRGB(const sensor_msgs::Image::ConstPtr& img);
+        void camCallBackDepth(const sensor_msgs::Image::ConstPtr& img);
 };
