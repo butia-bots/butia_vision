@@ -7,8 +7,6 @@
 #include "cv_bridge/cv_bridge.h"
 #include "vision_system_msgs/ImageRequest.h"
 
-
-
 class ImgServer {
     private:
         std::vector<sensor_msgs::ImageConstPtr> rgb_buffer;

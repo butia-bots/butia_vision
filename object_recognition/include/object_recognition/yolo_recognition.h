@@ -16,6 +16,8 @@ class YoloRecognition{
 
         void yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bbs);
 
+        bool recognitionImage2World(vision_system_msgs::Recognitions& recognitions);
+
     private:
         ros::NodeHandle node_handle;
 
@@ -25,6 +27,8 @@ class YoloRecognition{
 
         vision_system_msgs::Recognitions pub_object_msg;
         vision_system_msgs::Recognitions pub_people_msg;
+
+        vision_system_msgs::Image2World image2world_srv;
 
         std::vector<vision_system_msgs::Description> objects;
         std::vector<vision_system_msgs::Description> people;
@@ -40,6 +44,8 @@ class YoloRecognition{
 
         std::string people_detection_topic;
         int people_detection_qs;
+
+        std::string image2world_client_service
 
         std::string person_identifier;
 

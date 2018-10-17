@@ -16,3 +16,8 @@ publishers:
 
   person:
     identifier: "person"
+
+service:
+
+  image2world:
+    service: /vision_system/iw/image2world
