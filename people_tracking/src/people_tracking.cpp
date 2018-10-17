@@ -3,38 +3,69 @@
 
 
 //------------------------------People Tracker's Functions------------------------------
-void PeopleTracker::peopleDetectCallback(const vision_system_msgs::RecognitionsConstPtr person) {
-    srv.request.frame = person->image_header.seq; //Getting the frame
-    std::pair<cv::Mat, cv::Mat> images; //This variable stores the rgb and the depth image, in this order
-    cv::Mat mask, segmented_image; //This variable stores the segmented rgb image
+PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh) {
+    people_detection_subscriber = node_handle.subscribe("/vision_system/or/people_detection", 150, &PeopleTracker::peopleDetectionCallBack, this);
+    image_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>("/vision_system/is/image_request");
+}
 
-    //Treating all the people in the frame
-    for (int i = 0; i < person->descriptions.size(); i++) {
-        images = crop(srv.response.rgbd_image, person->descriptions[i].bounding_box); //Cropping the image to the size of the bounding box
-        mask = getMask(images.second, person->descriptions[i].bounding_box.width * person->descriptions[i].bounding_box.height); //Getting the masks
-        segmented_image = segment(images.first, mask); //Segmenting the images
+
+void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitions::ConstPtr& person_detected) {
+    vision_system_msgs::ImageRequest image_service;
+    image_service.request.frame = person_detected->image_header.seq;
+
+    if (!image_client.call(image_service))
+        ROS_ERROR("Failed to call image_server service");
+    else {
+        cv::Mat rgb_image, depth_image;
+        vision_system_msgs::RGBDImage rgbd_image = image_service.response.rgbd_image;
+
+        sensor_msgs::Image::ConstPtr rgb_const_ptr(new sensor_msgs::Image(rgbd_image.rgb));
+        sensor_msgs::Image::ConstPtr depth_const_ptr(new sensor_msgs::Image(rgbd_image.depth));
+
+        readImage(rgb_const_ptr, rgb_image);
+        readImage(depth_const_ptr, depth_image);
     }
 }
 
 
-std::pair<cv::Mat, cv::Mat> PeopleTracker::crop(vision_system_msgs::RGBDImage rgbd_image, vision_system_msgs::BoundingBox bounding_box) {
-    //Getting the images
-    cv::Mat initial_rgb_image = (cv_bridge::toCvCopy(rgbd_image.rgb, rgbd_image.rgb.encoding))->image;
-    cv::Mat initial_depth_image = (cv_bridge::toCvCopy(rgbd_image.depth, rgbd_image.depth.encoding))->image;
-
-    //Defining the region of interest
-    cv::Rect region_of_interest(bounding_box.minX, bounding_box.minY, bounding_box.width, bounding_box.height);
-
-    //Cutting the images
-    std::pair<cv::Mat, cv::Mat> final_images;
-    final_images.first = initial_rgb_image(region_of_interest);
-    final_images.second = initial_depth_image(region_of_interest);
-    return final_images;
+void PeopleTracker::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image) {
+    cv_bridge::CvImageConstPtr cv_image;
+    cv_image = cv_bridge::toCvShare(msg_image, msg_image->encoding);
+    cv_image->image.copyTo(image);
 }
+//------------------------------People Tracker's Functions------------------------------
 
 
-cv::Mat PeopleTracker::getMask(const cv::Mat depth_image, int bounding_box_size) {
-    //Defining parameters
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*cv::Mat PeopleTracker::getMask(const cv::Mat depth_image, int bounding_box_size) {
     cv::Mat histogram;
     int histogram_size = 64;
     float range[] = {0, 5001};
@@ -44,7 +75,6 @@ cv::Mat PeopleTracker::getMask(const cv::Mat depth_image, int bounding_box_size)
     const int channels[] = {0};
     float bounding_box_threshold = 0.65;
 
-    //Calculating the histograms until the max value be consistent with the bouding box
     int number_of_pixels;
     do {
         cv::calcHist(&depth_image, 1, channels, cv::Mat(), histogram, 1, &histogram_size, &histogram_range, uniform, accumulate);
@@ -55,7 +85,6 @@ cv::Mat PeopleTracker::getMask(const cv::Mat depth_image, int bounding_box_size)
     int reference_value = histogram.at<int>((int)(histogram_range[1] / histogram_size), 0) * number_of_pixels; //Defining the reference depth value
     int mask_threshold = (histogram_range[1] / histogram_size) / 2; //Defining the threshold
 
-    //Creating the mask with the value 0 in the background pixels and value 1 int the foreground pixels
     cv::Mat mask;
     for (int i = 0; i < depth_image.rows; i++) {
         for (int j = 0; j < depth_image.cols; j++) {
@@ -66,31 +95,4 @@ cv::Mat PeopleTracker::getMask(const cv::Mat depth_image, int bounding_box_size)
         }
     }
     return mask;
-}
-
-
-cv::Mat PeopleTracker::segment(cv::Mat rgb_image, cv::Mat mask) {
-    cv::Mat segmented_image;
-
-    //Multiplying the matrices pixel-by-pixel
-    for (int i = 0; i < rgb_image.rows; i++) {
-        for (int j = 0; j < rgb_image.cols; j++)
-            segmented_image.at<int>(i, j) = rgb_image.at<int>(i, j) * mask.at<int>(i, j);
-    }
-
-    return segmented_image;
-}
-
-
-int PeopleTracker::getMax(cv::Mat histogram) {
-    int max = 0; //Set the initial maximum value (zero for any value be bigger)
-
-    //Scrolls the vector looking for the bigger value
-    for (int i = 0; i < histogram.cols; i++) {
-        if (max < histogram.at<int>(i, 0))
-            max = histogram.at<int>(i, 0);
-    }
-
-    return max;
-}
-//------------------------------People Tracker's Functions------------------------------
+}*/

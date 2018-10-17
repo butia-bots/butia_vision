@@ -7,6 +7,5 @@ int main(int argc, char **argv) {
 
     ImgServer img_server(nh);
 
-    
     ros::spin();
 }
