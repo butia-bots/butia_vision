@@ -1,3 +1,5 @@
 Recognitions recognitions
 ---
 sensor_msgs/PointCloud[] clouds
+geometry_msgs/Point32[] means_position
+geometry_msgs/Point32[] variances

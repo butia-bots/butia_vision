@@ -93,7 +93,7 @@ void YoloRecognition::readParameters()
     node_handle.param("/object_recognition/publishers/people_detection/topic", people_detection_topic, std::string("/vision_system/or/people_detection"));
     node_handle.param("/object_recognition/publishers/people_detection/queue_size", people_detection_qs, 1);
 
-    node_handle.param("/object_recognition/services/image2world/service", image2world_client_service, "/vision_system/iw/image2world");
+    node_handle.param("/object_recognition/services/image2world/service", image2world_client_service, std::string("/vision_system/iw/image2world"));
 
     node_handle.param("/object_recognition/person/identifier", person_identifier, std::string("person"));
 }

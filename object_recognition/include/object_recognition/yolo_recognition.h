@@ -45,7 +45,7 @@ class YoloRecognition{
         std::string people_detection_topic;
         int people_detection_qs;
 
-        std::string image2world_client_service
+        std::string image2world_client_service;
 
         std::string person_identifier;
 

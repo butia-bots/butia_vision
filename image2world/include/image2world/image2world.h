@@ -1,6 +1,7 @@
 #include "ros/ros.h"
 
 #include <opencv2/opencv.hpp>
+
 #include <string>
 #include <vector>
 
@@ -20,7 +21,7 @@ class Image2World{
     public:
         Image2World(ros::NodeHandle _nh);
 
-        void rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud);
+        void rgbd2Position(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud, geometry_msgs::Point32 mean_position, geometry_msgs::Point32 variance);
 
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
         

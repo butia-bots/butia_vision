@@ -52,6 +52,7 @@ void Image2World::createTabels()
     }
 }
 
+
 void Image2World::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image)
 {
     cv_bridge::CvImageConstPtr cv_image;
@@ -59,9 +60,16 @@ void Image2World::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::M
     cv_image->image.copyTo(image);
 }
 
-void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud)
+void Image2World::rgbd2Position(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud, geometry_msgs::Point32& mean_position, geometry_msgs::Point32& variance)
 {
     const float bad_point = std::numeric_limits<float>::quiet_NaN();
+
+    mean_posision.x = 0.0f;
+    mean_posision.y = 0.0f;
+    mean_posision.z = 0.0f;
+    variance.x = 0.0f;
+    variance.y = 0.0f;
+    variance.z = 0.0f;
 
     std::vector<geometry_msgs::Point32> &points = point_cloud.points;
     for(int r = 0 ; r < depth.rows ; r++) {
@@ -73,25 +81,47 @@ void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::Po
             if(it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0){
                 geometry_msgs::Point32 point;
 
-                if(*it_depth == 0) {
-                    point.x = bad_point;
-                    point.y = bad_point;
-                    point.z = bad_point;
-                }
+                float depth_value = *it_depth/1000.0;
 
-                else {
-                    float depth_value = *it_depth/1000.0;
+                point.x = depth_value * table_x.at<float>(0, c);
+                point.y = depth_value * table_y.at<float>(0, r);
+                point.z = depth_value;
 
-                    point.x = depth_value * table_x.at<float>(0, c);
-                    point.y = depth_value * table_y.at<float>(0, r);
-                    point.z = depth_value;
-                }
+                mean_posision.x += point.x;
+                mean_posision.y += point.y;
+                mean_posision.z += point.z;
 
                 points.push_back(point);
 
             }
         }
     }
+
+    if(points.size() <= 0) {
+        mean_posision.x = bad_point;
+        mean_posision.y = bad_point;
+        mean_posision.z = bad_point;
+        variance.x = bad_point;
+        variance.y = bad_point;
+        variance.z = bad_point;
+        return;
+    } 
+
+    mean_posision.x /= points.size();
+    mean_posision.y /= points.size();
+    mean_posision.z /= points.size();
+
+    vector<geometry_msgs::Point32>::iterator it;
+
+    for(it = points.begin() ; it != points.end() ; it++) {
+        variance.x += (it->x - mean_position.x)*(it->x - mean_position.x);
+        variance.y += (it->y - mean_position.y)*(it->y - mean_position.y);
+        variance.z += (it->z - mean_position.z)*(it->z - mean_position.z);
+    }
+
+    variance.x = sqrt(variance.x/points.size());
+    variance.y = sqrt(variance.y/points.size());
+    variance.z = sqrt(variance.z/points.size());
 
 }
 
@@ -125,6 +155,9 @@ bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &
 
     for(it = descriptions.begin() ; it != descriptions.end() ; it++) {
         sensor_msgs::PointCloud cloud;
+        geometry_msgs::Point32 mean_position;
+        geometry_msgs::Point32 variance;
+
         cv::Rect roi;
         roi.x = (*it).bounding_box.minX;
         roi.y = (*it).bounding_box.minY;
@@ -135,7 +168,7 @@ bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &
 
         //segment(crop_color)
 
-        rgb2PointCloud(crop_color, crop_depth, cloud);
+        rgbd2Position(crop_color, crop_depth, cloud, mean_posision, variance);
         //botar campos que faltam na cloud
         clouds.push_back(cloud);
     }
