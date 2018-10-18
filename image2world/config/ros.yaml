@@ -1,0 +1,14 @@
+subscribers:
+
+  camera_info:
+    topic: /kinect2/qhd/camera_info
+    queue_size: 1
+
+services:
+
+  image2world:
+    service: /vision_system/iw/image2world
+  image_server:
+    service: /vision_system/is/image_request
+  segmentation_server:
+    service: /vision_system/fr/classifier_training

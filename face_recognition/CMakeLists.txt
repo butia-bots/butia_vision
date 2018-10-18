@@ -69,12 +69,12 @@ cv_bridge
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
+#generate_messages(
+  #DEPENDENCIES
   #vision_system_msgs  # Or other packages containing msgs
   #std_msgs
   #sensor_msgs
-)
+#)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##

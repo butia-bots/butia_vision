@@ -1,3 +1,3 @@
 Header image_header
 Header recognition_header
-ObjectDescription[] objects_description
+Description3D[] descriptions
