@@ -3,10 +3,7 @@
 Image2World::Image2World(ros::NodeHandle _nh) : node_handle(_nh), width(0), height(0)
 {
     readParameters();
-    
-    image_d = node_handle.subscribe("/kinect2/qhd/image_color_rect", 1, &Image2World::imageRCb, this);
-    image_r = node_handle.subscribe("/kinect2/qhd/image_depth_rect", 1, &Image2World::imageDCb, this);
-    
+
     camera_info_subscriber = node_handle.subscribe(camera_info_topic, camera_info_qs, &Image2World::cameraInfoCallback, this);
     image2world_server = node_handle.advertiseService(image2world_server_service, &Image2World::image2worldCallback, this);
     image_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(image_client_service);
@@ -15,23 +12,6 @@ Image2World::Image2World(ros::NodeHandle _nh) : node_handle(_nh), width(0), heig
 }
 
 
-void Image2World::imageDCb(const sensor_msgs::Image::ConstPtr &msg_image)
-{
-    ROS_INFO("D ID: %d", msg_image->header.seq);
-    cv::Mat image;
-    readImage(msg_image, image);
-    cv::imshow("Depth", image);
-    cv::waitKey(10);
-
-}
-void Image2World::imageRCb(const sensor_msgs::Image::ConstPtr &msg_image)
-{
-    ROS_INFO("RGB ID: %d", msg_image->header.seq);
-    cv::Mat image;
-    readImage(msg_image, image);
-    cv::imshow("RGB", image);
-    cv::waitKey(10);
-}
 
 void Image2World::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& camera_info)
 {
@@ -75,6 +55,7 @@ void Image2World::createTabels()
     }
 }
 
+
 void Image2World::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image)
 {
     cv_bridge::CvImageConstPtr cv_image;
@@ -82,9 +63,20 @@ void Image2World::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::M
     cv_image->image.copyTo(image);
 }
 
-void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud)
+void Image2World::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geometry_msgs::PoseWithCovariance &pose)
 {
-    std::vector<geometry_msgs::Point32> &points = point_cloud.points;
+    const float bad_point = std::numeric_limits<float>::quiet_NaN();
+
+    geometry_msgs::Point &mean_position = pose.pose.position;
+
+    mean_position.x = 0.0f;
+    mean_position.y = 0.0f;
+    mean_position.z = 0.0f;
+    for(int i = 0 ; i < 36 ; i++){
+        pose.covariance[i] = 0.0f;
+    }
+
+    std::vector<geometry_msgs::Point32> points;
     for(int r = 0 ; r < depth.rows ; r++) {
 
         uint16_t *it_depth = depth.ptr<uint16_t>(r);
@@ -93,11 +85,18 @@ void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::Po
         for(int c = 0 ; c < depth.cols ; c++, it_depth++, it_color++) {
             if(it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0){
                 geometry_msgs::Point32 point;
+                
+                if(*it_depth == 0) continue;
+
                 float depth_value = *it_depth/1000.0;
 
                 point.x = depth_value * table_x.at<float>(0, c);
                 point.y = depth_value * table_y.at<float>(0, r);
                 point.z = depth_value;
+
+                mean_position.x += point.x;
+                mean_position.y += point.y;
+                mean_position.z += point.z;
 
                 points.push_back(point);
 
@@ -105,6 +104,37 @@ void Image2World::rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::Po
         }
     }
 
+    if(points.size() <= 0) {
+        mean_position.x = bad_point;
+        mean_position.y = bad_point;
+        mean_position.z = bad_point;
+        return;
+    } 
+
+    mean_position.x /= points.size();
+    mean_position.y /= points.size();
+    mean_position.z /= points.size();
+
+    std::vector<geometry_msgs::Point32>::iterator it;
+
+    for(it = points.begin() ; it != points.end() ; it++) {
+        pose.covariance[6*0 + 0] += (it->x - mean_position.x)*(it->x - mean_position.x); //xx
+        pose.covariance[6*0 + 1] += (it->x - mean_position.x)*(it->y - mean_position.y); //xy
+        pose.covariance[6*0 + 2] += (it->x - mean_position.x)*(it->z - mean_position.z); //xz
+        pose.covariance[6*1 + 1] += (it->y - mean_position.y)*(it->y - mean_position.y); //yy
+        pose.covariance[6*1 + 2] += (it->y - mean_position.y)*(it->z - mean_position.z); //yz
+        pose.covariance[6*2 + 2] += (it->z - mean_position.z)*(it->z - mean_position.z); //zz
+    }
+
+    pose.covariance[6*1 + 0] = pose.covariance[6*0 + 1]; //yx
+    pose.covariance[6*2 + 0] = pose.covariance[6*0 + 2]; //zx
+    pose.covariance[6*2 + 1] = pose.covariance[6*1 + 2]; //zy
+
+    for(int i = 0 ; i < 3 ; i++) {
+        for(int j = 0 ; j < 3 ; j++) {
+            pose.covariance[6*i + j] /= points.size();
+        }
+    }
 }
 
 bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &request, vision_system_msgs::Image2World::Response &response)
@@ -130,13 +160,15 @@ bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &
     readImage(rgb_const_ptr, color);
     readImage(depth_const_ptr, depth);
 
-    std::vector<sensor_msgs::PointCloud> clouds;
+    //std::vector<sensor_msgs::PointCloud> clouds;
+    std::vector<geometry_msgs::PoseWithCovariance> &poses = response.poses;
 
     std::vector<vision_system_msgs::Description> descriptions = request.recognitions.descriptions;
     std::vector<vision_system_msgs::Description>::iterator it;
 
     for(it = descriptions.begin() ; it != descriptions.end() ; it++) {
-        sensor_msgs::PointCloud cloud;
+        //sensor_msgs::PointCloud cloud;
+        geometry_msgs::PoseWithCovariance pose;
         cv::Rect roi;
         roi.x = (*it).bounding_box.minX;
         roi.y = (*it).bounding_box.minY;
@@ -147,13 +179,11 @@ bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &
 
         //segment(crop_color)
 
-        rgb2PointCloud(crop_color, crop_depth, cloud);
+        rgbd2PoseWithCovariance(crop_color, crop_depth, pose);
         //botar campos que faltam na cloud
-        clouds.push_back(cloud);
-
+        poses.push_back(pose);
     }
 
-    response.clouds = clouds;
     return true;
 }
 

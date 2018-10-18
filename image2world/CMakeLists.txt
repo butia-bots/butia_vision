@@ -3,13 +3,13 @@ project(image2world)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED roscpp vision_system_msgs cv_bridge)
+find_package(catkin REQUIRED roscpp vision_system_msgs geometry_msgs cv_bridge)
 find_package(OpenCV REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME}
   LIBRARIES image2world
-  CATKIN_DEPENDS roscpp vision_system_msgs cv_bridge
+  CATKIN_DEPENDS roscpp vision_system_msgs geometry_msgs cv_bridge
 )
 
 

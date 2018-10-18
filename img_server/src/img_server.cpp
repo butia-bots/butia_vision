@@ -3,36 +3,56 @@
 
 
 //------------------------------Image Prepare's Functions------------------------------
-ImgServer::ImgServer() {
-    buffer.resize(150);
+ImgServer::ImgServer(ros::NodeHandle &nh) : node_handle(nh), min_seq(0), max_seq(0), last_rgb(-1), buffer_size(150) {
+    rgb_buffer.resize(buffer_size);
+    depth_buffer.resize(buffer_size);
+
+    img_rgb_sub = nh.subscribe("/kinect2/qhd/image_color_rect", 100, &ImgServer::camCallBackRGB, this);
+    img_d_sub = nh.subscribe("/kinect2/qhd/image_depth_rect", 100, &ImgServer::camCallBackDepth, this);
+    service = nh.advertiseService("/vision_system/is/image_request", &ImgServer::accessQueue, this);
 }
 
 
-ImgServer::ImgServer(int size) {
-    buffer.resize(size);
+ImgServer::ImgServer(ros::NodeHandle &nh, int size) : node_handle(nh), min_seq(0), max_seq(0), last_rgb(-1), buffer_size(size) {
+    rgb_buffer.resize(buffer_size);
+    depth_buffer.resize(buffer_size);
+
+    img_rgb_sub = nh.subscribe("/kinect2/qhd/image_color_rect", 100, &ImgServer::camCallBackRGB, this);
+    img_d_sub = nh.subscribe("/kinect2/qhd/image_depth_rect", 100, &ImgServer::camCallBackDepth, this);
+    service = nh.advertiseService("/vision_system/is/image_request", &ImgServer::accessQueue, this);
 }
-
-
-std::vector<std::pair<sensor_msgs::ImageConstPtr, sensor_msgs::ImageConstPtr>> ImgServer::getBuffer() {
-    return buffer;
-}
-
 
 bool ImgServer::accessQueue(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res) {
-    res.rgbd_image.rgb = *(buffer[(req.frame)%150].first);
-    res.rgbd_image.depth = *(buffer[(req.frame)%150].second);
+    int seq = req.frame;
+    if(seq > max_seq || seq < min_seq) 
+    {
+        ROS_ERROR("INVALID RGB ACCESS!");
+        return false;
+    }
+    res.rgbd_image.rgb = *(rgb_buffer[seq%buffer_size]);
+    
+    if(depth_buffer[seq%buffer_size] == NULL) {
+        ROS_ERROR("INVALID DEPTH ACCESS!");
+        return false;
+    }
+    res.rgbd_image.depth = *(depth_buffer[seq%buffer_size]);
+    
     return true;
 }
 
-
-void ImgServer::camCallBackRGB(const sensor_msgs::ImageConstPtr img) {
-    ROS_INFO("RGB Frame ID: %d", img->header.seq);
-    buffer[(img->header.seq)%150].first = img;
+void ImgServer::camCallBackRGB(const sensor_msgs::Image::ConstPtr img) {
+    int seq = img->header.seq;
+    ROS_INFO("RGB Frame ID: %d", seq);
+    rgb_buffer[seq%buffer_size] = img;
+    depth_buffer[seq%buffer_size] = NULL;
+    if(seq - buffer_size >= min_seq || seq < min_seq) min_seq = seq;
+    max_seq = seq;
+    last_rgb = seq%buffer_size;
 }
 
-
-void ImgServer::camCallBackDepth(const sensor_msgs::ImageConstPtr img) {
+void ImgServer::camCallBackDepth(const sensor_msgs::Image::ConstPtr img) {
     ROS_INFO("Depth Frame ID: %d", img->header.seq);
-    buffer[(img->header.seq)%150].second = img;
+    if(last_rgb >= 0) depth_buffer[last_rgb] = img;
+    last_rgb = -1;
 }
 //------------------------------Image Prepare's Functions------------------------------
