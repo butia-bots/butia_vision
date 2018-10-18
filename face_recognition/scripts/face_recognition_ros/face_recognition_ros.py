@@ -13,8 +13,8 @@ from dlib import rectangle, rectangles
 
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
-from vision_system_msgs.msg import BoundingBox, Description, Recognitions
-from vision_system_msgs.srv import FaceClassifierTraining
+from vision_system_msgs.msg import BoundingBox, Description, Description3D, Recognitions, Recognitions3D
+from vision_system_msgs.srv import FaceClassifierTraining, Image2World
 
 BRIDGE = CvBridge()
 PACK_DIR = rospkg.RosPack().get_path('face_recognition')
@@ -27,6 +27,9 @@ class FaceRecognitionROS():
         self.num_recognitions = 0
 
         self.last_recognition = 0.0
+
+        self.image_width = 0
+        self.image_height = 0
 
         self.detector_lib = ''
         self.aligner_lib = ''
@@ -160,10 +163,18 @@ class FaceRecognitionROS():
 
     def dlibRectangle2RosBoundingBox(self, rect):
         bounding_box = BoundingBox()
-        bounding_box.minX = rect.tl_corner().x
-        bounding_box.minY = rect.tl_corner().y
-        bounding_box.width = rect.width()
-        bounding_box.height = rect.height()
+        if rect.tl_corner().x > 0:
+            bounding_box.minX = rect.tl_corner().x
+        if rect.tl_corner().y > 0: 
+            bounding_box.minY = rect.tl_corner().y
+        if rect.tl_corner().x + rect.width() > self.image_width:
+            bounding_box.width = self.image_width - rect.tl_corner().x  
+        else:    
+            bounding_box.width = rect.width()
+        if rect.tl_corner().y + rect.height() > self.image_height:
+            bounding_box.height = self.image_height - rect.tl_corner().y  
+        else:    
+            bounding_box.height = rect.height()
         return bounding_box
 
     def numpyndArray2dlibRectangles(self, array):
@@ -346,6 +357,8 @@ class FaceRecognitionROS():
     def recognitionProcess(self, ros_msg):
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
 
+        self.image_width, self.image_height, c = rgb_image.shape 
+
         face_rects = self.detectFaces(rgb_image)
         if len(face_rects) == 0:
             rospy.loginfo("Recognition FPS: {:.2f} Hz.".format((1/(rospy.get_rostime().to_sec() - self.last_recognition))))
@@ -393,3 +406,28 @@ class FaceRecognitionROS():
         self.extractDatasetFeatures()
         ans = self.trainClassifier(ros_srv.classifier_type, ros_srv.classifier_name)
         return ans 
+
+    def recognitions2Recognitions3D(self, recognitions, client):
+        try:
+           response = client(recognitions)
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            return None
+
+        recognitions3d = Recognitions3D()
+        recognitions3d.image_header = recognitions.image_header
+        recognitions3d.recognition_header = recognitions.recognition_header
+        
+        recognitions3d = Recognitions3D()
+        poses = response.poses
+
+        for i in range(0, len(recognitions.descriptions)):
+            description = Description3D()
+            description.label_class = recognitions.descriptions[i].label_class
+            description.probability = recognitions.descriptions[i].probability
+            description.pose = poses[i]
+
+            recognitions3d.descriptions.append(description)
+        
+        return recognitions3d
+
