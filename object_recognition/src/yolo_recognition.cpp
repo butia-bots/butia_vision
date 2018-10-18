@@ -13,15 +13,16 @@ YoloRecognition::YoloRecognition(ros::NodeHandle _nh) : node_handle(_nh)
 
 bool YoloRecognition::recognitions2Recognitions3D(vision_system_msgs::Recognitions& recognitions, vision_system_msgs::Recognitions3D& recognitions3d)
 {
-    recognitions3d.image_header = recognitions.image_header;
-    recognitions3d.recognition_header = recognitions.recognition_header;
-
     //tem que gerar uma mensagem
     image2world_srv.request.recognitions = recognitions;
     if(!image2world_client.call(image2world_srv)) {
         ROS_ERROR("Failed to call image2world service");
         return false;
     }
+
+    recognitions3d.image_header = recognitions.image_header;
+    recognitions3d.recognition_header = recognitions.recognition_header;
+
     std::vector<geometry_msgs::PoseWithCovariance> poses;
     std::vector<vision_system_msgs::Description> &objects = recognitions.descriptions; 
     std::vector<vision_system_msgs::Description3D> &descriptions = recognitions3d.descriptions; 
@@ -87,9 +88,10 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
         pub_object_msg.descriptions = objects;
         recognized_objects_pub.publish(pub_object_msg);
 
-        recognitions2Recognitions3D(pub_object_msg, pub_object3D_msg);
+        if(recognitions2Recognitions3D(pub_object_msg, pub_object3D_msg)){
+            recognized_objects3d_pub.publish(pub_object3D_msg);
+        }
 
-        recognized_objects3d_pub.publish(pub_object3D_msg);
     }
 
     if(people.size() > 0) {
