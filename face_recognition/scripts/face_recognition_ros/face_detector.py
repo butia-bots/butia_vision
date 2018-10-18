@@ -23,7 +23,7 @@ def loadOpencvModels(models_dir, model = 'haarcascade_frontalface_alt.xml', cuda
 
 @load(lib_name='dlib')
 @debug
-def loadDlibModels(models_dir, model = 'shape_predictor_68_face_landmarks.dat', debug=False):
+def loadDlibModels(models_dir, model = 'default', debug=False):
     dlib_aligner = openface.AlignDlib(os.path.join(models_dir, 'dlib', model))
     return dlib_aligner
 

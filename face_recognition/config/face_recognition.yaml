@@ -2,7 +2,7 @@ verbose: False
 debug: False
 
 detector:
-  lib: opencv #opencv or dlib
+  lib: dlib #opencv or dlib
   opencv:
     model: haarcascade_frontalface_alt.xml
     scale_factor: 1.3
