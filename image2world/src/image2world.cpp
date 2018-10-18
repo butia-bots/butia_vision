@@ -60,18 +60,20 @@ void Image2World::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::M
     cv_image->image.copyTo(image);
 }
 
-void Image2World::rgbd2Position(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud, geometry_msgs::Point32& mean_position, geometry_msgs::Point32& variance)
+void Image2World::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geometry_msgs::PoseWithCovariance &pose)
 {
     const float bad_point = std::numeric_limits<float>::quiet_NaN();
 
-    mean_posision.x = 0.0f;
-    mean_posision.y = 0.0f;
-    mean_posision.z = 0.0f;
-    variance.x = 0.0f;
-    variance.y = 0.0f;
-    variance.z = 0.0f;
+    geometry_msgs::Point &mean_position = pose.pose.position;
 
-    std::vector<geometry_msgs::Point32> &points = point_cloud.points;
+    mean_position.x = 0.0f;
+    mean_position.y = 0.0f;
+    mean_position.z = 0.0f;
+    for(int i = 0 ; i < 36 ; i++){
+        pose.covariance[i] = 0.0f;
+    }
+
+    std::vector<geometry_msgs::Point32> points;
     for(int r = 0 ; r < depth.rows ; r++) {
 
         uint16_t *it_depth = depth.ptr<uint16_t>(r);
@@ -87,9 +89,9 @@ void Image2World::rgbd2Position(cv::Mat &color, cv::Mat &depth, sensor_msgs::Poi
                 point.y = depth_value * table_y.at<float>(0, r);
                 point.z = depth_value;
 
-                mean_posision.x += point.x;
-                mean_posision.y += point.y;
-                mean_posision.z += point.z;
+                mean_position.x += point.x;
+                mean_position.y += point.y;
+                mean_position.z += point.z;
 
                 points.push_back(point);
 
@@ -98,31 +100,30 @@ void Image2World::rgbd2Position(cv::Mat &color, cv::Mat &depth, sensor_msgs::Poi
     }
 
     if(points.size() <= 0) {
-        mean_posision.x = bad_point;
-        mean_posision.y = bad_point;
-        mean_posision.z = bad_point;
-        variance.x = bad_point;
-        variance.y = bad_point;
-        variance.z = bad_point;
+        mean_position.x = bad_point;
+        mean_position.y = bad_point;
+        mean_position.z = bad_point;
         return;
     } 
 
-    mean_posision.x /= points.size();
-    mean_posision.y /= points.size();
-    mean_posision.z /= points.size();
+    mean_position.x /= points.size();
+    mean_position.y /= points.size();
+    mean_position.z /= points.size();
 
-    vector<geometry_msgs::Point32>::iterator it;
+    std::vector<geometry_msgs::Point32>::iterator it;
 
     for(it = points.begin() ; it != points.end() ; it++) {
-        variance.x += (it->x - mean_position.x)*(it->x - mean_position.x);
-        variance.y += (it->y - mean_position.y)*(it->y - mean_position.y);
-        variance.z += (it->z - mean_position.z)*(it->z - mean_position.z);
+        pose.covariance[6*0 + 0] += (it->x - mean_position.x)*(it->x - mean_position.x); //xx
+        pose.covariance[6*0 + 1] += (it->x - mean_position.x)*(it->y - mean_position.y); //xy
+        pose.covariance[6*0 + 2] += (it->x - mean_position.x)*(it->z - mean_position.z); //xz
+        pose.covariance[6*1 + 1] += (it->y - mean_position.y)*(it->y - mean_position.y); //yy
+        pose.covariance[6*1 + 2] += (it->y - mean_position.y)*(it->z - mean_position.z); //yz
+        pose.covariance[6*2 + 2] += (it->z - mean_position.z)*(it->z - mean_position.z); //zz
     }
 
-    variance.x = sqrt(variance.x/points.size());
-    variance.y = sqrt(variance.y/points.size());
-    variance.z = sqrt(variance.z/points.size());
-
+    pose.covariance[6*1 + 0] = pose.covariance[6*0 + 1]; //yx
+    pose.covariance[6*2 + 0] = pose.covariance[6*0 + 2]; //zx
+    pose.covariance[6*2 + 1] = pose.covariance[6*1 + 2]; //zy
 }
 
 bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &request, vision_system_msgs::Image2World::Response &response)
@@ -148,16 +149,15 @@ bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &
     readImage(rgb_const_ptr, color);
     readImage(depth_const_ptr, depth);
 
-    std::vector<sensor_msgs::PointCloud> clouds;
+    //std::vector<sensor_msgs::PointCloud> clouds;
+    std::vector<geometry_msgs::PoseWithCovariance> &poses = response.poses;
 
     std::vector<vision_system_msgs::Description> descriptions = request.recognitions.descriptions;
     std::vector<vision_system_msgs::Description>::iterator it;
 
     for(it = descriptions.begin() ; it != descriptions.end() ; it++) {
-        sensor_msgs::PointCloud cloud;
-        geometry_msgs::Point32 mean_position;
-        geometry_msgs::Point32 variance;
-
+        //sensor_msgs::PointCloud cloud;
+        geometry_msgs::PoseWithCovariance pose;
         cv::Rect roi;
         roi.x = (*it).bounding_box.minX;
         roi.y = (*it).bounding_box.minY;
@@ -168,12 +168,11 @@ bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &
 
         //segment(crop_color)
 
-        rgbd2Position(crop_color, crop_depth, cloud, mean_posision, variance);
+        rgbd2PoseWithCovariance(crop_color, crop_depth, pose);
         //botar campos que faltam na cloud
-        clouds.push_back(cloud);
+        poses.push_back(pose);
     }
 
-    response.clouds = clouds;
     return true;
 }
 

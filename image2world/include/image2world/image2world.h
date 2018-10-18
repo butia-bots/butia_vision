@@ -15,13 +15,15 @@
 #include "sensor_msgs/PointCloud.h"
 #include "sensor_msgs/CameraInfo.h"
 
+#include "geometry_msgs/PoseWithCovariance.h"
+
 #include <cv_bridge/cv_bridge.h>
 
 class Image2World{
     public:
         Image2World(ros::NodeHandle _nh);
 
-        void rgbd2Position(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud, geometry_msgs::Point32 mean_position, geometry_msgs::Point32 variance);
+        void rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geometry_msgs::PoseWithCovariance &pose);
 
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
         

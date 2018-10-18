@@ -67,16 +67,16 @@ bool YoloRecognition::recognitionImage2World(vision_system_msgs::Recognitions& r
         ROS_ERROR("Failed to call image2world service");
         return false;
     }
-    std::vector<sensor_msgs::PointCloud> clouds;
-    clouds = image2world_srv.response.clouds;
+    std::vector<geometry_msgs::PoseWithCovariance> poses;
+    poses = image2world_srv.response.poses;
 
-    std::vector<sensor_msgs::PointCloud>::iterator it;
+    std::vector<geometry_msgs::PoseWithCovariance>::iterator it;
     std::vector<vision_system_msgs::Description>::iterator jt;
 
-    geometry_msgs::Point32 point;
+    geometry_msgs::Point point;
 
-    for(it = clouds.begin(), jt = objects.begin() ; it!=clouds.end() && jt!=objects.end() ; it++, jt++) {
-        point = it->points[(it->points).size()/2];
+    for(it = poses.begin(), jt = objects.begin() ; it!=poses.end() && jt!=objects.end() ; it++, jt++) {
+        point = it->pose.position;
         std::cout<<"<"<<jt->label_class<<", "<<point.x<<", "<<point.y<<", "<<point.z<<">"<<std::endl;
     }
     return true;
