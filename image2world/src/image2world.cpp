@@ -82,6 +82,8 @@ void Image2World::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geomet
         for(int c = 0 ; c < depth.cols ; c++, it_depth++, it_color++) {
             if(it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0){
                 geometry_msgs::Point32 point;
+                
+                if(*it_depth == 0) continue;
 
                 float depth_value = *it_depth/1000.0;
 
@@ -124,6 +126,12 @@ void Image2World::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geomet
     pose.covariance[6*1 + 0] = pose.covariance[6*0 + 1]; //yx
     pose.covariance[6*2 + 0] = pose.covariance[6*0 + 2]; //zx
     pose.covariance[6*2 + 1] = pose.covariance[6*1 + 2]; //zy
+
+    for(int i = 0 ; i < 3 ; i++) {
+        for(int j = 0 ; j < 3 ; j++) {
+            pose.covariance[6*i + j] /= points.size();
+        }
+    }
 }
 
 bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &request, vision_system_msgs::Image2World::Response &response)

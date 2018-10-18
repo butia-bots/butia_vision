@@ -24,10 +24,17 @@ ImgServer::ImgServer(ros::NodeHandle &nh, int size) : node_handle(nh), min_seq(0
 
 bool ImgServer::accessQueue(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res) {
     int seq = req.frame;
-    if(seq > max_seq || seq < min_seq) return false;
+    if(seq > max_seq || seq < min_seq) 
+    {
+        ROS_ERROR("INVALID RGB ACCESS!");
+        return false;
+    }
     res.rgbd_image.rgb = *(rgb_buffer[seq%buffer_size]);
     
-    if(depth_buffer[seq%buffer_size] == NULL) return false;
+    if(depth_buffer[seq%buffer_size] == NULL) {
+        ROS_ERROR("INVALID DEPTH ACCESS!");
+        return false;
+    }
     res.rgbd_image.depth = *(depth_buffer[seq%buffer_size]);
     
     return true;
