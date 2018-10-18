@@ -35,10 +35,20 @@ The vision_system_msgs package has all messages and services used by the system.
     float64 probability
     BoundingBox bounding_box
 
+##### Description3D
+    string label_class
+    float64 probability
+    geometry_msgs/PoseWithCovariance pose
+
 ##### Recognitions
     Header image_header
     Header recognition_header
     Description[] descriptions
+
+##### Recognitions3D
+    Header image_header
+    Header recognition_header
+    Description3D[] descriptions
 
 #### Services
 ##### FaceClassifierTraining
@@ -109,6 +119,10 @@ The object_recognition package uses darknet_ros information and redistribute in 
 * **`object_recognition:`** `/vision_system/or/object_recognition` ([vision_system_msgs::Recognitions])
 
     Publishes the recognized objects.
+
+* **`object_recognition3d:`** `/vision_system/or/object_recognition3d` ([vision_system_msgs::Recognitions3D])
+
+    Publishes the recognized objects in 3d.
     
 * **`people_detection:`** `/vision_system/or/people_detection` ([vision_system_msgs::Recognitions])
 
