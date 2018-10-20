@@ -358,7 +358,7 @@ class FaceRecognitionROS():
         rospy.loginfo('Image ID: {}'.format(ros_msg.header.seq))
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
 
-        self.image_width, self.image_height, c = rgb_image.shape 
+        self.image_height, self.image_width, c = rgb_image.shape 
 
         face_rects = self.detectFaces(rgb_image)
         if len(face_rects) == 0:

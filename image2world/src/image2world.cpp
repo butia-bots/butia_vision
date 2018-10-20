@@ -3,12 +3,15 @@
 Image2World::Image2World(ros::NodeHandle _nh) : node_handle(_nh), width(0), height(0)
 {
     readParameters();
+
     camera_info_subscriber = node_handle.subscribe(camera_info_topic, camera_info_qs, &Image2World::cameraInfoCallback, this);
     image2world_server = node_handle.advertiseService(image2world_server_service, &Image2World::image2worldCallback, this);
     image_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(image_client_service);
 
     camera_matrix_color = cv::Mat::zeros(3, 3, CV_64F);
 }
+
+
 
 void Image2World::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& camera_info)
 {

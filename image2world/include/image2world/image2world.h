@@ -26,7 +26,7 @@ class Image2World{
         void rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geometry_msgs::PoseWithCovariance &pose);
 
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
-        
+
         void createTabels();
 
         void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr &camera_info);
