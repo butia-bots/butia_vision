@@ -355,6 +355,7 @@ class FaceRecognitionROS():
 
 
     def recognitionProcess(self, ros_msg):
+        rospy.loginfo('Image ID: {}'.format(ros_msg.header.seq))
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
 
         self.image_width, self.image_height, c = rgb_image.shape 
@@ -422,6 +423,7 @@ class FaceRecognitionROS():
         poses = response.poses
 
         for i in range(0, len(recognitions.descriptions)):
+            print('<{}, {}, {}, {}>'.format(description.label_class, poses[i].pose.position.x, poses[i].pose.position.y, poses[i].pose.position.z))
             description = Description3D()
             description.label_class = recognitions.descriptions[i].label_class
             description.probability = recognitions.descriptions[i].probability
