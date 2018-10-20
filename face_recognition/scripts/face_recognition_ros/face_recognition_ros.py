@@ -423,11 +423,12 @@ class FaceRecognitionROS():
         poses = response.poses
 
         for i in range(0, len(recognitions.descriptions)):
-            print('<{}, {}, {}, {}>'.format(description.label_class, poses[i].pose.position.x, poses[i].pose.position.y, poses[i].pose.position.z))
             description = Description3D()
             description.label_class = recognitions.descriptions[i].label_class
             description.probability = recognitions.descriptions[i].probability
             description.pose = poses[i]
+
+            print('<{}, {}, {}, {}>'.format(description.label_class, poses[i].pose.position.x, poses[i].pose.position.y, poses[i].pose.position.z))
 
             recognitions3d.descriptions.append(description)
         

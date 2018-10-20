@@ -32,4 +32,4 @@ def classifySklearn(classifier, array, threshold=0.5, verbose=True, debug=False)
     if confidence > threshold:
         return (person.decode('utf-8'), confidence)
     else:
-        return ('Unknow', confidence)
+        return ('unknow', confidence)
