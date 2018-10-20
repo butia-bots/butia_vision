@@ -162,6 +162,7 @@ class FaceRecognitionROS():
 
 
     def dlibRectangle2RosBoundingBox(self, rect):
+	print(self.image_width, self.image_height)
         bounding_box = BoundingBox()
         if rect.tl_corner().x > 0:
             bounding_box.minX = rect.tl_corner().x
@@ -357,7 +358,7 @@ class FaceRecognitionROS():
     def recognitionProcess(self, ros_msg):
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
 
-        self.image_width, self.image_height, c = rgb_image.shape 
+        self.image_height, self.image_width, c = rgb_image.shape 
 
         face_rects = self.detectFaces(rgb_image)
         if len(face_rects) == 0:
