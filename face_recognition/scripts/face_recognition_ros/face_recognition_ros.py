@@ -162,7 +162,6 @@ class FaceRecognitionROS():
 
 
     def dlibRectangle2RosBoundingBox(self, rect):
-	print(self.image_width, self.image_height)
         bounding_box = BoundingBox()
         if rect.tl_corner().x > 0:
             bounding_box.minX = rect.tl_corner().x
