@@ -2,7 +2,7 @@ verbose: False
 debug: False
 
 detector:
-  model_id: dlib #opencv or dlib
+  model_id: opencv_cascade
 
   opencv_cascade:
     model: haarcascade_frontalface_alt.xml
@@ -13,6 +13,9 @@ detector:
   opencv_dnn:
     model: tensorflow #tensorflow or caffe
     threshold: 0.7
+    scale_factor: 1
+    size: [300, 300]
+    mean: [104, 117, 123]
 
   dlib_hog:
     model: default

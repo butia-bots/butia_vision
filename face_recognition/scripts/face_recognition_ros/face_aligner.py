@@ -3,7 +3,7 @@ import openface
 from decorators import *
 import os
 
-@load(lib_name='Openface Aligner')
+@load(model_id='Openface Aligner')
 @debug
 def loadOpenfaceAlignerModel(models_dir, model = 'shape_predictor_68_face_landmarks.dat', debug=False):
     openface_aligner = openface.AlignDlib(os.path.join(models_dir, 'openface', model))

@@ -58,34 +58,60 @@ def detectFacesOpencvCascade(detector, image, scale_factor=1.3, min_neighbors=5,
 
 @action(action_name='detection')
 @debug
-def detectFacesOpencvDnn(detector, image, threshold = 0.7, verbose=True, debug=False):
-    frameOpencvDnn = frame.copy()
-    frameHeight = frameOpencvDnn.shape[0]
-    frameWidth = frameOpencvDnn.shape[1]
-    blob = cv2.dnn.blobFromImage(frameOpencvDnn, 1.0, (300, 300), [104, 117, 123], False, False)
+def detectFacesOpencvDnn(detector, image, threshold=0.7, scale_factor=1, size=(300, 300), mean=[104, 117, 123], verbose=True, debug=False):
+    image_height = image.shape[0]
+    image_width = image.shape[1]
+    blob = cv2.dnn.blobFromImage(image, scale_factor, size, mena)
 
-    net.setInput(blob)
-    detections = net.forward()
-    bboxes = []
+    detector.setInput(blob)
+    detections = detector.forward()
+    faces = rectangles()
     for i in range(detections.shape[2]):
         confidence = detections[0, 0, i, 2]
-        if confidence > conf_threshold:
-            x1 = int(detections[0, 0, i, 3] * frameWidth)
-            y1 = int(detections[0, 0, i, 4] * frameHeight)
-            x2 = int(detections[0, 0, i, 5] * frameWidth)
-            y2 = int(detections[0, 0, i, 6] * frameHeight)
-            bboxes.append([x1, y1, x2, y2])
-            cv2.rectangle(frameOpencvDnn, (x1, y1), (x2, y2), (0, 255, 0), int(round(frameHeight/150)), 8)
-    return frameOpencvDnn, bboxes
-
-@action(action_name='detection')
-@debug
-def detectFacesDlibHog(detector, image, verbose=True, debug=False):
-    faces = detector.getAllFaceBoundingBoxes(image)
+        if confidence >= threshold:
+            x1 = int(detections[0, 0, i, 3] * image_width)
+            y1 = int(detections[0, 0, i, 4] * image_height)
+            x2 = int(detections[0, 0, i, 5] * image_width)
+            y2 = int(detections[0, 0, i, 6] * image_hgeight)
+            rects.append(rectangle(x1, y1, x2 - x1, y2 - y1))
     return faces
 
 @action(action_name='detection')
 @debug
-def detectFacesDlibMmod(detector, image, verbose=True, debug=False):
-    faces = detector.getAllFaceBoundingBoxes(image)
+def detectFacesDlibHog(detector, image, height=300, verbose=True, debug=False):
+    image_height = image.shape[0]
+    image_width = image.shape[1]
+    width = 0
+    if height != image_height:
+        width = int((image_width / image_height) * height)
+    else:
+        width = image_width
+
+    scale_height = image_height / height
+    scale_width = image_width / width
+
+    image_small = cv2.resize(image, (width, height))
+
+    image_small = cv2.cvtColor(image_small, cv2.COLOR_BGR2RGB)
+    faces = detector(image_small, 0)
+    return faces
+
+@action(action_name='detection')
+@debug
+def detectFacesDlibMmod(detector, image, height=300, verbose=True, debug=False):
+    image_height = image.shape[0]
+    image_width = image.shape[1]
+    width = 0
+    if height != image_height:
+        width = int((image_width / image_height) * height)
+    else:
+        width = image_width
+
+    scale_height = image_height / height
+    scale_width = image_width / width
+
+    image_small = cv2.resize(image, (width, height))
+
+    image_small = cv2.cvtColor(image_small, cv2.COLOR_BGR2RGB)
+    faces = detector(image_small, 0)
     return faces

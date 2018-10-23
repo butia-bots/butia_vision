@@ -7,6 +7,7 @@ import openface
 import rospy
 import rospkg
 from face_detector import *
+from face_aligner import *
 from face_embosser import *
 from face_classifier import *
 from dlib import rectangle, rectangles
@@ -97,6 +98,9 @@ class FaceRecognitionROS():
 
         opencv_dnn_detector_model = rospy.get_param('/face_recognition/detector/opencv_dnn/model', 'tensorflow')
         opencv_dnn_detector_threshold = rospy.get_param('/face_recognition/detector/opencv_dnn/threshold', 0.7)
+        opencv_dnn_detector_scale_factor = rospy.get_param('/face_recognition/detector/opencv_dnn/scale_factor', 1)
+        opencv_dnn_detector_size = rospy.get_param('/face_recognition/detector/opencv_dnn/size', [300, 300])
+        opencv_dnn_detector_mean = rospy.get_param('/face_recognition/detector/opencv_dnn/mean', [104, 117, 123])
 
         self.detectors_dict['opencv_dnn'] = {
             'load' : {
@@ -112,6 +116,9 @@ class FaceRecognitionROS():
                 'args' : (),
                 'kwargs' : {
                     'threshold' : opencv_dnn_detector_threshold,
+                    'scale_factor' : opencv_dnn_detector_scale_factor,
+                    'size' : tuple(opencv_dnn_detector_size),
+                    'mean' : opencv_dnn_detector_mean,
                     'debug' : self.debug,
                     'verbose' : self.verbose
                 }
@@ -172,7 +179,7 @@ class FaceRecognitionROS():
 
         self.aligners_dict['openface'] = {
             'load' : {
-                'function' : loadOpenfaceModel,
+                'function' : loadOpenfaceAlignerModel,
                 'args' : (self.models_dir,),
                 'kwargs' : {
                     'model' : openface_aligner_model,
@@ -180,7 +187,7 @@ class FaceRecognitionROS():
                 }
             },
             'action' : {
-                'function' : alignFaceOpenface,
+                'function' : alignFaceOpenfaceAligner,
                 'args' : (),
                 'kwargs' : {
                     'image_dimension' : openface_aligner_image_dimension,
@@ -197,9 +204,9 @@ class FaceRecognitionROS():
         openface_embosser_image_dimension = rospy.get_param('/face_recognition/embosser/openface/image_dimension', 96)
         openface_embosser_cuda = rospy.get_param('/face_recognition/embosser/openface/cuda', False)
 
-        self.embossers_dict['facenet'] = {
+        self.embossers_dict['openface'] = {
             'load' : {
-                'function' : loadOpenfaceModel,
+                'function' : loadOpenfaceEmbosserModel,
                 'args' : (self.models_dir,),
                 'kwargs' : {
                     'model' : openface_embosser_model,
@@ -209,7 +216,7 @@ class FaceRecognitionROS():
                 }
             },
             'action' : {
-                'function' : extractFeaturesOpenface,
+                'function' : extractFeaturesOpenfaceEmbosser,
                 'args' : (),
                 'kwargs' : {
                     'debug' : self.debug,
@@ -441,7 +448,8 @@ class FaceRecognitionROS():
         rospy.loginfo('Image ID: {}'.format(ros_msg.header.seq))
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
 
-        self.image_height, self.image_width, c = rgb_image.shape 
+        self.image_height = rgb_image.shape[0]
+        self.image_width = rgb_image.shape[1]
 
         face_rects = self.detectFaces(rgb_image)
         if len(face_rects) == 0:
