@@ -58,10 +58,17 @@ def detectFacesOpencvCascade(detector, image, scale_factor=1.3, min_neighbors=5,
 
 @action(action_name='detection')
 @debug
-def detectFacesOpencvDnn(detector, image, threshold=0.7, scale_factor=1, size=(300, 300), mean=[104, 117, 123], verbose=True, debug=False):
+def detectFacesOpencvDnn(detector, image, threshold=0.7, scale_factor=1.0, height=300, mean=[104, 117, 123], verbose=True, debug=False):
     image_height = image.shape[0]
     image_width = image.shape[1]
-    blob = cv2.dnn.blobFromImage(image, scale_factor, size, mena)
+    width = 0
+    if height != image_height:
+        relation = float(image_width) / image_height
+        width = int(relation * height)
+    else:
+        width = image_width
+    size = (width, height)
+    blob = cv2.dnn.blobFromImage(image, scale_factor, size, mean)
 
     detector.setInput(blob)
     detections = detector.forward()
@@ -72,8 +79,8 @@ def detectFacesOpencvDnn(detector, image, threshold=0.7, scale_factor=1, size=(3
             x1 = int(detections[0, 0, i, 3] * image_width)
             y1 = int(detections[0, 0, i, 4] * image_height)
             x2 = int(detections[0, 0, i, 5] * image_width)
-            y2 = int(detections[0, 0, i, 6] * image_hgeight)
-            rects.append(rectangle(x1, y1, x2 - x1, y2 - y1))
+            y2 = int(detections[0, 0, i, 6] * image_height)
+            faces.append(rectangle(x1, y1, x2, y2))
     return faces
 
 @action(action_name='detection')
@@ -83,17 +90,22 @@ def detectFacesDlibHog(detector, image, height=300, verbose=True, debug=False):
     image_width = image.shape[1]
     width = 0
     if height != image_height:
-        width = int((image_width / image_height) * height)
+        relation = float(image_width) / image_height
+        width = int(relation * height)
     else:
         width = image_width
 
-    scale_height = image_height / height
-    scale_width = image_width / width
+    scale_height = float(image_height) / height
+    scale_width = float(image_width) / width
 
     image_small = cv2.resize(image, (width, height))
 
     image_small = cv2.cvtColor(image_small, cv2.COLOR_BGR2RGB)
-    faces = detector(image_small, 0)
+    faces_small = detector(image_small, 0)
+    faces = rectangles()
+    for face in faces_small:
+        faces.append(rectangle(int(face.left()*scale_width), int(face.top()*scale_height),
+                  int(face.right()*scale_width), int(face.bottom()*scale_height)))
     return faces
 
 @action(action_name='detection')
@@ -103,15 +115,20 @@ def detectFacesDlibMmod(detector, image, height=300, verbose=True, debug=False):
     image_width = image.shape[1]
     width = 0
     if height != image_height:
-        width = int((image_width / image_height) * height)
+        relation = float(image_width) / image_height
+        width = int(relation * height)
     else:
         width = image_width
 
-    scale_height = image_height / height
-    scale_width = image_width / width
+    scale_height = float(image_height) / height
+    scale_width = float(image_width) / width
 
     image_small = cv2.resize(image, (width, height))
 
     image_small = cv2.cvtColor(image_small, cv2.COLOR_BGR2RGB)
-    faces = detector(image_small, 0)
+    faces_small = detector(image_small, 0)
+    faces = rectangles()
+    for face in faces_small:
+        faces.append(rectangle(int(face.rect.left()*scale_width), int(face.rect.top()*scale_height),
+                  int(face.rect.right()*scale_width), int(face.rect.bottom()*scale_height)))
     return faces

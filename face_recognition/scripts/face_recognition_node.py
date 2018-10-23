@@ -29,9 +29,9 @@ def imageCallback(image_msg):
     pub_msg = face_recognition_ros.recognitionProcess(image_msg)
     if pub_msg != None:
         recognition_publisher.publish(pub_msg)
-        pub_3d_msg = face_recognition_ros.recognitions2Recognitions3D(pub_msg, image2world_client)
-        if pub_3d_msg != None:
-            recognition3d_publisher.publish(pub_3d_msg)
+        #pub_3d_msg = face_recognition_ros.recognitions2Recognitions3D(pub_msg, image2world_client)
+        #if pub_3d_msg != None:
+        #   recognition3d_publisher.publish(pub_3d_msg)
 
     pub_image_msg = recognizedFaces2ViewImage(image_msg, pub_msg)
     view_publisher.publish(pub_image_msg)   

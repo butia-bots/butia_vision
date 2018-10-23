@@ -98,8 +98,8 @@ class FaceRecognitionROS():
 
         opencv_dnn_detector_model = rospy.get_param('/face_recognition/detector/opencv_dnn/model', 'tensorflow')
         opencv_dnn_detector_threshold = rospy.get_param('/face_recognition/detector/opencv_dnn/threshold', 0.7)
-        opencv_dnn_detector_scale_factor = rospy.get_param('/face_recognition/detector/opencv_dnn/scale_factor', 1)
-        opencv_dnn_detector_size = rospy.get_param('/face_recognition/detector/opencv_dnn/size', [300, 300])
+        opencv_dnn_detector_scale_factor = rospy.get_param('/face_recognition/detector/opencv_dnn/scale_factor', 1.0)
+        opencv_dnn_detector_height = rospy.get_param('/face_recognition/detector/opencv_dnn/height', 300)
         opencv_dnn_detector_mean = rospy.get_param('/face_recognition/detector/opencv_dnn/mean', [104, 117, 123])
 
         self.detectors_dict['opencv_dnn'] = {
@@ -117,7 +117,7 @@ class FaceRecognitionROS():
                 'kwargs' : {
                     'threshold' : opencv_dnn_detector_threshold,
                     'scale_factor' : opencv_dnn_detector_scale_factor,
-                    'size' : tuple(opencv_dnn_detector_size),
+                    'height' : opencv_dnn_detector_height,
                     'mean' : opencv_dnn_detector_mean,
                     'debug' : self.debug,
                     'verbose' : self.verbose
