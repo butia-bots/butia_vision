@@ -2,12 +2,12 @@
 import functools
 import time
 
-def load(lib_name):
+def load(model_id):
     def decorator_load(func):
         @functools.wraps(func)
         def wrapper_load(*args, **kwargs):
             model = kwargs['model']
-            print('Loading {} model: {}...'.format(lib_name, model))
+            print('Loading {} model: {}...'.format(model_id, model))
             value = func(*args, **kwargs)
             print("Finished.")
             return value
