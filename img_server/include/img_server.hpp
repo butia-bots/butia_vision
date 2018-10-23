@@ -16,6 +16,9 @@ class ImgServer {
         int max_seq;
         
         int last_rgb;
+        int last_depth;
+
+        bool unsynchronized;
 
         int buffer_size;
 

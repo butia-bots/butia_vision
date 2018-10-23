@@ -1,9 +1,6 @@
 #include "img_server.hpp"
 
-
-
-//------------------------------Image Prepare's Functions------------------------------
-ImgServer::ImgServer(ros::NodeHandle &nh) : node_handle(nh), min_seq(0), max_seq(0), last_rgb(-1), buffer_size(150) {
+ImgServer::ImgServer(ros::NodeHandle &nh) : node_handle(nh), min_seq(0), max_seq(0), last_rgb(-1), last_depth(-1), buffer_size(150) {
     rgb_buffer.resize(buffer_size);
     depth_buffer.resize(buffer_size);
 
@@ -13,7 +10,7 @@ ImgServer::ImgServer(ros::NodeHandle &nh) : node_handle(nh), min_seq(0), max_seq
 }
 
 
-ImgServer::ImgServer(ros::NodeHandle &nh, int size) : node_handle(nh), min_seq(0), max_seq(0), last_rgb(-1), buffer_size(size) {
+ImgServer::ImgServer(ros::NodeHandle &nh, int size) : node_handle(nh), min_seq(0), max_seq(0), last_rgb(-1), last_depth(-1), buffer_size(size) {
     rgb_buffer.resize(buffer_size);
     depth_buffer.resize(buffer_size);
 
@@ -31,7 +28,7 @@ bool ImgServer::accessQueue(vision_system_msgs::ImageRequest::Request &req, visi
     }
     res.rgbd_image.rgb = *(rgb_buffer[seq%buffer_size]);
     
-    if(depth_buffer[seq%buffer_size] == NULL) {
+    if(seq%buffer_size > last_depth%buffer_size) {
         ROS_ERROR("INVALID DEPTH ACCESS!");
         return false;
     }
@@ -44,15 +41,25 @@ void ImgServer::camCallBackRGB(const sensor_msgs::Image::ConstPtr img) {
     int seq = img->header.seq;
     ROS_INFO("RGB Frame ID: %d", seq);
     rgb_buffer[seq%buffer_size] = img;
-    depth_buffer[seq%buffer_size] = NULL;
+
+    if(last_depth > last_rgb) {
+        last_rgb = (last_rgb/buffer_size)*buffer_size +  seq%buffer_size;
+        depth_buffer[last_rgb%buffer_size] = depth_buffer[last_depth%buffer_size];
+        last_depth = last_rgb;
+    }
+    else {
+        last_rgb = (last_rgb/buffer_size)*buffer_size +  seq%buffer_size;
+    }
+
     if(seq - buffer_size >= min_seq || seq < min_seq) min_seq = seq;
     max_seq = seq;
-    last_rgb = seq%buffer_size;
 }
 
 void ImgServer::camCallBackDepth(const sensor_msgs::Image::ConstPtr img) {
     ROS_INFO("Depth Frame ID: %d", img->header.seq);
-    if(last_rgb >= 0) depth_buffer[last_rgb] = img;
-    last_rgb = -1;
+    if(last_rgb == last_depth) depth_buffer[(++last_depth)%buffer_size] = img;
+    else if(last_rgb > last_depth) {
+        last_depth = last_rgb;
+        depth_buffer[last_depth%buffer_size] = img;
+    }
 }
-//------------------------------Image Prepare's Functions------------------------------
