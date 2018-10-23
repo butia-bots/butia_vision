@@ -1,7 +1,7 @@
 subscribers:
 
   camera_reading:
-    topic: /usb_cam/image_raw
+    topic: /kinect2/qhd/image_color_rect
     queue_size: 1
   
   classifier_reload:
