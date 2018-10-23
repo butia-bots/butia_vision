@@ -7,6 +7,7 @@ import openface
 import rospy
 import rospkg
 from face_detector import *
+from face_aligner import *
 from face_embosser import *
 from face_classifier import *
 from dlib import rectangle, rectangles
@@ -31,12 +32,11 @@ class FaceRecognitionROS():
         self.image_width = 0
         self.image_height = 0
 
-        self.detector_lib = ''
-        self.aligner_lib = ''
-        self.embosser_lib = ''
-        self.classifier_lib = ''
+        self.detector_model_id = ''
+        self.aligner_model_id = ''
+        self.embosser_model_id = ''
+        self.classifier_model_id = ''
 
-        self.loads_dict = {}
         self.detectors_dict = {}
         self.aligners_dict = {}
         self.embossers_dict = {}
@@ -53,110 +53,200 @@ class FaceRecognitionROS():
         self.verbose = rospy.get_param('/face_recognition/verbose', True)
         self.debug = rospy.get_param('/face_recognition/debug', False)
 
-        self.detector_lib = rospy.get_param('/face_recognition/detector/lib', 'opencv')
+        self.detector_model_id = rospy.get_param('/face_recognition/detector/model_id', 'opencv_dnn')
+        self.mountDetectorsDict()
 
-        opencv_detector_model = rospy.get_param('/face_recognition/detector/opencv/model', 'haarcascade_frontalface_default.xml')
-        opencv_detector_cuda = rospy.get_param('/face_recognition/detector/opencv/cuda', True)
-        opencv_detector_scale_factor = rospy.get_param('/face_recognition/detector/opencv/scale_factor', 1.3)
-        opencv_detector_min_neighbors = rospy.get_param('/face_recognition/detector/opencv/min_neighbors', 5)
-
-        self.loads_dict['opencv'] = {
-            'function' : loadOpencvModels,
-            'args' : (self.models_dir,),
-            'kwargs' : {
-                'model' : opencv_detector_model,
-                'cuda' : opencv_detector_cuda,
-                'debug' : self.debug    
-            }
-        }
-        self.detectors_dict['opencv'] = {
-            'function' : detectFacesOpencv,
-            'args' : (),
-            'kwargs' : {
-                'debug' : self.debug,
-                'verbose' : self.verbose
-            }
-        }
-        self.detectors_dict['dlib'] = {
-            'function' : detectFacesDlib,
-            'args' : (),
-            'kwargs' : {
-                'debug' : self.debug,
-                'verbose' : self.verbose
-            }
-        }
+        self.aligner_model_id = rospy.get_param('/face_recognition/aligner/model_id', 'dlib')
+        self.mountAlignersDict()
         
 
-        self.aligner_lib = rospy.get_param('/face_recognition/aligner/lib', 'dlib')
+        self.embosser_model_id = rospy.get_param('/face_recognition/embosser/model_id', 'facenet')
+        self.mountEmbossersDict()
+       
 
-        dlib_aligner_model = rospy.get_param('/face_recognition/aligner/dlib/model', 'shape_predictor_68_face_landmarks.dat')
-        dlib_aligner_image_dimension = rospy.get_param('/face_recognition/aligner/dlib/image_dimension', 96)
+        self.classifier_model_id = rospy.get_param('/face_recognition/classifier/model_id', 'sklearn')
+        self.mountClassifiersDict()
+       
 
-        self.loads_dict['dlib'] = {
-            'function' : loadDlibModels,
-            'args' : (self.models_dir,),
-            'kwargs' : {
-                'model' : dlib_aligner_model,
-                'debug' : self.debug   
-            }
-        }
-        self.aligners_dict['dlib'] = {
-            'function' : alignFaceDlib,
-            'args' : (),
-            'kwargs' : {
-                'image_dimension' : dlib_aligner_image_dimension,
-                'debug' : self.debug,
-                'verbose' : self.verbose
-            }
-        }
+    def mountDetectorsDict(self):
+        opencv_cascade_detector_model = rospy.get_param('/face_recognition/detector/opencv_cascade/model', 'haarcascade_frontalface_default.xml')
+        opencv_cascade_detector_cuda = rospy.get_param('/face_recognition/detector/opencv_cascade/cuda', True)
+        opencv_cascade_detector_scale_factor = rospy.get_param('/face_recognition/detector/opencv_cascade/scale_factor', 1.3)
+        opencv_cascade_detector_min_neighbors = rospy.get_param('/face_recognition/detector/opencv_cascade/min_neighbors', 5)
 
-
-        self.embosser_lib = rospy.get_param('/face_recognition/embosser/lib', 'facenet')
-
-        facenet_embosser_model = rospy.get_param('/face_recognition/embosser/facenet/model', 'nn4.small2.v1.t7')
-        facenet_embosser_image_dimension = dlib_aligner_image_dimension
-        facenet_embosser_cuda = rospy.get_param('/face_recognition/embosser/facenet/cuda', False)
-
-        self.loads_dict['facenet'] = {
-            'function' : loadFacenetModels,
-            'args' : (self.models_dir,),
-            'kwargs' : {
-                'model' : facenet_embosser_model,
-                'image_dimension' : facenet_embosser_image_dimension,
-                'cuda' : facenet_embosser_cuda,
-                'debug' : self.debug 
-            }
-        }
-        self.embossers_dict['facenet'] = {
-            'function' : extractFeaturesFacenet,
-            'args' : (),
-            'kwargs' : {
-                'debug' : self.debug,
-                'verbose' : self.verbose
+        self.detectors_dict['opencv_cascade'] = {
+            'load' : {
+                'function' : loadOpencvCascadeModel,
+                'args' : (self.models_dir,),
+                'kwargs' : {
+                    'model' : opencv_cascade_detector_model,
+                    'cuda' : opencv_cascade_detector_cuda,
+                    'debug' : self.debug    
+                }
+            },
+            'action' : {
+                'function' : detectFacesOpencvCascade,
+                'args' : (),
+                'kwargs' : {
+                    'scale_factor' : opencv_cascade_detector_scale_factor,
+                    'min_neighbors' : opencv_cascade_detector_min_neighbors,
+                    'debug' : self.debug,
+                    'verbose' : self.verbose
+                }
             }
         }
 
+        opencv_dnn_detector_model = rospy.get_param('/face_recognition/detector/opencv_dnn/model', 'tensorflow')
+        opencv_dnn_detector_threshold = rospy.get_param('/face_recognition/detector/opencv_dnn/threshold', 0.7)
+        opencv_dnn_detector_scale_factor = rospy.get_param('/face_recognition/detector/opencv_dnn/scale_factor', 1.0)
+        opencv_dnn_detector_height = rospy.get_param('/face_recognition/detector/opencv_dnn/height', 300)
+        opencv_dnn_detector_mean = rospy.get_param('/face_recognition/detector/opencv_dnn/mean', [104, 117, 123])
 
-        self.classifier_lib = rospy.get_param('/face_recognition/classifier/lib', 'sklearn')
+        self.detectors_dict['opencv_dnn'] = {
+            'load' : {
+                'function' : loadOpencvDnnModel,
+                'args' : (self.models_dir,),
+                'kwargs' : {
+                    'model' : opencv_dnn_detector_model,
+                    'debug' : self.debug    
+                }
+            },
+            'action' : {
+                'function' : detectFacesOpencvDnn,
+                'args' : (),
+                'kwargs' : {
+                    'threshold' : opencv_dnn_detector_threshold,
+                    'scale_factor' : opencv_dnn_detector_scale_factor,
+                    'height' : opencv_dnn_detector_height,
+                    'mean' : opencv_dnn_detector_mean,
+                    'debug' : self.debug,
+                    'verbose' : self.verbose
+                }
+            }
+        }
 
+
+        dlib_hog_detector_model = rospy.get_param('/face_recognition/detector/dlib_hog/model', 'default')
+        dlib_hog_detector_height = rospy.get_param('/face_recognition/detector/dlib_hog/height', 300)
+
+        self.detectors_dict['dlib_hog'] = {
+            'load' : {
+                'function' : loadDlibHogModel,
+                'args' : (self.models_dir,),
+                'kwargs' : {
+                    'model' : dlib_hog_detector_model,
+                    'debug' : self.debug    
+                }
+            },
+            'action' : {
+                'function' : detectFacesDlibHog,
+                'args' : (),
+                'kwargs' : {
+                    'height' : dlib_hog_detector_height,
+                    'debug' : self.debug,
+                    'verbose' : self.verbose
+                }
+            }
+        }
+
+
+        dlib_mmod_detector_model = rospy.get_param('/face_recognition/detector/dlib_mmod/model', 'mmod_human_face_detector.dat')
+        dlib_mmod_detector_height = rospy.get_param('/face_recognition/detector/dlib_mmod/height', 300)
+
+        self.detectors_dict['dlib_mmod'] = {
+            'load' : {
+                'function' : loadDlibMmodModel,
+                'args' : (self.models_dir,),
+                'kwargs' : {
+                    'model' : dlib_mmod_detector_model,
+                    'debug' : self.debug    
+                }
+            },
+            'action' : {
+                'function' : detectFacesDlibMmod,
+                'args' : (),
+                'kwargs' : {
+                    'height' : dlib_mmod_detector_height,
+                    'debug' : self.debug,
+                    'verbose' : self.verbose
+                }
+            }
+        }
+    
+    def mountAlignersDict(self):
+        openface_aligner_model = rospy.get_param('/face_recognition/aligner/openface/model', 'shape_predictor_68_face_landmarks.dat')
+        openface_aligner_image_dimension = rospy.get_param('/face_recognition/aligner/openface/image_dimension', 96)
+
+        self.aligners_dict['openface'] = {
+            'load' : {
+                'function' : loadOpenfaceAlignerModel,
+                'args' : (self.models_dir,),
+                'kwargs' : {
+                    'model' : openface_aligner_model,
+                    'debug' : self.debug   
+                }
+            },
+            'action' : {
+                'function' : alignFaceOpenfaceAligner,
+                'args' : (),
+                'kwargs' : {
+                    'image_dimension' : openface_aligner_image_dimension,
+                    'debug' : self.debug,
+                    'verbose' : self.verbose
+                }    
+            }
+        }
+
+
+    def mountEmbossersDict(self):
+
+        openface_embosser_model = rospy.get_param('/face_recognition/embosser/openface/model', 'nn4.small2.v1.t7')
+        openface_embosser_image_dimension = rospy.get_param('/face_recognition/embosser/openface/image_dimension', 96)
+        openface_embosser_cuda = rospy.get_param('/face_recognition/embosser/openface/cuda', False)
+
+        self.embossers_dict['openface'] = {
+            'load' : {
+                'function' : loadOpenfaceEmbosserModel,
+                'args' : (self.models_dir,),
+                'kwargs' : {
+                    'model' : openface_embosser_model,
+                    'image_dimension' : openface_embosser_image_dimension,
+                    'cuda' : openface_embosser_cuda,
+                    'debug' : self.debug 
+                }
+            },
+            'action' : {
+                'function' : extractFeaturesOpenfaceEmbosser,
+                'args' : (),
+                'kwargs' : {
+                    'debug' : self.debug,
+                    'verbose' : self.verbose
+                }   
+            }
+        }
+
+
+    def mountClassifiersDict(self):
         sklearn_classifier_model = rospy.get_param('/face_recognition/classifier/sklearn/model', 'classifier.pkl')
         sklearn_classifier_threshold = rospy.get_param('/face_recognition/classifier/sklearn/threshold', 0.5)
 
-        self.loads_dict['sklearn'] = {
-            'function' : loadSklearnModels,
-            'args' : (self.models_dir,),
-            'kwargs' : {
-                'model' : sklearn_classifier_model,
-                'debug' : self.debug 
-            }
-        }
         self.classifiers_dict['sklearn'] = {
-            'function' : classifySklearn,
-            'args' : (),
-            'kwargs' : {
-                'threshold' : sklearn_classifier_threshold,
-                'debug' : self.debug,
-                'verbose' : self.verbose
+            'load' : {
+                'function' : loadSklearnModel,
+                'args' : (self.models_dir,),
+                'kwargs' : {
+                    'model' : sklearn_classifier_model,
+                    'debug' : self.debug 
+                }
+            },
+            'action' : {
+                'function' : classifySklearn,
+                'args' : (),
+                'kwargs' : {
+                    'threshold' : sklearn_classifier_threshold,
+                    'debug' : self.debug,
+                    'verbose' : self.verbose
+                }
             }
         }
 
@@ -189,27 +279,27 @@ class FaceRecognitionROS():
 
 
     def loadDetector(self):
-        detector_dict = self.loads_dict[self.detector_lib]
+        detector_dict = self.detectors_dict[self.detector_model_id]['load']
         self.face_detector = detector_dict['function'](*detector_dict['args'], **detector_dict['kwargs'])
 
     def loadAligner(self):
-        aligner_dict = self.loads_dict[self.aligner_lib]
+        aligner_dict = self.aligners_dict[self.aligner_model_id]['load']
         self.face_aligner = aligner_dict['function'](*aligner_dict['args'], **aligner_dict['kwargs'])
 
     def loadEmbosser(self):
-        embosser_dict = self.loads_dict[self.embosser_lib]
+        embosser_dict = self.embossers_dict[self.embosser_model_id]['load']
         self.face_embosser = embosser_dict['function'](*embosser_dict['args'], **embosser_dict['kwargs'])
 
     def loadClassifier(self, model=''):
         if(model != ''):
             rospy.set_param('/face_recognition/classifier/lib/{}/model'.format(model), model)
-            self.loads_dict[self.classifier_lib]['kwargs']['model'] = model
-        classifier_dict = self.loads_dict[self.classifier_lib]
+            self.classifiers_dict[self.classifier_model_id]['load']['kwargs']['model'] = model
+        classifier_dict = self.classifiers_dict[self.classifier_model_id]['load']
         self.face_classifier = classifier_dict['function'](*classifier_dict['args'], **classifier_dict['kwargs'])
 
 
     def detectFaces(self, rgb_image):
-        detector_dict = self.detectors_dict[self.detector_lib]
+        detector_dict = self.detectors_dict[self.detector_model_id]['action']
         face_rects = detector_dict['function'](self.face_detector, rgb_image, *detector_dict['args'], **detector_dict['kwargs'])
         return face_rects
 
@@ -221,17 +311,17 @@ class FaceRecognitionROS():
             return None
     
     def alignFace(self, rgb_image, face_rect):
-        aligner_dict = self.aligners_dict[self.aligner_lib]
+        aligner_dict = self.aligners_dict[self.aligner_model_id]['action']
         aligned_face = aligner_dict['function'](self.face_aligner, rgb_image, face_rect, *aligner_dict['args'], **aligner_dict['kwargs'])
         return aligned_face
 
     def extractFeatures(self, aligned_face):
-        embosser_dict = self.embossers_dict[self.embosser_lib]
+        embosser_dict = self.embossers_dict[self.embosser_model_id]['action']
         features_array = embosser_dict['function'](self.face_embosser, aligned_face, *embosser_dict['args'], **embosser_dict['kwargs']) 
         return features_array
 
     def classify(self, features_array):
-        classifier_dict = self.classifiers_dict[self.classifier_lib]
+        classifier_dict = self.classifiers_dict[self.classifier_model_id]['action']
         classification = classifier_dict['function'](self.face_classifier, features_array, *classifier_dict['args'], **classifier_dict['kwargs'])
         return classification
 
@@ -358,7 +448,8 @@ class FaceRecognitionROS():
         rospy.loginfo('Image ID: {}'.format(ros_msg.header.seq))
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
 
-        self.image_height, self.image_width, c = rgb_image.shape 
+        self.image_height = rgb_image.shape[0]
+        self.image_width = rgb_image.shape[1]
 
         face_rects = self.detectFaces(rgb_image)
         if len(face_rects) == 0:
