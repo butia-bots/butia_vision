@@ -18,6 +18,8 @@
 class VisionSystemBridge {
     public:
         VisionSystemBridge(ros::NodeHandle &nh);
+
+        void kinectCallback(sensor_msgs::Image::ConstPtr image_rgb, sensor_msgs::Image::ConstPtr image_depth, sensor_msgs::CameraInfo::ConstPtr camera_info);
         
         /*
         bool accessQueue(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res);
@@ -37,14 +39,13 @@ class VisionSystemBridge {
         bool use_exact_time;
         int buffer_size;
 
+        int queue_size;
+
         std::string image_rgb_topic;
-        int image_rgb_qs;
 
         std::string image_depth_topic;
-        int image_depth_qs;
 
         std::string camera_info_topic;
-        int camera_info_qs;
 
         std::string rgbdimage_request_service;
 
@@ -52,6 +53,7 @@ class VisionSystemBridge {
         typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ExactSyncPolicy;
         typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ApproximateSyncPolicy;
 
+        image_transport::ImageTransport it;
         image_transport::SubscriberFilter *image_rgb_sub;
         image_transport::SubscriberFilter *image_depth_sub;
         message_filters::Subscriber<sensor_msgs::CameraInfo> *camera_info_sub;
