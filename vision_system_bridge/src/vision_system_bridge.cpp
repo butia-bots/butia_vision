@@ -1,23 +1,35 @@
 #include "vision_system_bridge.h"
 
-VisionSystemBridge::VisionSystemBridge(ros::NodeHandle &nh) : node_handle(nh), min_seq(0), max_seq(0), last_rgb(-1), last_depth(-1), buffer_size(150) {
-    rgb_buffer.resize(buffer_size);
-    depth_buffer.resize(buffer_size);
+VisionSystemBridge::VisionSystemBridge(ros::NodeHandle &nh) : node_handle(nh), min_seq(0), max_seq(0), last_rgb(-1), last_depth(-1) {
+    readParameters();
+    
+    resizeBuffers();
+    
 
-    img_rgb_sub = nh.subscribe("/kinect2/qhd/image_color_rect", 100, &VisionSystemBridge::camCallBackRGB, this);
-    img_d_sub = nh.subscribe("/kinect2/qhd/image_depth_rect", 100, &VisionSystemBridge::camCallBackDepth, this);
-    service = nh.advertiseService("/vision_system/is/image_request", &VisionSystemBridge::accessQueue, this);
+
+}
+
+void VisionSystemBridge::resizeBuffers() {
+    image_rgb_buffer.resize(buffer_size);
+    image_depth_buffer.resize(buffer_size);
+    camera_info_buffer.resize(buffer_size);
 }
 
 
 void VisionSystemBridge::readParameters() {
     node_handle.param("/vision_system_bridge/subscribers/image_rgb/topic", image_rgb_topic, std::string("/kinect2/qhd/image_color_rect"));
-    node_handle.param("/vision_system_bridge/subscribers/image_rgb/queue_size", image_rgb_qs, 100);
+    node_handle.param("/vision_system_bridge/subscribers/image_rgb/queue_size", image_rgb_qs, 5);
 
     node_handle.param("/vision_system_bridge/subscribers/image_depth/topic", image_depth_topic, std::string("/kinect2/qhd/image_depth_rect"));
-    node_handle.param("/vision_system_bridge/subscribers/image_depth/queue_size", image_depth_qs, 100);
+    node_handle.param("/vision_system_bridge/subscribers/image_depth/queue_size", image_depth_qs, 5);
+
+    node_handle.param("/vision_system_bridge/subscribers/camera_info/topic", camera_info_topic, std::string("/kinect2/qhd/camera_info"));
+    node_handle.param("/vision_system_bridge/subscribers/camera_info/queue_size", camera_info_qs, 5);
 
     node_handle.param("/vision_system_bridge/services/rgbdimage_request/service", rgbdimage_request_service, std::string("/vision_system/vsb/rgbdimage_request"));
+
+    node_handle.param("/vision_system_bridge/buffer_size", buffer_size, 150);
+    node_handle.param("/vision_system_bridge/use_exact_time", use_exact_time, false);
 }
 
 
