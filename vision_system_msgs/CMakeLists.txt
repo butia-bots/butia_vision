@@ -18,8 +18,7 @@ add_service_files(
   FILES
   FaceClassifierTraining.srv
   ImageRequest.srv
-  Image2World.srv
-  ImageSegmentation.srv
+  SegmentationRequest.srv
 )
 
 generate_messages(

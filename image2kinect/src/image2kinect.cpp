@@ -83,7 +83,7 @@ void Image2Kinect::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geome
         pose.covariance[i] = 0.0f;
     }
 
-    std::vector<geometry_msgs::Point32> points;
+    std::vector<geometry_msgs::Point> points;
     for(int r = 0 ; r < depth.rows ; r++) {
 
         uint16_t *it_depth = depth.ptr<uint16_t>(r);
@@ -91,7 +91,7 @@ void Image2Kinect::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geome
 
         for(int c = 0 ; c < depth.cols ; c++, it_depth++, it_color++) {
             if(it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0){
-                geometry_msgs::Point32 point;
+                geometry_msgs::Point point;
                 
                 if(*it_depth == 0) continue;
 
@@ -122,7 +122,7 @@ void Image2Kinect::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geome
     mean_position.y /= points.size();
     mean_position.z /= points.size();
 
-    std::vector<geometry_msgs::Point32>::iterator it;
+    std::vector<geometry_msgs::Point>::iterator it;
 
     for(it = points.begin() ; it != points.end() ; it++) {
         pose.covariance[6*0 + 0] += (it->x - mean_position.x)*(it->x - mean_position.x); //xx
@@ -158,22 +158,20 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
         return;
     }
 
-    cv::Mat color, depth, segmented_depth_image;
+    cv::Mat segmented_rgb_image, depth, segmented_depth_image;
 
     vision_system_msgs::RGBDImage &rgbd_image = image_srv.response.rgbd_image;
 
-    sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(rgbd_image.rgb));
     sensor_msgs::Image::ConstPtr depth_const_ptr( new sensor_msgs::Image(rgbd_image.depth));
     sensor_msgs::CameraInfo::ConstPtr camera_info_const_ptr( new sensor_msgs::CameraInfo(image_srv.response.camera_info));
 
-    readImage(rgb_const_ptr, color);
     readImage(depth_const_ptr, depth);
     readCameraInfo(camera_info_const_ptr);
 
     std::vector<vision_system_msgs::Description> &descriptions = recognitions.descriptions;
 
     vision_system_msgs::SegmentationRequest segmentation_srv;
-    segmentation_srv.request.rgbd_image = rgbd_image;
+    segmentation_srv.request.initial_rgbd_image = rgbd_image;
     segmentation_srv.request.descriptions = descriptions;
     if (!segmentation_request_client.call(segmentation_srv)) {
         ROS_ERROR("Failed to call segmentation service");
@@ -182,14 +180,14 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
 
     std::vector<vision_system_msgs::Description>::iterator it;
 
-    std::vector<vision_system_msgs::Image> &segmented_rgb_images = segmentation_srv.response.segmented_rgb_images;
-    std::vector<vision_system_msgs::Image>::iterator jt;
+    std::vector<sensor_msgs::Image> &segmented_rgb_images = segmentation_srv.response.segmented_rgb_images;
+    std::vector<sensor_msgs::Image>::iterator jt;
 
     recognitions3d.header = recognitions.header;
     recognitions3d.image_header = recognitions.image_header;
     std::vector<vision_system_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
 
-    for(it = descriptions.begin(), jt = rgb_images.begin() ; it != descriptions.end(), jt != rgb_images.end() ; it++, jt++) {
+    for(it = descriptions.begin(), jt = segmented_rgb_images.begin() ; it != descriptions.end(), jt != segmented_rgb_images.end() ; it++, jt++) {
         vision_system_msgs::Description3D description3d;
         description3d.label_class = it->label_class;
         description3d.probability = it->probability;
@@ -200,8 +198,10 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
         roi.width = (*it).bounding_box.width;
         roi.height = (*it).bounding_box.height;
         segmented_depth_image = depth(roi);
+        sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
+        readImage(rgb_const_ptr, segmented_rgb_image);
 
-        rgbd2PoseWithCovariance(*jt, segmented_depth_image, description3d.pose);
+        rgbd2PoseWithCovariance(segmented_rgb_image, segmented_depth_image, description3d.pose);
         descriptions3d.push_back(description3d);
     }
 }
