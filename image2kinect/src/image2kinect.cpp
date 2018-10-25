@@ -187,8 +187,8 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
     recognitions3d.image_header = recognitions.image_header;
     std::vector<vision_system_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
 
-    for(it = descriptions.begin(), jt = segmented_rgb_images.begin() ; it != descriptions.end(), jt != segmented_rgb_images.end() ; it++, jt++) {
-        vision_system_msgs::Description3D description3d;
+    for(it = descriptions.begin(), jt = segmented_rgb_images.begin() ; it != descriptions.end() && jt != segmented_rgb_images.end() ; it++, jt++) {
+        /*vision_system_msgs::Description3D description3d;
         description3d.label_class = it->label_class;
         description3d.probability = it->probability;
 
@@ -202,7 +202,7 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
         readImage(rgb_const_ptr, segmented_rgb_image);
 
         rgbd2PoseWithCovariance(segmented_rgb_image, segmented_depth_image, description3d.pose);
-        descriptions3d.push_back(description3d);
+        descriptions3d.push_back(description3d);*/
     }
 }
 
@@ -240,5 +240,5 @@ void Image2Kinect::readParameters()
     node_handle.param("/image2kinect/publishers/people_tracking/topic", people_tracking_pub_topic, std::string("/vision_system/pt/people_tracking3d"));
     
     node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/vision_system/vsb/image_request"));
-    node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string(""));
+    node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/vision_system/seg/image_segmentation"));
 }
