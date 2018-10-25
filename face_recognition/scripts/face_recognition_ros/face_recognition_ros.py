@@ -499,29 +499,3 @@ class FaceRecognitionROS():
         ans = self.trainClassifier(ros_srv.classifier_type, ros_srv.classifier_name)
         return ans 
 
-    def recognitions2Recognitions3D(self, recognitions, client):
-        try:
-           response = client(recognitions)
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            return None
-
-        recognitions3d = Recognitions3D()
-        recognitions3d.image_header = recognitions.image_header
-        recognitions3d.recognition_header = recognitions.recognition_header
-        
-        recognitions3d = Recognitions3D()
-        poses = response.poses
-
-        for i in range(0, len(recognitions.descriptions)):
-            description = Description3D()
-            description.label_class = recognitions.descriptions[i].label_class
-            description.probability = recognitions.descriptions[i].probability
-            description.pose = poses[i]
-
-            print('<{}, {}, {}, {}>'.format(description.label_class, poses[i].pose.position.x, poses[i].pose.position.y, poses[i].pose.position.z))
-
-            recognitions3d.descriptions.append(description)
-        
-        return recognitions3d
-
