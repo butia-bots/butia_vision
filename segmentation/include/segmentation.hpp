@@ -33,7 +33,6 @@ class ImageSegmenter {
 
         cv_bridge::CvImage ros_segmented_rgb_image;
         sensor_msgs::Image ros_segmented_msg_image;
-        std::vector<sensor_msgs::Image> vector_segmented_msg_image;
 
         int histogram_size;
         int upper_histogram_limit;
