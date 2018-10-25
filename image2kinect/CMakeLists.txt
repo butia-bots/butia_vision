@@ -8,11 +8,7 @@ find_package(OpenCV REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME}
-<<<<<<< HEAD:image2world/CMakeLists.txt
-  LIBRARIES image2world
-=======
   LIBRARIES image2kinect
->>>>>>> master:image2kinect/CMakeLists.txt
   CATKIN_DEPENDS roscpp vision_system_msgs geometry_msgs cv_bridge
 )
 
