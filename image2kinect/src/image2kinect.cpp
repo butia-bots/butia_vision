@@ -1,11 +1,11 @@
-#include "image2world/image2world.h"
+#include "image2kinect/image2kinect.h"
 
-Image2World::Image2World(ros::NodeHandle _nh) : node_handle(_nh), width(0), height(0)
+Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), height(0)
 {
     readParameters();
 
-    camera_info_subscriber = node_handle.subscribe(camera_info_topic, camera_info_qs, &Image2World::cameraInfoCallback, this);
-    image2world_server = node_handle.advertiseService(image2world_server_service, &Image2World::image2worldCallback, this);
+    camera_info_subscriber = node_handle.subscribe(camera_info_topic, camera_info_qs, &Image2Kinect::cameraInfoCallback, this);
+    image2kinect_server = node_handle.advertiseService(image2kinect_server_service, &Image2Kinect::image2kinectCallback, this);
     image_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(image_client_service);
 
     camera_matrix_color = cv::Mat::zeros(3, 3, CV_64F);
@@ -13,7 +13,7 @@ Image2World::Image2World(ros::NodeHandle _nh) : node_handle(_nh), width(0), heig
 
 
 
-void Image2World::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& camera_info)
+void Image2Kinect::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& camera_info)
 {
     bool recalculate_tabels = false;
 

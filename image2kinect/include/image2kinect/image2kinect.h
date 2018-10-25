@@ -19,9 +19,9 @@
 
 #include <cv_bridge/cv_bridge.h>
 
-class Image2World{
+class Image2Kinect{
     public:
-        Image2World(ros::NodeHandle _nh);
+        Image2Kinect(ros::NodeHandle _nh);
 
         void rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geometry_msgs::PoseWithCovariance &pose);
 
@@ -30,20 +30,20 @@ class Image2World{
         void createTabels();
 
         void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr &camera_info);
-        bool image2worldCallback(vision_system_msgs::Image2World::Request &request, vision_system_msgs::Image2World::Response &response);
+        bool image2kinectCallback(vision_system_msgs::Image2Kinect::Request &request, vision_system_msgs::Image2Kinect::Response &response);
 
     private:
         ros::NodeHandle node_handle;
 
         ros::Subscriber camera_info_subscriber;
-        ros::ServiceServer image2world_server;
+        ros::ServiceServer image2kinect_server;
         ros::ServiceClient image_client;
         ros::ServiceClient segmentation_client;
 
         std::string camera_info_topic;
         int camera_info_qs;
 
-        std::string image2world_server_service;
+        std::string image2kinect_server_service;
         std::string image_client_service;
         std::string segmentation_client_service;
 
