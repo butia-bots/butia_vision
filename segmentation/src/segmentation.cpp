@@ -25,6 +25,8 @@ bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &r
     ros_segmented_rgb_image.encoding = req.initial_rgbd_image.rgb.encoding;
     descriptions = req.descriptions;
 
+    std::vector<sensor_msgs::Image> &vector_segmented_msg_image = res.segmented_rgb_images;
+
     for (it = descriptions.begin(); it != descriptions.end(); it++) {
         cropImage(mat_initial_depth_image, (*it).bounding_box, cropped_initial_depth_image);
         cropImage(mat_initial_rgb_image, (*it).bounding_box, cropped_initial_rgb_image);
@@ -46,8 +48,6 @@ bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &r
         ros_segmented_rgb_image.toImageMsg(ros_segmented_msg_image);
         vector_segmented_msg_image.push_back(ros_segmented_msg_image);
     }
-
-    res.segmented_rgb_images = vector_segmented_msg_image;
 
     return true;
 }
