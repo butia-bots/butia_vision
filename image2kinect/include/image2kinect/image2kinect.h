@@ -47,7 +47,7 @@ class Image2Kinect{
         ros::Publisher people_tracking_pub;
 
         ros::ServiceClient image_request_client;
-        ros::ServiceClient segmentation_client;
+        ros::ServiceClient segmentation_request_client;
 
 
         int sub_queue_size;
@@ -62,7 +62,7 @@ class Image2Kinect{
         std::string people_tracking_pub_topic;
 
         std::string image_request_client_service;
-        std::string segmentation_client_service;
+        std::string segmentation_request_client_service;
 
         cv::Mat camera_matrix_color;
 
