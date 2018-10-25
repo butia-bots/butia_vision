@@ -3,13 +3,13 @@ project(people_tracking)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED COMPONENTS roscpp vision_system_msgs img_server cv_bridge)
+find_package(catkin REQUIRED COMPONENTS roscpp vision_system_msgs cv_bridge)
 find_package(OpenCV REQUIRED)
 
 catkin_package(
     INCLUDE_DIRS include
     LIBRARIES people_tracking
-    CATKIN_DEPENDS roscpp vision_system_msgs img_server cv_bridge
+    CATKIN_DEPENDS roscpp vision_system_msgs cv_bridge
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})

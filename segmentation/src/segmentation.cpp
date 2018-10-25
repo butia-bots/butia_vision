@@ -15,7 +15,7 @@ ImageSegmenter::ImageSegmenter(ros::NodeHandle _nh) : node_handle(_nh) {
 }
 
 
-bool ImageSegmenter::segment(vision_system_msgs::ImageSegmentation::Request &req, vision_system_msgs::ImageSegmentation::Response &res) {
+bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &req, vision_system_msgs::SegmentationRequest::Response &res) {
     sensor_msgs::Image::ConstPtr constptr_initial_rgb_image(new sensor_msgs::Image(req.initial_rgbd_image.rgb));
     sensor_msgs::Image::ConstPtr constptr_initial_depth_image(new sensor_msgs::Image(req.initial_rgbd_image.depth));
 
@@ -27,10 +27,10 @@ bool ImageSegmenter::segment(vision_system_msgs::ImageSegmentation::Request &req
 
     for (it = descriptions.begin(); it != descriptions.end(); it++) {
         cropImage(mat_initial_depth_image, (*it).bounding_box, cropped_initial_depth_image);
-        cropImage(mat_initial_rgb_image, (*it)descriptions[i].bounding_box, cropped_initial_rgb_image);
+        cropImage(mat_initial_rgb_image, (*it).bounding_box, cropped_initial_rgb_image);
 
-        mat_segmented_image = cv::Mat_<cv::Vec3b>(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC3);
-        mask = cv::Mat_<uint8_t>(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC1);
+        mat_segmented_image = cv::Mat_<cv::Vec3b>(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols, CV_8UC3);
+        mask = cv::Mat_<uint8_t>(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols, CV_8UC1);
 
         createMask();
 
