@@ -42,9 +42,11 @@ class VisionSystemBridge {
         std::string image_rgb_sub_topic;
         std::string image_depth_sub_topic;
         std::string camera_info_sub_topic;
+
         std::string image_rgb_pub_topic;
         std::string image_depth_pub_topic;
         std::string camera_info_pub_topic;
+        
         std::string image_request_server_service;
 
         typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ExactSyncPolicy;

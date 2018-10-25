@@ -73,13 +73,13 @@ bool VisionSystemBridge::imageRequestServer(vision_system_msgs::ImageRequest::Re
         return false;
     }
 
-    res.rgbd_image.rgb = *(image_rgb_buffer[seq%buffer_size]);
+    res.rgbd_image.rgb = *(image_rgb_buffer[req_seq%buffer_size]);
     res.rgbd_image.rgb.header.seq = req_seq;
     
-    res.rgbd_image.depth = *(image_depth_buffer[seq%buffer_size]);
+    res.rgbd_image.depth = *(image_depth_buffer[req_seq%buffer_size]);
     res.rgbd_image.depth.header.seq = req_seq;
 
-    res.camera_info = *(camera_info_buffer[seq%buffer_size]);
+    res.camera_info = *(camera_info_buffer[req_seq%buffer_size]);
     res.camera_info.header.seq = req_seq;
     
     return true;
