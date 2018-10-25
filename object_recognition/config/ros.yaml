@@ -10,6 +10,10 @@ publishers:
     topic: /vision_system/or/object_recognition
     queue_size: 1
 
+  object_recognition3d:
+    topic: /vision_system/or/object_recognition3d
+    queue_size: 1
+
   people_detection:
     topic: /vision_system/or/people_detection
     queue_size: 1

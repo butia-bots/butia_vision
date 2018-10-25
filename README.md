@@ -15,7 +15,11 @@ This software is built on the Robotic Operating System ([ROS]), which needs to b
 - [darknet_ros](https://github.com/leggedrobotics/darknet_ros) (darknet ros package)
 
 ## Packages
+<<<<<<< HEAD
+The vision system has three main packages and other four helpers.
+=======
 The vision system has three main packages and other three helpers.
+>>>>>>> master
 
 ### Main Packages
 - object-reog

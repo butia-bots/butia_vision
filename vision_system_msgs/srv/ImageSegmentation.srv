@@ -1,0 +1,4 @@
+RGBDImage initial_rgbd_image
+BoundingBox bounding_box
+---
+sensor_msgs/Image segmented_rgb_image

@@ -1,0 +1,13 @@
+service:
+  image_segmentation:
+    service: /vision_system/seg/image_segmentation
+
+parameters:
+  histogram:
+    size: 20
+    upper_limit: 5001
+    lower_limit: 0
+    left_class_limit: 1
+    right_class_limit: 1
+    bounding_box_threshold: 0.35
+    decrease_factor: 2
