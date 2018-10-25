@@ -153,7 +153,7 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
     vision_system_msgs::ImageRequest image_srv;
     image_srv.request.seq = frame_id;
     if (!image_request_client.call(image_srv)) {
-        ROS_ERROR("Failed to call image_server service");
+        ROS_ERROR("Failed to call image_request service");
         return;
     }
 
@@ -228,6 +228,6 @@ void Image2Kinect::readParameters()
     node_handle.param("/image2kinect/publishers/face_recognition/topic", face_recognition_pub_topic, std::string("/vision_system/fr/face_recognition3d"));
     node_handle.param("/image2kinect/publishers/people_tracking/topic", people_tracking_pub_topic, std::string("/vision_system/pt/people_tracking3d"));
     
-    node_handle.param("/object_recognition/clients/image_server/service", image_request_client_service, std::string("/vision_system/is/image_request"));
+    node_handle.param("/object_recognition/clients/image_server/service", image_request_client_service, std::string("/vision_system/vsb/image_request"));
     node_handle.param("/object_recognition/clients/segmentation_server/service", segmentation_client_service, std::string(""));
 }
