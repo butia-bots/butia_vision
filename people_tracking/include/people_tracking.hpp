@@ -13,7 +13,7 @@
 #include "vision_system_msgs/RGBDImage.h"
 #include "vision_system_msgs/Recognitions.h"
 #include "vision_system_msgs/Description.h"
-#include "vision_system_msgs/ImageSegmentation.h"
+#include "vision_system_msgs/SegmentationRequest.h"
 
 
 
@@ -26,6 +26,7 @@ class PeopleTracker {
 
         int image_size;
         float bounding_box_size_threshold;
+        float probability_threshold;
 
         cv::Mat mat_rgb_segmented_image;
         cv::Mat mat_grayscale_segmented_image;
