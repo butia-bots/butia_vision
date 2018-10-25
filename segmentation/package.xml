@@ -12,7 +12,6 @@
 
   <depend>roscpp</depend>
   <depend>vision_system_msgs</depend>
-  <depend>img_server</depend>
   <depend>cv_bridge</depend>
 
   <export></export>

@@ -9,48 +9,6 @@ YoloRecognition::YoloRecognition(ros::NodeHandle _nh) : node_handle(_nh)
     recognized_objects3d_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(object_recognition3d_topic, object_recognition3d_qs);
     recognized_people_pub = node_handle.advertise<vision_system_msgs::Recognitions>(people_detection_topic, people_detection_qs);
     image2world_client = node_handle.serviceClient<vision_system_msgs::Image2World>(image2world_client_service);
-<<<<<<< HEAD
-}
-
-bool YoloRecognition::recognitions2Recognitions3D(vision_system_msgs::Recognitions& recognitions, vision_system_msgs::Recognitions3D& recognitions3d)
-{
-    //tem que gerar uma mensagem
-    image2world_srv.request.recognitions = recognitions;
-    if(!image2world_client.call(image2world_srv)) {
-        ROS_ERROR("Failed to call image2world service");
-        return false;
-    }
-
-    recognitions3d.image_header = recognitions.image_header;
-    recognitions3d.recognition_header = recognitions.recognition_header;
-
-    std::vector<geometry_msgs::PoseWithCovariance> poses;
-    std::vector<vision_system_msgs::Description> &objects = recognitions.descriptions; 
-    std::vector<vision_system_msgs::Description3D> &descriptions = recognitions3d.descriptions; 
-    poses = image2world_srv.response.poses;
-
-
-    std::vector<geometry_msgs::PoseWithCovariance>::iterator it;
-    std::vector<vision_system_msgs::Description>::iterator jt;
-
-    geometry_msgs::Point point;
-
-    for(it = poses.begin(), jt = objects.begin(); it!=poses.end() && jt!=objects.end(); it++, jt++) {
-        vision_system_msgs::Description3D description;
-
-        point = it->pose.position;
-        std::cout<<"<"<<jt->label_class<<", "<<point.x<<", "<<point.y<<", "<<point.z<<">"<<std::endl;
-
-        description.label_class = jt->label_class;
-        description.probability = jt->probability;
-        description.pose = *(it);
-
-        descriptions.push_back(description);
-    }
-
-    return true;
-=======
->>>>>>> master
 }
 
 void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bbs)
@@ -90,14 +48,6 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
         pub_object_msg.image_header = bbs.image_header;
         pub_object_msg.descriptions = objects;
         recognized_objects_pub.publish(pub_object_msg);
-<<<<<<< HEAD
-
-        if(recognitions2Recognitions3D(pub_object_msg, pub_object3D_msg)){
-            recognized_objects3d_pub.publish(pub_object3D_msg);
-        }
-
-=======
->>>>>>> master
     }
 
     if(people.size() > 0) {
