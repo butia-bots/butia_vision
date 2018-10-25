@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <opencv2/opencv.hpp>
+#include <opencv2/xfeatures2d.hpp>
 #include <vector>
 #include <string>
 #include <utility>
@@ -16,7 +17,6 @@
 
 
 
-
 class PeopleTracker {
     private:
         ros::NodeHandle node_handle; //Internal NodeHandle
@@ -27,12 +27,39 @@ class PeopleTracker {
         int image_size;
         float bounding_box_size_threshold;
 
+        cv::Mat mat_rgb_segmented_image;
+        cv::Mat mat_grayscale_segmented_image;
+
+        int min_hessian;
+        cv::Ptr<cv::xfeatures2d::SURF> surf_detector;
+        cv::Ptr<cv::xfeatures2d::SIFT> sift_detector;
+        cv::FlannBasedMatcher matcher;
+
+        cv::Mat descriptors;
+        cv::Mat actual_descriptors;
+        std::vector<cv::KeyPoint> keypoints;
+        std::vector<std::vector<cv::DMatch>> matches;
+        std::vector<cv::DMatch> good_matches;
+        std::vector<int> bad_matches;
+
+        std::string param_detector_type;
+        int param_k;
+
+        float minimal_minimal_distance;
+        float matches_check_factor;
+
+        bool initialized;
+
 
     public:
         PeopleTracker(ros::NodeHandle _nh); //Constructor
 
         void peopleDetectionCallBack(const vision_system_msgs::Recognitions::ConstPtr &person_detected); //CallBack
-        void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
+
+        void readImage(const sensor_msgs::Image::ConstPtr &source, cv::Mat &destiny);
+        void extractFeatures(cv::Mat &descriptors_destiny);
+        bool matchFeatures();
+        void registerMatch();
 };
 
 

@@ -16,6 +16,8 @@ ImageSegmenter::ImageSegmenter(ros::NodeHandle _nh) : node_handle(_nh) {
 
 
 bool ImageSegmenter::segment(vision_system_msgs::ImageSegmentation::Request &req, vision_system_msgs::ImageSegmentation::Response &res) {
+    ros_segmented_rgb_image.encoding = req.initial_rgbd_image.rgb.encoding;
+
     sensor_msgs::Image::ConstPtr constptr_initial_rgb_image(new sensor_msgs::Image(req.initial_rgbd_image.rgb));
     sensor_msgs::Image::ConstPtr constptr_initial_depth_image(new sensor_msgs::Image(req.initial_rgbd_image.depth));
 
@@ -25,21 +27,23 @@ bool ImageSegmenter::segment(vision_system_msgs::ImageSegmentation::Request &req
     cropImage(mat_initial_depth_image, req.bounding_box);
     cropImage(mat_initial_rgb_image, req.bounding_box);
 
-    mat_segmented_rgb_image.image = cv::Mat_<cv::Vec3b>(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC3);
+    mat_segmented_image = cv::Mat_<cv::Vec3b>(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC3);
     mask = cv::Mat_<uint8_t>(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC1);
 
     createMask();
 
     for (int r = 0; r < mask.rows; r++) {
         for (int c = 0; c < mask.cols; c++) {
-            mat_segmented_rgb_image.image.at<int>(r, c, 0) = mat_initial_rgb_image(r, c)[0] * mask(r, c);
-            mat_segmented_rgb_image.image.at<int>(r, c, 1) = mat_initial_rgb_image(r, c)[1] * mask(r, c);
-            mat_segmented_rgb_image.image.at<int>(r, c, 2) = mat_initial_rgb_image(r, c)[2] * mask(r, c);
+            mat_segmented_image(r, c)[0] = mat_initial_rgb_image(r, c)[0] * mask(r, c);
+            mat_segmented_image(r, c)[1] = mat_initial_rgb_image(r, c)[1] * mask(r, c);
+            mat_segmented_image(r, c)[2] = mat_initial_rgb_image(r, c)[2] * mask(r, c);
         }
     }
 
-    mat_segmented_rgb_image.toImageMsg(ros_segmented_image);
-    res.segmented_rgb_image = ros_segmented_image;
+    ros_segmented_rgb_image.image = mat_segmented_image;
+
+    ros_segmented_rgb_image.toImageMsg(ros_segmented_msg_image);
+    res.segmented_rgb_image = ros_segmented_msg_image;
 
     return true;
 }
@@ -198,8 +202,8 @@ void ImageSegmenter::readParameters() {
     node_handle.param("/segmentation/parameters/histogram/size", histogram_size, 20);
     node_handle.param("/segmentation/parameters/historam/upper_limit", upper_histogram_limit, 5001);
     node_handle.param("/segmentation/parameters/historam/lower_limit", lower_histogram_limit, 0);
-    node_handle.param("/segmentation/parameters/historam/left_class_limit", left_class_limit, 1);
-    node_handle.param("/segmentation/parameters/historam/right_class_limit", right_class_limit, 1);
+    node_handle.param("/segmentation/parameters/historam/left_class_limit", left_class_limit, 2);
+    node_handle.param("/segmentation/parameters/historam/right_class_limit", right_class_limit, 2);
     node_handle.param("/segmentation/parameters/historam/bounding_box_threshold", bounding_box_threshold, (float)0.35);
     node_handle.param("/segmentation/parameters/historam/decrease_factor", histogram_decrease_factor, (float)2.0);
 }

@@ -23,8 +23,10 @@ class ImageSegmenter {
         cv::Mat_<cv::Vec3b> mat_initial_rgb_image;
         cv::Mat_<uint16_t> mat_initial_depth_image;
 
-        cv_bridge::CvImage mat_segmented_rgb_image;
-        sensor_msgs::Image ros_segmented_image;
+        cv::Mat_<cv::Vec3b> mat_segmented_image;
+
+        cv_bridge::CvImage ros_segmented_rgb_image;
+        sensor_msgs::Image ros_segmented_msg_image;
 
         int histogram_size;
         int upper_histogram_limit;
