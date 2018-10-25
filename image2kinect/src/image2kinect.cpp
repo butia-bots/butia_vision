@@ -4,16 +4,22 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 {
     readParameters();
 
-    camera_info_subscriber = node_handle.subscribe(camera_info_topic, camera_info_qs, &Image2Kinect::cameraInfoCallback, this);
-    image2kinect_server = node_handle.advertiseService(image2kinect_server_service, &Image2Kinect::image2kinectCallback, this);
-    image_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(image_client_service);
+    object_recognition_sub = node_handle.subscribe(object_recognition_sub_topic, sub_queue_size, &Image2Kinect::objectRecognitionCallback, this);
+    face_recognition_sub = node_handle.subscribe(face_recognition_sub_topic, sub_queue_size, &Image2Kinect::faceRecognitionCallback, this);
+    people_tracking_sub = node_handle.subscribe(people_tracking_sub_topic, sub_queue_size, &Image2Kinect::peopleTrackingCallback, this);
+
+    object_recognition_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(object_recognition_pub_topic, pub_queue_size);
+    face_recognition_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(face_recognition_pub_topic, pub_queue_size);
+    people_tracking_pub = node_handle.advertise<vision_system_msgs::Description3D>(people_tracking_pub_topic, pub_queue_size);
+
+    image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(image_request_client_service);
 
     camera_matrix_color = cv::Mat::zeros(3, 3, CV_64F);
 }
 
 
 
-void Image2Kinect::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& camera_info)
+void Image2Kinect::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr& camera_info)
 {
     bool recalculate_tabels = false;
 
@@ -34,7 +40,7 @@ void Image2Kinect::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& c
     if(recalculate_tabels) createTabels();
 }
 
-void Image2World::createTabels()
+void Image2Kinect::createTabels()
 {
     float fx = 1.0f / camera_matrix_color.at<double>(0, 0);
     float fy = 1.0f / camera_matrix_color.at<double>(1, 1);
@@ -56,14 +62,14 @@ void Image2World::createTabels()
 }
 
 
-void Image2World::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image)
+void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image)
 {
     cv_bridge::CvImageConstPtr cv_image;
     cv_image = cv_bridge::toCvShare(msg_image, msg_image->encoding);
     cv_image->image.copyTo(image);
 }
 
-void Image2World::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geometry_msgs::PoseWithCovariance &pose)
+void Image2Kinect::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geometry_msgs::PoseWithCovariance &pose)
 {
     const float bad_point = std::numeric_limits<float>::quiet_NaN();
 
@@ -137,38 +143,43 @@ void Image2World::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geomet
     }
 }
 
-bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &request, vision_system_msgs::Image2World::Response &response)
+
+void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions &recognitions, vision_system_msgs::Recognitions3D& recognitions3d)
 {
-    int frame_id = request.recognitions.image_header.seq;
+    int frame_id = recognitions.header.seq;
 
     ROS_INFO("Frame ID: %d", frame_id);
 
     vision_system_msgs::ImageRequest image_srv;
-    image_srv.request.frame = frame_id;
-    if (!image_client.call(image_srv)) {
+    image_srv.request.seq = frame_id;
+    if (!image_request_client.call(image_srv)) {
         ROS_ERROR("Failed to call image_server service");
-        return false;
+        return;
     }
 
     cv::Mat color, depth, crop_color, crop_depth;
 
-    vision_system_msgs::RGBDImage rgbd_image = image_srv.response.rgbd_image;
+    vision_system_msgs::RGBDImage &rgbd_image = image_srv.response.rgbd_image;
 
     sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(rgbd_image.rgb));
     sensor_msgs::Image::ConstPtr depth_const_ptr( new sensor_msgs::Image(rgbd_image.depth));
+    sensor_msgs::CameraInfo::ConstPtr camera_info_const_ptr( new sensor_msgs::CameraInfo(image_srv.response.camera_info));
 
     readImage(rgb_const_ptr, color);
     readImage(depth_const_ptr, depth);
+    readCameraInfo(camera_info_const_ptr);
 
-    //std::vector<sensor_msgs::PointCloud> clouds;
-    std::vector<geometry_msgs::PoseWithCovariance> &poses = response.poses;
-
-    std::vector<vision_system_msgs::Description> descriptions = request.recognitions.descriptions;
+    std::vector<vision_system_msgs::Description> &descriptions = recognitions.descriptions;
     std::vector<vision_system_msgs::Description>::iterator it;
 
+    recognitions3d.header = recognitions.header;
+    std::vector<vision_system_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
+
     for(it = descriptions.begin() ; it != descriptions.end() ; it++) {
-        //sensor_msgs::PointCloud cloud;
-        geometry_msgs::PoseWithCovariance pose;
+        vision_system_msgs::Description3D description3d;
+        description3d.label_class = it->label_class;
+        description3d.probability = it->probability;
+
         cv::Rect roi;
         roi.x = (*it).bounding_box.minX;
         roi.y = (*it).bounding_box.minY;
@@ -179,22 +190,44 @@ bool Image2World::image2worldCallback(vision_system_msgs::Image2World::Request &
 
         //segment(crop_color)
 
-        rgbd2PoseWithCovariance(crop_color, crop_depth, pose);
-        //botar campos que faltam na cloud
-        poses.push_back(pose);
+        rgbd2PoseWithCovariance(crop_color, crop_depth, description3d.pose);
+        descriptions3d.push_back(description3d);
     }
-
-    return true;
 }
 
-void Image2World::readParameters()
+void Image2Kinect::objectRecognitionCallback(vision_system_msgs::Recognitions recognitions)
 {
-    node_handle.param("/object_recognition/subscribers/camera_info/topic", camera_info_topic, std::string("/kinect2/qhd/camera_info"));
-    node_handle.param("/object_recognition/subscribers/camera_info/qs", camera_info_qs, 1);
+    vision_system_msgs::Recognitions3D recognitions3d;
+    recognitions2Recognitions3d(recognitions, recognitions3d);
+    object_recognition_pub.publish(recognitions3d);
+}
 
-    node_handle.param("/object_recognition/services/image2world/service", image2world_server_service, std::string("/vision_system/iw/image2world"));
+void Image2Kinect::faceRecognitionCallback(vision_system_msgs::Recognitions recognitions)
+{
+    vision_system_msgs::Recognitions3D recognitions3d;
+    recognitions2Recognitions3d(recognitions, recognitions3d);
+    face_recognition_pub.publish(recognitions3d);
+}
 
-    node_handle.param("/object_recognition/services/image_server/service", image_client_service, std::string("/vision_system/is/image_request"));
+void Image2Kinect::peopleTrackingCallback(vision_system_msgs::Recognitions recognitions)
+{
+    vision_system_msgs::Recognitions3D recognitions3d;
+    recognitions2Recognitions3d(recognitions, recognitions3d);
+    people_tracking_pub.publish(recognitions3d);
+}
 
-    node_handle.param("/object_recognition/services/segmentation_server/service", segmentation_client_service, std::string(""));
+void Image2Kinect::readParameters()
+{
+    node_handle.param("/image2kinect/subscribers/queue_size", sub_queue_size, 5);
+    node_handle.param("/image2kinect/subscribers/object_recognition/topic", object_recognition_sub_topic, std::string("/vision_system/or/object_recognition"));
+    node_handle.param("/image2kinect/subscribers/face_recognition/topic", face_recognition_sub_topic, std::string("/vision_system/fr/face_recognition"));
+    node_handle.param("/image2kinect/subscribers/people_tracking/topic", people_tracking_sub_topic, std::string("/vision_system/pt/people_tracking"));
+
+    node_handle.param("/image2kinect/publishers/queue_size", pub_queue_size, 5);
+    node_handle.param("/image2kinect/publishers/object_recognition/topic", object_recognition_pub_topic, std::string("/vision_system/or/object_recognition3d"));
+    node_handle.param("/image2kinect/publishers/face_recognition/topic", face_recognition_pub_topic, std::string("/vision_system/fr/face_recognition3d"));
+    node_handle.param("/image2kinect/publishers/people_tracking/topic", people_tracking_pub_topic, std::string("/vision_system/pt/people_tracking3d"));
+    
+    node_handle.param("/object_recognition/clients/image_server/service", image_request_client_service, std::string("/vision_system/is/image_request"));
+    node_handle.param("/object_recognition/clients/segmentation_server/service", segmentation_client_service, std::string(""));
 }
