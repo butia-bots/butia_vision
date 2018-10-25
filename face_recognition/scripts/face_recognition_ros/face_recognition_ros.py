@@ -14,8 +14,8 @@ from dlib import rectangle, rectangles
 
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
-from vision_system_msgs.msg import BoundingBox, Description, Description3D, Recognitions, Recognitions3D
-from vision_system_msgs.srv import FaceClassifierTraining, Image2World
+from vision_system_msgs.msg import BoundingBox, Description, Recognitions
+from vision_system_msgs.srv import FaceClassifierTraining
 
 BRIDGE = CvBridge()
 PACK_DIR = rospkg.RosPack().get_path('face_recognition')

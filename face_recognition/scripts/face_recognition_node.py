@@ -8,7 +8,7 @@ from face_recognition_ros import FaceRecognitionROS
 
 from sensor_msgs.msg import Image
 
-from vision_system_msgs.msg import Recognitions, Recognitions3D, ClassifierReload
+from vision_system_msgs.msg import Recognitions, ClassifierReload
 from vision_system_msgs.srv import Image2World
  
 BRIDGE = CvBridge()
