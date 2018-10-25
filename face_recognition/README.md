@@ -21,10 +21,13 @@ The face_recognition package uses Openface, OpenCV and scikit-learn to perform a
 
     Publishes the recognized faces.
 
+<<<<<<< HEAD
 * **`face_recognition3d:`** `/vision_system/fr/face_recognition3d` ([vision_system_msgs::Recognitions3D])
 
     Publishes the recognized faces in 3D.
 
+=======
+>>>>>>> master
 * **`face_recognition_view:`** `/vision_system/fr/face_recognition_view` ([sensor_msgs::Image])
 
     Publishes an image of the recognized faces to debug the process.

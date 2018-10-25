@@ -8,7 +8,11 @@ from face_recognition_ros import FaceRecognitionROS
 
 from sensor_msgs.msg import Image
 
+<<<<<<< HEAD
 from vision_system_msgs.msg import Recognitions, Recognitions3D, ClassifierReload
+=======
+from vision_system_msgs.msg import Recognitions, ClassifierReload
+>>>>>>> master
 from vision_system_msgs.srv import Image2World
  
 BRIDGE = CvBridge()
@@ -19,7 +23,10 @@ image_subscriber = None
 reload_subscriber = None
 
 recognition_publisher = None
+<<<<<<< HEAD
 recognition3d_publisher = None
+=======
+>>>>>>> master
 
 view_publisher = None
 
@@ -29,9 +36,12 @@ def imageCallback(image_msg):
     pub_msg = face_recognition_ros.recognitionProcess(image_msg)
     if pub_msg != None:
         recognition_publisher.publish(pub_msg)
+<<<<<<< HEAD
         pub_3d_msg = face_recognition_ros.recognitions2Recognitions3D(pub_msg, image2world_client)
         if pub_3d_msg != None:
            recognition3d_publisher.publish(pub_3d_msg)
+=======
+>>>>>>> master
 
     pub_image_msg = recognizedFaces2ViewImage(image_msg, pub_msg)
     view_publisher.publish(pub_image_msg)   

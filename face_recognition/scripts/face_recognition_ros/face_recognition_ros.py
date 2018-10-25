@@ -499,6 +499,7 @@ class FaceRecognitionROS():
         ans = self.trainClassifier(ros_srv.classifier_type, ros_srv.classifier_name)
         return ans 
 
+<<<<<<< HEAD
     def recognitions2Recognitions3D(self, recognitions, client):
         try:
            response = client(recognitions)
@@ -525,3 +526,5 @@ class FaceRecognitionROS():
         
         return recognitions3d
 
+=======
+>>>>>>> master

@@ -1,0 +1,33 @@
+subscribers:
+
+  queue_size: 5
+
+  object_recognition:
+    topic: /vision_system/or/object_recognition
+
+  face_recognition:
+    topic: /vision_system/fr/face_recognition
+
+  people_tracking:
+    topic: /vision_system/pt/people_tracking
+
+publishers:
+
+  queue_size: 5
+
+  object_recognition:
+    topic: /vision_system/or/object_recognition3d
+
+  face_recognition:
+    topic: /vision_system/fr/face_recognition3d
+
+  people_tracking:
+    topic: /vision_system/pt/people_tracking3d
+
+clients:
+
+  image_request:
+    service: /vision_system/vsb/image_request
+
+  segmentation_request:
+    service: ds

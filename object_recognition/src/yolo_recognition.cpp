@@ -9,6 +9,7 @@ YoloRecognition::YoloRecognition(ros::NodeHandle _nh) : node_handle(_nh)
     recognized_objects3d_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(object_recognition3d_topic, object_recognition3d_qs);
     recognized_people_pub = node_handle.advertise<vision_system_msgs::Recognitions>(people_detection_topic, people_detection_qs);
     image2world_client = node_handle.serviceClient<vision_system_msgs::Image2World>(image2world_client_service);
+<<<<<<< HEAD
 }
 
 bool YoloRecognition::recognitions2Recognitions3D(vision_system_msgs::Recognitions& recognitions, vision_system_msgs::Recognitions3D& recognitions3d)
@@ -48,6 +49,8 @@ bool YoloRecognition::recognitions2Recognitions3D(vision_system_msgs::Recognitio
     }
 
     return true;
+=======
+>>>>>>> master
 }
 
 void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bbs)
@@ -83,20 +86,23 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
     }
 
     if(objects.size() > 0) {
+        pub_object_msg.header = bbs.header;
         pub_object_msg.image_header = bbs.image_header;
-        pub_object_msg.recognition_header = bbs.header;
         pub_object_msg.descriptions = objects;
         recognized_objects_pub.publish(pub_object_msg);
+<<<<<<< HEAD
 
         if(recognitions2Recognitions3D(pub_object_msg, pub_object3D_msg)){
             recognized_objects3d_pub.publish(pub_object3D_msg);
         }
 
+=======
+>>>>>>> master
     }
 
     if(people.size() > 0) {
+        pub_people_msg.header = bbs.header;
         pub_people_msg.image_header = bbs.image_header;
-        pub_people_msg.recognition_header = bbs.header;
         pub_people_msg.descriptions = people;
         recognized_people_pub.publish(pub_people_msg);
     }

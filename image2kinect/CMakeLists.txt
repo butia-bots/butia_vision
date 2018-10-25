@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(image2world)
+project(image2kinect)
 
 add_compile_options(-std=c++11)
 
@@ -8,7 +8,11 @@ find_package(OpenCV REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME}
+<<<<<<< HEAD:image2world/CMakeLists.txt
   LIBRARIES image2world
+=======
+  LIBRARIES image2kinect
+>>>>>>> master:image2kinect/CMakeLists.txt
   CATKIN_DEPENDS roscpp vision_system_msgs geometry_msgs cv_bridge
 )
 
@@ -20,11 +24,11 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}
-  src/image2world.cpp
+  src/image2kinect.cpp
 )
 
 
-add_executable(${PROJECT_NAME}_node src/image2world_node.cpp)
+add_executable(${PROJECT_NAME}_node src/image2kinect_node.cpp)
 
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
