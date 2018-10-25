@@ -22,6 +22,8 @@ VisionSystemBridge::VisionSystemBridge(ros::NodeHandle &nh) : node_handle(nh), i
     image_rgb_pub = it.advertise(image_rgb_pub_topic, pub_queue_size);
     image_depth_pub = it.advertise(image_depth_pub_topic, pub_queue_size);
     camera_info_pub = node_handle.advertise<sensor_msgs::CameraInfo>(camera_info_pub_topic, pub_queue_size);
+
+    image_request_server = node_handle.advertiseService(image_request_server_service, &VisionSystemBridge::imageRequestServer, this);
 }
 
 void VisionSystemBridge::resizeBuffers()
@@ -44,10 +46,10 @@ void VisionSystemBridge::readParameters()
     node_handle.param("/vision_system_bridge/publishers/image_depth/topic", image_depth_pub_topic, std::string("/vision_system/vsb/image_depth_raw"));
     node_handle.param("/vision_system_bridge/publishers/camera_info/topic", camera_info_pub_topic, std::string("/vision_system/vsb/camera_info"));
 
-    node_handle.param("/vision_system_bridge/services/rgbdimage_request/service", rgbdimage_request_service, std::string("/vision_system/vsb/rgbdimage_request"));
+    node_handle.param("/vision_system_bridge/server/image_request/service", image_request_server_service, std::string("/vision_system/vsb/image_request"));
 
-    node_handle.param("/vision_system_bridge/buffer_size", buffer_size, 150);
-    node_handle.param("/vision_system_bridge/use_exact_time", use_exact_time, false);
+    node_handle.param("/vision_system_bridge/parameters/buffer_size", buffer_size, 150);
+    node_handle.param("/vision_system_bridge/parameters/use_exact_time", use_exact_time, false);
 }
 
 void VisionSystemBridge::kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb, const sensor_msgs::Image::ConstPtr &image_depth, const sensor_msgs::CameraInfo::ConstPtr &camera_info)
@@ -63,7 +65,7 @@ void VisionSystemBridge::kinectCallback(const sensor_msgs::Image::ConstPtr &imag
     seq++;
 }
 
-bool VisionSystemBridge::accessQueue(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res) {
+bool VisionSystemBridge::imageRequestServer(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res) {
     int req_seq = req.seq;
     ROS_INFO("REQUEST ID: %d", req_seq);
     
