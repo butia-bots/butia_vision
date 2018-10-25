@@ -3,8 +3,10 @@
 #include <vector>
 #include <string>
 
-#include "sensor_msgs/Image.h"
 #include "cv_bridge/cv_bridge.h"
+
+#include "sensor_msgs/Image.h"
+#include <sensor_msgs/CameraInfo.h>
 #include "vision_system_msgs/ImageRequest.h"
 
 #include <image_transport/image_transport.h>
@@ -19,36 +21,31 @@ class VisionSystemBridge {
     public:
         VisionSystemBridge(ros::NodeHandle &nh);
 
-        void kinectCallback(sensor_msgs::Image::ConstPtr image_rgb, sensor_msgs::Image::ConstPtr image_depth, sensor_msgs::CameraInfo::ConstPtr camera_info);
+        void kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb, const sensor_msgs::Image::ConstPtr &image_depth, const sensor_msgs::CameraInfo::ConstPtr &camera_info);
         
-        /*
         bool accessQueue(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res);
 
-        void camCallBackRGB(const sensor_msgs::ImageConstPtr img);
-        void camCallBackDepth(const sensor_msgs::ImageConstPtr img);*/
+        void publish();
 
     private:
         ros::NodeHandle node_handle;
 
-
-        std::vector<sensor_msgs::ImageConstPtr> image_rgb_buffer;
-        std::vector<sensor_msgs::ImageConstPtr> image_depth_buffer;
-        std::vector<sensor_msgs::CameraInfo> camera_info_buffer;
-
+        std::vector<sensor_msgs::Image::ConstPtr> image_rgb_buffer;
+        std::vector<sensor_msgs::Image::ConstPtr> image_depth_buffer;
+        std::vector<sensor_msgs::CameraInfo::ConstPtr> camera_info_buffer;
 
         bool use_exact_time;
         int buffer_size;
+        int sub_queue_size;
+        int pub_queue_size;
 
-        int queue_size;
-
-        std::string image_rgb_topic;
-
-        std::string image_depth_topic;
-
-        std::string camera_info_topic;
-
+        std::string image_rgb_sub_topic;
+        std::string image_depth_sub_topic;
+        std::string camera_info_sub_topic;
+        std::string image_rgb_pub_topic;
+        std::string image_depth_pub_topic;
+        std::string camera_info_pub_topic;
         std::string rgbdimage_request_service;
-
 
         typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ExactSyncPolicy;
         typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ApproximateSyncPolicy;
@@ -61,17 +58,11 @@ class VisionSystemBridge {
         message_filters::Synchronizer<ExactSyncPolicy> *exact_sync;
         message_filters::Synchronizer<ApproximateSyncPolicy> *approximate_sync;
 
-         /*
-        int min_seq;
-        int max_seq;
-        
-        int last_rgb;
-        int last_depth;
+        image_transport::Publisher image_rgb_pub;
+        image_transport::Publisher image_depth_pub;
+        ros::Publisher camera_info_pub;
 
-        ros::Subscriber img_rgb_sub;
-        ros::Subscriber img_d_sub;
-        ros::ServiceServer service;
-        */
+        long seq;
 
         void resizeBuffers();
         void readParameters();

@@ -1,5 +1,4 @@
-#include "vision_system_bridge.h"
-
+#include "vision_system_bridge/vision_system_bridge.h"
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "vision_system_bridge_node");
