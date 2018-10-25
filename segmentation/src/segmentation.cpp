@@ -16,34 +16,38 @@ ImageSegmenter::ImageSegmenter(ros::NodeHandle _nh) : node_handle(_nh) {
 
 
 bool ImageSegmenter::segment(vision_system_msgs::ImageSegmentation::Request &req, vision_system_msgs::ImageSegmentation::Response &res) {
-    ros_segmented_rgb_image.encoding = req.initial_rgbd_image.rgb.encoding;
-
     sensor_msgs::Image::ConstPtr constptr_initial_rgb_image(new sensor_msgs::Image(req.initial_rgbd_image.rgb));
     sensor_msgs::Image::ConstPtr constptr_initial_depth_image(new sensor_msgs::Image(req.initial_rgbd_image.depth));
 
     readImage(constptr_initial_rgb_image, mat_initial_rgb_image);
     readImage(constptr_initial_depth_image, mat_initial_depth_image);
 
-    cropImage(mat_initial_depth_image, req.bounding_box);
-    cropImage(mat_initial_rgb_image, req.bounding_box);
+    ros_segmented_rgb_image.encoding = req.initial_rgbd_image.rgb.encoding;
+    descriptions = req.descriptions;
 
-    mat_segmented_image = cv::Mat_<cv::Vec3b>(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC3);
-    mask = cv::Mat_<uint8_t>(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC1);
+    for (it = descriptions.begin(); it != descriptions.end(); it++) {
+        cropImage(mat_initial_depth_image, (*it).bounding_box, cropped_initial_depth_image);
+        cropImage(mat_initial_rgb_image, (*it)descriptions[i].bounding_box, cropped_initial_rgb_image);
 
-    createMask();
+        mat_segmented_image = cv::Mat_<cv::Vec3b>(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC3);
+        mask = cv::Mat_<uint8_t>(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC1);
 
-    for (int r = 0; r < mask.rows; r++) {
-        for (int c = 0; c < mask.cols; c++) {
-            mat_segmented_image(r, c)[0] = mat_initial_rgb_image(r, c)[0] * mask(r, c);
-            mat_segmented_image(r, c)[1] = mat_initial_rgb_image(r, c)[1] * mask(r, c);
-            mat_segmented_image(r, c)[2] = mat_initial_rgb_image(r, c)[2] * mask(r, c);
+        createMask();
+
+        for (int r = 0; r < mask.rows; r++) {
+            for (int c = 0; c < mask.cols; c++) {
+                mat_segmented_image(r, c)[0] = cropped_initial_rgb_image(r, c)[0] * mask(r, c);
+                mat_segmented_image(r, c)[1] = cropped_initial_rgb_image(r, c)[1] * mask(r, c);
+                mat_segmented_image(r, c)[2] = cropped_initial_rgb_image(r, c)[2] * mask(r, c);
+            }
         }
+
+        ros_segmented_rgb_image.image = mat_segmented_image;
+        ros_segmented_rgb_image.toImageMsg(ros_segmented_msg_image);
+        vector_segmented_msg_image.push_back(ros_segmented_msg_image);
     }
 
-    ros_segmented_rgb_image.image = mat_segmented_image;
-
-    ros_segmented_rgb_image.toImageMsg(ros_segmented_msg_image);
-    res.segmented_rgb_image = ros_segmented_msg_image;
+    res.segmented_rgb_images = vector_segmented_msg_image;
 
     return true;
 }
@@ -56,9 +60,9 @@ void ImageSegmenter::readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv
 }
 
 
-void ImageSegmenter::cropImage(cv::Mat &image, vision_system_msgs::BoundingBox bounding_box) {
+void ImageSegmenter::cropImage(cv::Mat &image, vision_system_msgs::BoundingBox bounding_box, cv::Mat &destiny) {
     cv::Rect region_of_interest(bounding_box.minX, bounding_box.minY, bounding_box.width, bounding_box.height);
-    image = image(region_of_interest);
+    destiny = image(region_of_interest);
 }
 
 
@@ -66,9 +70,9 @@ void ImageSegmenter::calculateHistogram() {
     //Creating the histogram
     for(int r = 0; r < mat_initial_depth_image.rows; r++) {
         for(int c = 0; c < mat_initial_depth_image.cols; c++) {
-            if ((mat_initial_depth_image(r, c) <= lower_histogram_limit) || (mat_initial_depth_image(r, c) >= upper_histogram_limit))
+            if ((cropped_initial_depth_image(r, c) <= lower_histogram_limit) || (cropped_initial_depth_image(r, c) >= upper_histogram_limit))
                 continue;
-            histogram[(int)((mat_initial_depth_image(r, c)*histogram_size) / upper_histogram_limit)]++;
+            histogram[(int)((cropped_initial_depth_image(r, c)*histogram_size) / upper_histogram_limit)]++;
         }
     }
 }
@@ -122,8 +126,8 @@ void ImageSegmenter::createMask() {
 
     //Creating the mask
     if (object_founded == true) {
-        for (int r = 0; r < mat_initial_depth_image.rows; r++) {
-            for (int c = 0; c < mat_initial_depth_image.cols; c++) {
+        for (int r = 0; r < cropped_initial_depth_image.rows; r++) {
+            for (int c = 0; c < cropped_initial_depth_image.cols; c++) {
                 if (mask(r, c) == NOT_VERIFIED)
                     verifyState(r, c);
             }
@@ -149,12 +153,12 @@ bool ImageSegmenter::verifyState(int r, int c) {
     if (mask(r, c) == LIE)
         return false;
 
-    if ((mat_initial_depth_image(r, c) <= lower_histogram_limit) || (mat_initial_depth_image(r, c) >= upper_histogram_limit)) {
+    if ((cropped_initial_depth_image(r, c) <= lower_histogram_limit) || (cropped_initial_depth_image(r, c) >= upper_histogram_limit)) {
         mask(r, c) = LIE;
         return false;
     }
     
-    if ((mat_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value].first) && (mat_initial_depth_image(r, c) <= histogram_class_limits[position_of_max_value].second)) {
+    if ((cropped_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value].first) && (cropped_initial_depth_image(r, c) <= histogram_class_limits[position_of_max_value].second)) {
         mask(r, c) = TRUTH;
         return true;
     }
@@ -162,13 +166,13 @@ bool ImageSegmenter::verifyState(int r, int c) {
     bool answer = false;
     for (int i = 0; i < left_class_limit && answer == false; i++) {
         if (position_of_max_value - i > 0) {
-            if ((mat_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value - i].first) && (mat_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value - i].second))
+            if ((cropped_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value - i].first) && (cropped_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value - i].second))
                 answer = true;
         }
     }
     for (int i = 0; i < right_class_limit && answer == false; i++) {
         if (position_of_max_value + i > 0) {
-            if ((mat_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value + i].first) && (mat_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value + i].second))
+            if ((cropped_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value + i].first) && (cropped_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value + i].second))
                 answer = true;
         }
     }

@@ -6,8 +6,9 @@
 
 #include "sensor_msgs/Image.h"
 #include "cv_bridge/cv_bridge.h"
-#include "vision_system_msgs/ImageSegmentation.h"
+#include "vision_system_msgs/SegmentationRequest.h"
 #include "vision_system_msgs/BoundingBox.h"
+#include "vision_system_msgs/Description.h"
 
 
 enum Verifier {
@@ -20,6 +21,9 @@ class ImageSegmenter {
         ros::NodeHandle node_handle;
         ros::ServiceServer service;
 
+        std::vector<vision_system_msgs::Description> descriptions;
+        std::vector<vision_system_msgs::Description>::iterator it;
+
         cv::Mat_<cv::Vec3b> mat_initial_rgb_image;
         cv::Mat_<uint16_t> mat_initial_depth_image;
 
@@ -27,6 +31,7 @@ class ImageSegmenter {
 
         cv_bridge::CvImage ros_segmented_rgb_image;
         sensor_msgs::Image ros_segmented_msg_image;
+        std::vector<sensor_msgs::Image> vector_segmented_msg_image;
 
         int histogram_size;
         int upper_histogram_limit;
@@ -54,7 +59,7 @@ class ImageSegmenter {
         bool segment(vision_system_msgs::ImageSegmentation::Request &req, vision_system_msgs::ImageSegmentation::Response &res); //Service function
 
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image); //Image Reader
-        void cropImage(cv::Mat &image, vision_system_msgs::BoundingBox bounding_box); //Image Cropper
+        void cropImage(cv::Mat &image, vision_system_msgs::BoundingBox bounding_box, cv::Mat &destiny); //Image Cropper
         void calculateHistogram();
         void getMaxHistogramValue();
         void createMask();

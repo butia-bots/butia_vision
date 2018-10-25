@@ -1,0 +1,4 @@
+RGBDImage initial_rgbd_image
+Description[] descriptions
+---
+sensor_msgs/Image[] segmented_rgb_images

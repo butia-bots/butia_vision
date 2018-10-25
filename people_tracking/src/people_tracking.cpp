@@ -5,7 +5,7 @@
 //------------------------------People Tracker's Functions------------------------------
 PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size(640*480), bounding_box_size_threshold(0.1), min_hessian(400), surf_detector(cv::xfeatures2d::SURF::create(min_hessian)), sift_detector(cv::xfeatures2d::SIFT::create()), param_detector_type("surf"), minimal_minimal_distance(0.02), matches_check_factor(0.7), initialized(false), param_k(8) {
     people_detection_subscriber = node_handle.subscribe("/vision_system/or/people_detection", 150, &PeopleTracker::peopleDetectionCallBack, this);
-    image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>("/vision_system/is/image_request");
+    image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>("/vision_system/vsb/image_request");
     image_segmentation_client = node_handle.serviceClient<vision_system_msgs::ImageSegmentation>("/vision_system/seg/image_segmentation");
 }
 
