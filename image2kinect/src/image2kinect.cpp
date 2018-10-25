@@ -146,7 +146,7 @@ void Image2Kinect::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geome
 
 void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions &recognitions, vision_system_msgs::Recognitions3D& recognitions3d)
 {
-    int frame_id = recognitions.header.seq;
+    int frame_id = recognitions.image_header.seq;
 
     ROS_INFO("Frame ID: %d", frame_id);
 
@@ -173,6 +173,7 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
     std::vector<vision_system_msgs::Description>::iterator it;
 
     recognitions3d.header = recognitions.header;
+    recognitions3d.image_header = recognitions.image_header;
     std::vector<vision_system_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
 
     for(it = descriptions.begin() ; it != descriptions.end() ; it++) {
