@@ -13,6 +13,7 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
     people_tracking_pub = node_handle.advertise<vision_system_msgs::Description3D>(people_tracking_pub_topic, pub_queue_size);
 
     image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(image_request_client_service);
+    segmentation_request_client = node_handle.serviceClient<vision_system_msgs::SegmentationRequest>(segmentation_request_client_service);
 
     camera_matrix_color = cv::Mat::zeros(3, 3, CV_64F);
 }
@@ -157,7 +158,7 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
         return;
     }
 
-    cv::Mat color, depth, crop_color, crop_depth;
+    cv::Mat color, depth, segmented_depth_image;
 
     vision_system_msgs::RGBDImage &rgbd_image = image_srv.response.rgbd_image;
 
@@ -170,13 +171,25 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
     readCameraInfo(camera_info_const_ptr);
 
     std::vector<vision_system_msgs::Description> &descriptions = recognitions.descriptions;
+
+    vision_system_msgs::SegmentationRequest segmentation_srv;
+    segmentation_srv.request.rgbd_image = rgbd_image;
+    segmentation_srv.request.descriptions = descriptions;
+    if (!segmentation_request_client.call(segmentation_srv)) {
+        ROS_ERROR("Failed to call segmentation service");
+        return;
+    }
+
     std::vector<vision_system_msgs::Description>::iterator it;
+
+    std::vector<vision_system_msgs::Image> &segmented_rgb_images = segmentation_srv.response.segmented_rgb_images;
+    std::vector<vision_system_msgs::Image>::iterator jt;
 
     recognitions3d.header = recognitions.header;
     recognitions3d.image_header = recognitions.image_header;
     std::vector<vision_system_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
 
-    for(it = descriptions.begin() ; it != descriptions.end() ; it++) {
+    for(it = descriptions.begin(), jt = rgb_images.begin() ; it != descriptions.end(), jt != rgb_images.end() ; it++, jt++) {
         vision_system_msgs::Description3D description3d;
         description3d.label_class = it->label_class;
         description3d.probability = it->probability;
@@ -186,12 +199,9 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
         roi.y = (*it).bounding_box.minY;
         roi.width = (*it).bounding_box.width;
         roi.height = (*it).bounding_box.height;
-        crop_color = color(roi);
-        crop_depth = depth(roi);
+        segmented_depth_image = depth(roi);
 
-        //segment(crop_color)
-
-        rgbd2PoseWithCovariance(crop_color, crop_depth, description3d.pose);
+        rgbd2PoseWithCovariance(*jt, segmented_depth_image, description3d.pose);
         descriptions3d.push_back(description3d);
     }
 }
