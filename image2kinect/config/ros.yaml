@@ -30,4 +30,4 @@ clients:
     service: /vision_system/vsb/image_request
 
   segmentation_request:
-    service: 
+    service: ds
