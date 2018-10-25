@@ -1,7 +1,7 @@
 subscribers:
 
   camera_reading:
-    topic: /usb_cam/image_raw
+    topic: /kinect2/qhd/image_color_rect
     queue_size: 1
   
   classifier_reload:
@@ -14,6 +14,10 @@ publishers:
     topic: /vision_system/fr/face_recognition
     queue_size: 1
   
+  face_recognition3d:
+    topic: /vision_system/fr/face_recognition3d
+    queue_size: 1
+
   face_recognition_view:
     topic: /vision_system/fr/face_recognition_view
     queue_size: 1
@@ -23,6 +27,9 @@ publishers:
     queue_size: 1
 
 services:
+
+  image2world:
+    service: /vision_system/iw/image2world
 
   classifier_training:
     service: /vision_system/fr/classifier_training

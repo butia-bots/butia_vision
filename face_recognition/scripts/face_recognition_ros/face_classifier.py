@@ -13,10 +13,10 @@ from sklearn.mixture import GMM
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 
-@load(lib_name='sklearn')
+@load(model_id='sklearn')
 @debug
-def loadSklearnModels(models_dir, model='classifier.pkl', debug=False):
-    with open(os.path.join(models_dir, 'classifier', model), 'rb') as model_file:
+def loadSklearnModel(models_dir, model='classifier.pkl', debug=False):
+    with open(os.path.join(models_dir, 'sklearn', model), 'rb') as model_file:
         (cl_label, classifier_model) = pickle.load(model_file)
         return (cl_label, classifier_model)
 
@@ -32,4 +32,4 @@ def classifySklearn(classifier, array, threshold=0.5, verbose=True, debug=False)
     if confidence > threshold:
         return (person.decode('utf-8'), confidence)
     else:
-        return ('Unknow', confidence)
+        return ('unknow', confidence)

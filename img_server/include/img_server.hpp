@@ -8,8 +8,6 @@
 #include "vision_system_msgs/ImageRequest.h"
 #include "vision_system_msgs/RGBDImage.h"
 
-
-
 class ImgServer {
     private:
         std::vector<sensor_msgs::ImageConstPtr> rgb_buffer;
@@ -19,6 +17,9 @@ class ImgServer {
         int max_seq;
         
         int last_rgb;
+        int last_depth;
+
+        bool unsynchronized;
 
         int buffer_size;
 

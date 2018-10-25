@@ -32,6 +32,7 @@ class PeopleTracker {
         PeopleTracker(ros::NodeHandle _nh); //Constructor
 
         void peopleDetectionCallBack(const vision_system_msgs::Recognitions::ConstPtr &person_detected); //CallBack
+        void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
 };
 
 

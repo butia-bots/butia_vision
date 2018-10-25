@@ -3,19 +3,15 @@
 
 
 //----------------------------------Image Segmenter's Functions----------------------------------
-ImageSegmenter::ImageSegmenter(ros::NodeHandle _nh) : node_handle(_nh), histogram_size(20), lower_histogram_limit(1), upper_histogram_limit(5001), histogram_decrease_factor(2), bounding_box_threshold(0.25) {
-    range = (float *)malloc(2 * sizeof(float));
-    histogram_range = (const float **)malloc(sizeof(float *));
-    range[0] = lower_histogram_limit;
-    range[1] = upper_histogram_limit;
-    histogram_range[0] = range;
+ImageSegmenter::ImageSegmenter(ros::NodeHandle _nh) : node_handle(_nh) {
+    readParameters();
+    
+    dif = (int *)malloc(3 * sizeof(int));
+    dif[0] = -1;
+    dif[1] = 0;
+    dif[2] = 1;
 
-    d = (int *)malloc(3 * sizeof(int));
-    d[0] = -1;
-    d[1] = 0;
-    d[2] = 1;
-
-    service = node_handle.advertiseService("/vision_system/seg/image_segmentation", &ImageSegmenter::segment, this);
+    service = node_handle.advertiseService(param_segmentation_service, &ImageSegmenter::segment, this);
 }
 
 
@@ -29,25 +25,21 @@ bool ImageSegmenter::segment(vision_system_msgs::ImageSegmentation::Request &req
     cropImage(mat_initial_depth_image, req.bounding_box);
     cropImage(mat_initial_rgb_image, req.bounding_box);
 
-    cv::Mat_<cv::Vec3b> mat_segmented_rgb_image(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC3);
+    mat_segmented_rgb_image.image = cv::Mat_<cv::Vec3b>(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC3);
     mask = cv::Mat_<uint8_t>(mat_initial_depth_image.rows, mat_initial_depth_image.cols, CV_8UC1);
 
     createMask();
 
-    ROS_INFO("Mask created!");
-
-    for (int r = 0; r < mat_segmented_rgb_image.rows; r++) {
-        for (int c = 0; c < mat_segmented_rgb_image.cols; c++) {
-            mat_segmented_rgb_image(r, c)[0] = mat_initial_rgb_image(r, c)[0] * mask(r, c);
-            mat_segmented_rgb_image(r, c)[1] = mat_initial_rgb_image(r, c)[1] * mask(r, c);
-            mat_segmented_rgb_image(r, c)[2] = mat_initial_rgb_image(r, c)[2] * mask(r, c);
+    for (int r = 0; r < mask.rows; r++) {
+        for (int c = 0; c < mask.cols; c++) {
+            mat_segmented_rgb_image.image.at<int>(r, c, 0) = mat_initial_rgb_image(r, c)[0] * mask(r, c);
+            mat_segmented_rgb_image.image.at<int>(r, c, 1) = mat_initial_rgb_image(r, c)[1] * mask(r, c);
+            mat_segmented_rgb_image.image.at<int>(r, c, 2) = mat_initial_rgb_image(r, c)[2] * mask(r, c);
         }
     }
 
-    cv::namedWindow("Segmented image", 1);
-    cv::imshow("Segmented image", mat_segmented_rgb_image);
-    cv::waitKey(0);
-    cv::destroyAllWindows();
+    mat_segmented_rgb_image.toImageMsg(ros_segmented_image);
+    res.segmented_rgb_image = ros_segmented_image;
 
     return true;
 }
@@ -69,18 +61,20 @@ void ImageSegmenter::cropImage(cv::Mat &image, vision_system_msgs::BoundingBox b
 void ImageSegmenter::calculateHistogram() { 
     //Creating the histogram
     for(int r = 0; r < mat_initial_depth_image.rows; r++) {
-        uint16_t *it = mat_initial_depth_image.ptr<uint16_t>(r);
-        for(int c = 0; c < mat_initial_depth_image.cols; c++, it++) {
-                if (*it == 0)
-                    continue;
-                histogram[(int)(((*it)*histogram_size) / upper_histogram_limit)]++;
+        for(int c = 0; c < mat_initial_depth_image.cols; c++) {
+            if ((mat_initial_depth_image(r, c) <= lower_histogram_limit) || (mat_initial_depth_image(r, c) >= upper_histogram_limit))
+                continue;
+            histogram[(int)((mat_initial_depth_image(r, c)*histogram_size) / upper_histogram_limit)]++;
         }
     }
 }
 
 
 void ImageSegmenter::getMaxHistogramValue() {
-    for (int i = 0; i < histogram.size(); i++) {
+    max_histogram_value = 0;
+    position_of_max_value = 0;
+
+    for (int i = 0; i < histogram_size; i++) {
         if (histogram[i] > max_histogram_value) {
             max_histogram_value = histogram[i];
             position_of_max_value = i;
@@ -94,6 +88,7 @@ void ImageSegmenter::createMask() {
     bool validated;
     float initial_sill;
     float accumulated_sill;
+    int initial_histogram_size = histogram_size;
 
     //Calculating the histogram
     do {
@@ -122,15 +117,11 @@ void ImageSegmenter::createMask() {
     } while ((object_founded == false) && (histogram_size >= 8));
 
     //Creating the mask
-    state = cv::Mat_<uint8_t>(mask.rows, mask.cols, CV_8UC1);
     if (object_founded == true) {
-        ROS_INFO("Object founded!");
         for (int r = 0; r < mat_initial_depth_image.rows; r++) {
             for (int c = 0; c < mat_initial_depth_image.cols; c++) {
-                if (state(r, c) == NOT_VERIFIED) {
-                    state(r, c) = 1;
+                if (mask(r, c) == NOT_VERIFIED)
                     verifyState(r, c);
-                }
             }
         }
     }
@@ -141,6 +132,10 @@ void ImageSegmenter::createMask() {
                 mask(r, c) = 0;
         }
     }
+
+    histogram.clear();
+    histogram_class_limits.clear();
+    histogram_size = initial_histogram_size;
 }
 
 
@@ -149,30 +144,41 @@ bool ImageSegmenter::verifyState(int r, int c) {
         return true;
     if (mask(r, c) == LIE)
         return false;
+
+    if ((mat_initial_depth_image(r, c) <= lower_histogram_limit) || (mat_initial_depth_image(r, c) >= upper_histogram_limit)) {
+        mask(r, c) = LIE;
+        return false;
+    }
     
-    //uint16_t *it_depth = mat_initial_depth_image.ptr<uint16_t>(r);
-    //uint8_t *it_mask = depth.ptr<uint8_t>(r);
-    if ((mat_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value].first) && (mat_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value].second)) {
+    if ((mat_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value].first) && (mat_initial_depth_image(r, c) <= histogram_class_limits[position_of_max_value].second)) {
         mask(r, c) = TRUTH;
-        state(r, c) = 1;
         return true;
     }
 
-    bool r1 = false, r2 = false;
-    if (position_of_max_value > 0)
-        r1 = (mat_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value - 1].first) && (mat_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value - 1].second);
-    if (position_of_max_value < histogram_size - 1)
-        r2 = (mat_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value + 1].first) && (mat_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value + 1].second);
-    if (r1 || r2) {
+    bool answer = false;
+    for (int i = 0; i < left_class_limit && answer == false; i++) {
+        if (position_of_max_value - i > 0) {
+            if ((mat_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value - i].first) && (mat_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value - i].second))
+                answer = true;
+        }
+    }
+    for (int i = 0; i < right_class_limit && answer == false; i++) {
+        if (position_of_max_value + i > 0) {
+            if ((mat_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value + i].first) && (mat_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value + i].second))
+                answer = true;
+        }
+    }
+
+    if (answer == true) {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                if ((i == 1) && (j == 1))
+                if ((dif[i] == 0) && (dif[j] == 0))
                     continue;
-                if ((r + d[i] >= 0) && (r + d[i] < mask.rows) && (c + d[j] >= 0) && (c + d[j] < mask.cols)) {
-                    if (state(r + d[i], c + d[j]) != NOT_VERIFIED) {
-                        if (verifyState(r + d[i], c + d[j]) == true) {
+                if ((r + dif[i] >= 0) && (r + dif[i] < mask.rows) && (c + dif[j] >= 0) && (c + dif[j] < mask.cols)) {
+                    if (mask(r + dif[i], c + dif[j]) != VERIFYING) {
+                        mask(r, c) = VERIFYING;
+                        if (verifyState(r + dif[i], c + dif[j]) == true) {
                             mask(r, c) = TRUTH;
-                            state(r, c) = 1;
                             return true;
                         }
                     }
@@ -182,7 +188,19 @@ bool ImageSegmenter::verifyState(int r, int c) {
     }
 
     mask(r, c) = LIE;
-    state(r, c) = 1;
     return false;
+}
+
+
+void ImageSegmenter::readParameters() {
+    node_handle.param("/segmentation/service/image_segmentation/service", param_segmentation_service, std::string("/vision_system/seg/image_segmentation"));
+
+    node_handle.param("/segmentation/parameters/histogram/size", histogram_size, 20);
+    node_handle.param("/segmentation/parameters/historam/upper_limit", upper_histogram_limit, 5001);
+    node_handle.param("/segmentation/parameters/historam/lower_limit", lower_histogram_limit, 0);
+    node_handle.param("/segmentation/parameters/historam/left_class_limit", left_class_limit, 1);
+    node_handle.param("/segmentation/parameters/historam/right_class_limit", right_class_limit, 1);
+    node_handle.param("/segmentation/parameters/historam/bounding_box_threshold", bounding_box_threshold, (float)0.35);
+    node_handle.param("/segmentation/parameters/historam/decrease_factor", histogram_decrease_factor, (float)2.0);
 }
 //-----------------------------------------------------------------------------------------------

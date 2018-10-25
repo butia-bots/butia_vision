@@ -1,6 +1,7 @@
 #include "ros/ros.h"
 
 #include <opencv2/opencv.hpp>
+
 #include <string>
 #include <vector>
 
@@ -14,20 +15,17 @@
 #include "sensor_msgs/PointCloud.h"
 #include "sensor_msgs/CameraInfo.h"
 
+#include "geometry_msgs/PoseWithCovariance.h"
+
 #include <cv_bridge/cv_bridge.h>
 
 class Image2World{
     public:
         Image2World(ros::NodeHandle _nh);
 
-        void rgb2PointCloud(cv::Mat &color, cv::Mat &depth, sensor_msgs::PointCloud& point_cloud);
+        void rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geometry_msgs::PoseWithCovariance &pose);
 
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
-
-        /*
-        void imageDCb(const sensor_msgs::Image::ConstPtr &msg_image);
-        void imageRCb(const sensor_msgs::Image::ConstPtr &msg_image);
-        */
 
         void createTabels();
 
@@ -36,11 +34,6 @@ class Image2World{
 
     private:
         ros::NodeHandle node_handle;
-
-        /*
-        ros::Subscriber image_d;
-        ros::Subscriber image_r;
-        */
 
         ros::Subscriber camera_info_subscriber;
         ros::ServiceServer image2world_server;

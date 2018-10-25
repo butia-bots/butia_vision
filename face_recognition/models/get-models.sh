@@ -17,8 +17,8 @@ checkCmd() {
 checkCmd wget
 checkCmd bunzip2
 
-mkdir -p dlib
-if [ ! -f dlib/shape_predictor_68_face_landmarks.dat ]; then
+mkdir -p openface
+if [ ! -f openface/shape_predictor_68_face_landmarks.dat ]; then
   printf "\n\n====================================================\n"
   printf "Downloading dlib's public domain face landmarks model.\n"
   printf "Reference: https://github.com/davisking/dlib-models\n\n"
@@ -27,13 +27,12 @@ if [ ! -f dlib/shape_predictor_68_face_landmarks.dat ]; then
   printf "====================================================\n\n"
   wget -nv \
        http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2 \
-       -O dlib/shape_predictor_68_face_landmarks.dat.bz2
+       -O openface/shape_predictor_68_face_landmarks.dat.bz2
   [ $? -eq 0 ] || die "+ Error in wget."
-  bunzip2 dlib/shape_predictor_68_face_landmarks.dat.bz2
+  bunzip2 openface/shape_predictor_68_face_landmarks.dat.bz2
   [ $? -eq 0 ] || die "+ Error using bunzip2."
 fi
 
-mkdir -p openface
 if [ ! -f openface/nn4.small2.v1.t7 ]; then
   printf "\n\n====================================================\n"
   printf "Downloading OpenFace models, which are copyright\n"
@@ -83,7 +82,7 @@ checkmd5() {
 set -e
 
 checkmd5 \
-  dlib/shape_predictor_68_face_landmarks.dat \
+  openface/shape_predictor_68_face_landmarks.dat \
   73fde5e05226548677a050913eed4e04
 
 checkmd5 \

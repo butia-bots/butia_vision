@@ -3,7 +3,7 @@
 
 
 //------------------------------People Tracker's Functions------------------------------
-PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size(640*480), bounding_box_size_threshold(0.3) {
+PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size(640*480), bounding_box_size_threshold(0.1) {
     people_detection_subscriber = node_handle.subscribe("/vision_system/or/people_detection", 150, &PeopleTracker::peopleDetectionCallBack, this);
     image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>("/vision_system/is/image_request");
     image_segmentation_client = node_handle.serviceClient<vision_system_msgs::ImageSegmentation>("/vision_system/seg/image_segmentation");

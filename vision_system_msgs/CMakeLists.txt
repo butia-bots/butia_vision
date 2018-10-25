@@ -7,7 +7,9 @@ add_message_files(
   FILES
   BoundingBox.msg
   Description.msg
+  Description3D.msg
   Recognitions.msg
+  Recognitions3D.msg
   ClassifierReload.msg
   RGBDImage.msg
 )
