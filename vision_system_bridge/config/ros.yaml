@@ -25,11 +25,5 @@ publishers:
   camera_info:
     topic: /vision_system/vsb/camera_info
 
-server:
-
-  image_request:
-    service: /vision_system/vsb/image_request
-
 parameters:
-  buffer_size: 150
-  use_exact_time: false
+  use_exact_time: true
