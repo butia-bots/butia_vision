@@ -70,6 +70,7 @@ bool VisionSystemBridge::imageRequestServer(vision_system_msgs::ImageRequest::Re
     ROS_INFO("REQUEST ID: %d", req_seq);
     
     if(req_seq <= (seq - buffer_size) || req_seq >= seq) {
+        ROS_ERROR("REQ_SEQ: %d and SEQ: %d", req_seq, seq);
         return false;
     }
 
