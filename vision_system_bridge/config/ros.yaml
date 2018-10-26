@@ -1,3 +1,4 @@
+
 subscribers:
   
   queue_size: 5
@@ -31,4 +32,4 @@ server:
 
 parameters:
   buffer_size: 150
-  use_exact_time: true
+  use_exact_time: false
