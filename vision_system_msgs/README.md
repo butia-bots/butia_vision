@@ -31,6 +31,10 @@ The vision_system_msgs package has all messages and services used by the system.
     Header recognition_header
     Description3D[] descriptions
 
+### RGBDImage
+    sensor_msgs/Image rgb
+    sensor_msgs/Image depth
+
 ## Services
 ### FaceClassifierTraining
     string LINEAR_SVM = 'lsvm'
@@ -43,11 +47,15 @@ The vision_system_msgs package has all messages and services used by the system.
     string classifier_name
     ---
     bool sucess
-### Image2World
-    Recognitions recognitions
-    ---
-    geometry_msgs/PoseWithCovariance[] poses
+
 ### ImageRequest
-    uint64 frame
+    uint64 seq
     ---
     RGBDImage rgbd_image
+    sensor_msgs/CameraInfo camera_info
+
+### SegmentationRequest
+    RGBDImage initial_rgbd_image
+    Description[] descriptions
+    ---
+    sensor_msgs/Image[] segmented_rgb_images
