@@ -3,18 +3,18 @@
 
 
 //------------------------------People Tracker's Functions------------------------------
-PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size(640*480), bounding_box_size_threshold(0.1), min_hessian(400), surf_detector(cv::xfeatures2d::SURF::create(min_hessian)), sift_detector(cv::xfeatures2d::SIFT::create()), param_detector_type("surf"), minimal_minimal_distance(0.02), matches_check_factor(0.7), initialized(false), param_k(8) {
+PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size(640*480), bounding_box_size_threshold(0.1), min_hessian(400), surf_detector(cv::xfeatures2d::SURF::create(min_hessian)), sift_detector(cv::xfeatures2d::SIFT::create()), param_detector_type("surf"), minimal_minimal_distance(0.02), matches_check_factor(0.7), initialized(false), param_k(8), probability_threshold(0.7) {
     people_detection_subscriber = node_handle.subscribe("/vision_system/or/people_detection", 150, &PeopleTracker::peopleDetectionCallBack, this);
-    image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>("/vision_system/is/image_request");
-    image_segmentation_client = node_handle.serviceClient<vision_system_msgs::ImageSegmentation>("/vision_system/seg/image_segmentation");
+    image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>("/vision_system/vsb/image_request");
+    image_segmentation_client = node_handle.serviceClient<vision_system_msgs::SegmentationRequest>("/vision_system/seg/image_segmentation");
 }
 
 
 void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitions::ConstPtr &person_detected) {
     vision_system_msgs::ImageRequest image_request_service;
-    vision_system_msgs::ImageSegmentation image_segmentation_service;
+    vision_system_msgs::SegmentationRequest image_segmentation_service;
 
-    image_request_service.request.frame = person_detected->image_header.seq;
+    image_request_service.request.seq = person_detected->image_header.seq;
     if (!image_request_client.call(image_request_service))
         ROS_ERROR("Failed to call image request service!");
     else {
@@ -23,35 +23,37 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
         vision_system_msgs::RGBDImage rgbd_image = image_request_service.response.rgbd_image;
 
         std::vector<vision_system_msgs::Description> descriptions = person_detected->descriptions;
-        std::vector<vision_system_msgs::Description>::iterator it;
+        std::vector<vision_system_msgs::Description>::iterator it_descriptions;
+        std::vector<sensor_msgs::Image> segmented_images;
+        std::vector<sensor_msgs::Image>::iterator it_images;
 
-        for (it = descriptions.begin(); it != descriptions.end(); it++) {
-            if ((*it).bounding_box.height * (*it).bounding_box.width < image_size * bounding_box_size_threshold) {
-                ROS_ERROR("This bounding box is too small!");
-                continue;
-            }
-            if ((*it).probability < 0.7) {
-                ROS_ERROR("This person have a too small probability!");
-                continue;
-            }
-            image_segmentation_service.request.bounding_box = (*it).bounding_box;
-            image_segmentation_service.request.initial_rgbd_image = rgbd_image;
-            if (!image_segmentation_client.call(image_segmentation_service))
-                ROS_ERROR("Failed to call image segmentation service!");
-            else {
-                ROS_INFO("Image segmentation service called!");
+        for (it_descriptions = descriptions.begin(); it_descriptions != descriptions.end(); it_descriptions++) {
+            if (((*it_descriptions).bounding_box.width * (*it_descriptions).bounding_box.height < bounding_box_size_threshold * image_size) || ((*it_descriptions).probability < probability_threshold))
+                descriptions.erase(it_descriptions);
+        }
 
-                sensor_msgs::Image::ConstPtr constptr_segmented_image(new sensor_msgs::Image(image_segmentation_service.response.segmented_rgb_image));
+        image_segmentation_service.request.descriptions = descriptions;
+        image_segmentation_service.request.initial_rgbd_image = rgbd_image;
+        if (!image_segmentation_client.call(image_segmentation_service))
+            ROS_ERROR("Failed to call image segmentation service!");
+        else {
+            ROS_INFO("Image segmentation service called!");
+            segmented_images = image_segmentation_service.response.segmented_rgb_images;
+            
+            for (it_images = segmented_images.begin(); it_images != segmented_images.end(); it_images++) {
+                sensor_msgs::Image::ConstPtr constptr_segmented_image(new sensor_msgs::Image(*it_images));
                 readImage(constptr_segmented_image, mat_rgb_segmented_image);
 
-                cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
-
-                extractFeatures(actual_descriptors);
-                if (matchFeatures())
-                    ROS_INFO("Person founded!");
-                else
-                    ROS_INFO("Person not founded!");
+                cv::imshow("Image", mat_rgb_segmented_image);
+                cv::waitKey(1);
             }
+            /*cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
+
+            extractFeatures(actual_descriptors);
+            if (matchFeatures())
+                ROS_INFO("Person founded!");
+            else
+                ROS_INFO("Person not founded!");*/
         }
     }
 }

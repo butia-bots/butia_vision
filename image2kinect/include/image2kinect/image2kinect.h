@@ -5,15 +5,15 @@
 #include <string>
 #include <vector>
 
-#include "vision_system_msgs/ImageRequest.h"
 #include "vision_system_msgs/Recognitions.h"
 #include "vision_system_msgs/Recognitions3D.h"
 #include "vision_system_msgs/Description.h"
 #include "vision_system_msgs/Description3D.h"
 #include "vision_system_msgs/RGBDImage.h"
+#include "vision_system_msgs/ImageRequest.h"
+#include "vision_system_msgs/SegmentationRequest.h"
 
 #include "sensor_msgs/Image.h"
-#include "sensor_msgs/PointCloud.h"
 #include "sensor_msgs/CameraInfo.h"
 
 #include "geometry_msgs/PoseWithCovariance.h"
