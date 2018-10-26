@@ -27,5 +27,5 @@ publishers:
 
 parameters:
   use_exact_time: true
-  image_width: 320
-  image_height: 240
+  image_width: 640
+  image_height: 480

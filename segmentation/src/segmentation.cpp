@@ -31,8 +31,8 @@ bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &r
         cropImage(mat_initial_depth_image, (*it).bounding_box, cropped_initial_depth_image);
         cropImage(mat_initial_rgb_image, (*it).bounding_box, cropped_initial_rgb_image);
 
-        mat_segmented_image = cv::Mat_<cv::Vec3b>(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols, CV_8UC3);
-        mask = cv::Mat_<uint8_t>(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols, CV_8UC1);
+        mat_segmented_image = cv::Mat_<cv::Vec3b>(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols);
+        mask = cv::Mat_<uint8_t>(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols);
 
         createMask();
 
