@@ -1,10 +1,12 @@
 #include <ros/ros.h>
 #include <vector>
+#include <opencv2/opencv.hpp>
 #include <string>
 
 #include "sensor_msgs/Image.h"
 #include <sensor_msgs/CameraInfo.h>
 
+#include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
 
@@ -19,6 +21,11 @@ class VisionSystemBridge {
 
         void kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb, const sensor_msgs::Image::ConstPtr &image_depth, const sensor_msgs::CameraInfo::ConstPtr &camera_info);
         
+        void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info, sensor_msgs::CameraInfo &info);
+        void readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image);
+
+        void imageResize(cv::Mat &image);
+
         void publish(const sensor_msgs::Image::ConstPtr &image_rgb_ptr, const sensor_msgs::Image::ConstPtr &image_depth_ptr, const sensor_msgs::CameraInfo::ConstPtr &camera_info_ptr);
 
     private:
@@ -28,6 +35,9 @@ class VisionSystemBridge {
         int sub_queue_size;
         int pub_queue_size;
 
+        int image_width;
+        int image_height;
+
         std::string image_rgb_sub_topic;
         std::string image_depth_sub_topic;
         std::string camera_info_sub_topic;
@@ -35,7 +45,6 @@ class VisionSystemBridge {
         std::string image_rgb_pub_topic;
         std::string image_depth_pub_topic;
         std::string camera_info_pub_topic;
-        
 
         typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ExactSyncPolicy;
         typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ApproximateSyncPolicy;
