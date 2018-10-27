@@ -1,6 +1,6 @@
 # vision_system_bridge
 ## Overview
-The vision_system_bridge package is used to read images from kinect_bridge and publish the syncronized. Besides that, the package provides a service for request a specific image pair (rgb and depth) and camera_info.
+The vision_system_bridge package is used to read images and camera info from kinect_bridge and publish them syncronized with a new seq. 
 ## Subscribers
 * **`image_rgb:`** `/kinect2/qhd/image_color_rect` ([sensor_msgs::Image])
 
@@ -26,11 +26,6 @@ The vision_system_bridge package is used to read images from kinect_bridge and p
 * **`camera_info:`** `/vision_system/vsb/camera_info` ([sensor_msgs::CameraInfo])
 
     Publishs camera information.
-
-## Services
-* **`image_request:`** `/vision_system/img_server/image_request` ([vision_system_msgs::ImageRequest])
-
-    Ask for a frame from the image server.
 
 ## Nodes
 * **`vision_system_bridge`**
