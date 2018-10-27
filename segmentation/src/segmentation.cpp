@@ -22,19 +22,23 @@ bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &r
     readImage(constptr_initial_rgb_image, mat_initial_rgb_image);
     readImage(constptr_initial_depth_image, mat_initial_depth_image);
 
-    ros_segmented_rgb_image.encoding = req.initial_rgbd_image.rgb.encoding;
-    descriptions = req.descriptions;
+	std::vector<vision_system_msgs::Description> &descriptions = req.descriptions;
+	std::vector<vision_system_msgs::Description>::iterator it;
 
     std::vector<sensor_msgs::Image> &vector_segmented_msg_image = res.segmented_rgb_images;
 
+	cv::Mat_<cv::Vec3b> mat_segmented_image;
+
+	cv_bridge::CvImage ros_segmented_rgb_image;
+    sensor_msgs::Image ros_segmented_msg_image;
+	ros_segmented_rgb_image.encoding = req.initial_rgbd_image.rgb.encoding;
+
     for (it = descriptions.begin(); it != descriptions.end(); it++) {
-        vector_segmented_msg_image.clear();
+        cropImage(mat_initial_depth_image, it->bounding_box, cropped_initial_depth_image);
+        cropImage(mat_initial_rgb_image, it->bounding_box, cropped_initial_rgb_image);
 
-        cropImage(mat_initial_depth_image, (*it).bounding_box, cropped_initial_depth_image);
-        cropImage(mat_initial_rgb_image, (*it).bounding_box, cropped_initial_rgb_image);
-
-        mat_segmented_image = cv::Mat_<cv::Vec3b>(cv::Size(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols), CV_8UC3);
-        mask = cv::Mat_<uint8_t>(cv::Size(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols), CV_8UC1);
+        mat_segmented_image = cv::Mat_<cv::Vec3b>(cv::Size(cropped_initial_depth_image.cols, cropped_initial_depth_image.rows), CV_8UC3);
+        mask = cv::Mat_<uint8_t>(cv::Size(cropped_initial_depth_image.cols, cropped_initial_depth_image.rows), CV_8UC1);
 
         createMask();
 
@@ -137,7 +141,7 @@ void ImageSegmenter::createMask() {
 
     for (int r = 0; r < mask.rows; r++) {
         for (int c = 0; c < mask.cols; c++) {
-            if (mask(r, c) == 2)
+            if (mask(r, c) == 2 || mask(r, c) == 3)
                 mask(r, c) = 0;
         }
     }
@@ -207,8 +211,8 @@ void ImageSegmenter::readParameters() {
     node_handle.param("/segmentation/parameters/histogram/size", histogram_size, 20);
     node_handle.param("/segmentation/parameters/historam/upper_limit", upper_histogram_limit, 5001);
     node_handle.param("/segmentation/parameters/historam/lower_limit", lower_histogram_limit, 0);
-    node_handle.param("/segmentation/parameters/historam/left_class_limit", left_class_limit, 2);
-    node_handle.param("/segmentation/parameters/historam/right_class_limit", right_class_limit, 2);
+    node_handle.param("/segmentation/parameters/historam/left_class_limit", left_class_limit, 1);
+    node_handle.param("/segmentation/parameters/historam/right_class_limit", right_class_limit, 1);
     node_handle.param("/segmentation/parameters/historam/bounding_box_threshold", bounding_box_threshold, (float)0.35);
     node_handle.param("/segmentation/parameters/historam/decrease_factor", histogram_decrease_factor, (float)2.0);
 }

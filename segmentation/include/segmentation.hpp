@@ -21,18 +21,8 @@ class ImageSegmenter {
         ros::NodeHandle node_handle;
         ros::ServiceServer service;
 
-        std::vector<vision_system_msgs::Description> descriptions;
-        std::vector<vision_system_msgs::Description>::iterator it;
-
-        cv::Mat_<cv::Vec3b> mat_initial_rgb_image;
-        cv::Mat_<uint16_t> mat_initial_depth_image;
-        cv::Mat_<cv::Vec3b> cropped_initial_rgb_image;
-        cv::Mat_<uint16_t> cropped_initial_depth_image;
-
-        cv::Mat_<cv::Vec3b> mat_segmented_image;
-
-        cv_bridge::CvImage ros_segmented_rgb_image;
-        sensor_msgs::Image ros_segmented_msg_image;
+	cv::Mat_<cv::Vec3b> mat_initial_rgb_image, cropped_initial_rgb_image;
+	cv::Mat_<uint16_t> mat_initial_depth_image, cropped_initial_depth_image;
 
         int histogram_size;
         int upper_histogram_limit;
