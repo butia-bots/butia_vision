@@ -239,6 +239,6 @@ void Image2Kinect::readParameters()
     node_handle.param("/image2kinect/publishers/face_recognition/topic", face_recognition_pub_topic, std::string("/vision_system/fr/face_recognition3d"));
     node_handle.param("/image2kinect/publishers/people_tracking/topic", people_tracking_pub_topic, std::string("/vision_system/pt/people_tracking3d"));
     
-    node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/vision_system/vsb/image_request"));
+    node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/vision_system/is/image_request"));
     node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/vision_system/seg/image_segmentation"));
 }
