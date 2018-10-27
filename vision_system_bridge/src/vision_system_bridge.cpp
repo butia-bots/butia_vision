@@ -53,7 +53,7 @@ void VisionSystemBridge::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr 
     info.K[5] *= scale_y;
 
     info.width = image_width;
-    info.height = image_width;
+    info.height = image_height;
 }
 
 void VisionSystemBridge::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image)

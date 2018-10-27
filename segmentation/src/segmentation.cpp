@@ -30,9 +30,10 @@ bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &r
     for (it = descriptions.begin(); it != descriptions.end(); it++) {
         cropImage(mat_initial_depth_image, (*it).bounding_box, cropped_initial_depth_image);
         cropImage(mat_initial_rgb_image, (*it).bounding_box, cropped_initial_rgb_image);
+    	cv::waitKey(1);
 
-        mat_segmented_image = cv::Mat_<cv::Vec3b>(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols);
-        mask = cv::Mat_<uint8_t>(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols);
+        mat_segmented_image = cv::Mat_<cv::Vec3b>(cv::Size(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols), CV_8UC3);
+        mask = cv::Mat_<uint8_t>(cv::Size(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols), CV_8UC1);
 
         createMask();
 
@@ -158,7 +159,7 @@ bool ImageSegmenter::verifyState(int r, int c) {
         return false;
     }
     
-    if ((cropped_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value].first) && (cropped_initial_depth_image(r, c) <= histogram_class_limits[position_of_max_value].second)) {
+    if ((cropped_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value].first) && (cropped_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value].second)) {
         mask(r, c) = TRUTH;
         return true;
     }
