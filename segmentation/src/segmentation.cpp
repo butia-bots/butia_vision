@@ -22,19 +22,23 @@ bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &r
     readImage(constptr_initial_rgb_image, mat_initial_rgb_image);
     readImage(constptr_initial_depth_image, mat_initial_depth_image);
 
-    ros_segmented_rgb_image.encoding = req.initial_rgbd_image.rgb.encoding;
-    descriptions = req.descriptions;
+	std::vector<vision_system_msgs::Description> &descriptions = req.descriptions;
+	std::vector<vision_system_msgs::Description>::iterator it;
 
     std::vector<sensor_msgs::Image> &vector_segmented_msg_image = res.segmented_rgb_images;
 
+	cv::Mat_<cv::Vec3b> mat_segmented_image;
+
+	cv_bridge::CvImage ros_segmented_rgb_image;
+    sensor_msgs::Image ros_segmented_msg_image;
+	ros_segmented_rgb_image.encoding = req.initial_rgbd_image.rgb.encoding;
+
     for (it = descriptions.begin(); it != descriptions.end(); it++) {
-        vector_segmented_msg_image.clear();
+        cropImage(mat_initial_depth_image, it->bounding_box, cropped_initial_depth_image);
+        cropImage(mat_initial_rgb_image, it->bounding_box, cropped_initial_rgb_image);
 
-        cropImage(mat_initial_depth_image, (*it).bounding_box, cropped_initial_depth_image);
-        cropImage(mat_initial_rgb_image, (*it).bounding_box, cropped_initial_rgb_image);
-
-        mat_segmented_image = cv::Mat_<cv::Vec3b>(cv::Size(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols), CV_8UC3);
-        mask = cv::Mat_<uint8_t>(cv::Size(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols), CV_8UC1);
+        mat_segmented_image = cv::Mat_<cv::Vec3b>(cv::Size(cropped_initial_depth_image.cols, cropped_initial_depth_image.rows), CV_8UC3);
+        mask = cv::Mat_<uint8_t>(cv::Size(cropped_initial_depth_image.cols, cropped_initial_depth_image.rows), CV_8UC1);
 
         createMask();
 
