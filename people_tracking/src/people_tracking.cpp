@@ -14,7 +14,11 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
     vision_system_msgs::ImageRequest image_request_service;
     vision_system_msgs::SegmentationRequest image_segmentation_service;
 
-    image_request_service.request.seq = person_detected->image_header.seq;
+    ROS_WARN("Person Detected seq: %d", person_detected->image_header.seq);
+
+    int frame_id = person_detected->image_header.seq;
+
+    image_request_service.request.seq = frame_id;
     if (!image_request_client.call(image_request_service))
         ROS_ERROR("Failed to call image request service!");
     else {
