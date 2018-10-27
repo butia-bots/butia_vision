@@ -3,13 +3,4 @@
 
   <node name="vision_system_bridge_node" pkg="vision_system_bridge" type="vision_system_bridge_node" output="screen"/>
 
-  <node name="image_view_rgb" pkg="image_view" type="image_view" respawn="false" output="screen">
-    <remap from="image" to="/vision_system/vsb/image_rgb_raw"/>
-    <param name="autosize" value="true" />
-  </node>
-
-  <node name="image_view_depth" pkg="image_view" type="image_view" respawn="false" output="screen">
-    <remap from="image" to="/vision_system/vsb/image_depth_raw"/>
-    <param name="autosize" value="true" />
-  </node>
 </launch>

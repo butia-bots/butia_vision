@@ -14,6 +14,11 @@ ImageSegmenter::ImageSegmenter(ros::NodeHandle _nh) : node_handle(_nh) {
     service = node_handle.advertiseService(param_segmentation_service, &ImageSegmenter::segment, this);
 }
 
+void ImageSegmenter::filterImage(cv::Mat &image)
+{
+	cv:medianBlur(image, image, 5);
+}
+
 
 bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &req, vision_system_msgs::SegmentationRequest::Response &res) {
     sensor_msgs::Image::ConstPtr constptr_initial_rgb_image(new sensor_msgs::Image(req.initial_rgbd_image.rgb));
@@ -21,6 +26,8 @@ bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &r
 
     readImage(constptr_initial_rgb_image, mat_initial_rgb_image);
     readImage(constptr_initial_depth_image, mat_initial_depth_image);
+
+	//cv::medianBlur(mat_initial_depth_image, mat_initial_depth_image, 5);
 
 	std::vector<vision_system_msgs::Description> &descriptions = req.descriptions;
 	std::vector<vision_system_msgs::Description>::iterator it;
@@ -141,10 +148,12 @@ void ImageSegmenter::createMask() {
 
     for (int r = 0; r < mask.rows; r++) {
         for (int c = 0; c < mask.cols; c++) {
-            if (mask(r, c) == 2 || mask(r, c) == 3)
+            if (mask(r, c) == 2)
                 mask(r, c) = 0;
         }
     }
+
+	filterImage(mask);
 
     histogram.clear();
     histogram_class_limits.clear();
@@ -183,13 +192,13 @@ bool ImageSegmenter::verifyState(int r, int c) {
     }
 
     if (answer == true) {
+	mask(r, c) = VERIFYING;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 if ((dif[i] == 0) && (dif[j] == 0))
                     continue;
                 if ((r + dif[i] >= 0) && (r + dif[i] < mask.rows) && (c + dif[j] >= 0) && (c + dif[j] < mask.cols)) {
-                    if (mask(r + dif[i], c + dif[j]) != VERIFYING) {
-                        mask(r, c) = VERIFYING;
+                    if (mask(r + dif[i], c + dif[j]) != VERIFYING) {	
                         if (verifyState(r + dif[i], c + dif[j]) == true) {
                             mask(r, c) = TRUTH;
                             return true;

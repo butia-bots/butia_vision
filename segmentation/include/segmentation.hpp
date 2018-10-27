@@ -1,5 +1,7 @@
 #include <ros/ros.h>
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
+
 #include <vector>
 #include <utility>
 #include <string>
@@ -48,7 +50,7 @@ class ImageSegmenter {
         ImageSegmenter(ros::NodeHandle _nh); //Constructor
         
         bool segment(vision_system_msgs::SegmentationRequest::Request &req, vision_system_msgs::SegmentationRequest::Response &res); //Service function
-
+	void filterImage(cv::Mat &image);
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image); //Image Reader
         void cropImage(cv::Mat &image, vision_system_msgs::BoundingBox bounding_box, cv::Mat &destiny); //Image Cropper
         void calculateHistogram();
