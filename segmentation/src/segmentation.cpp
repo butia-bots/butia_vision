@@ -141,7 +141,7 @@ void ImageSegmenter::createMask() {
 
     for (int r = 0; r < mask.rows; r++) {
         for (int c = 0; c < mask.cols; c++) {
-            if (mask(r, c) == 2)
+            if (mask(r, c) == 2 || mask(r, c) == 3)
                 mask(r, c) = 0;
         }
     }
@@ -211,8 +211,8 @@ void ImageSegmenter::readParameters() {
     node_handle.param("/segmentation/parameters/histogram/size", histogram_size, 20);
     node_handle.param("/segmentation/parameters/historam/upper_limit", upper_histogram_limit, 5001);
     node_handle.param("/segmentation/parameters/historam/lower_limit", lower_histogram_limit, 0);
-    node_handle.param("/segmentation/parameters/historam/left_class_limit", left_class_limit, 2);
-    node_handle.param("/segmentation/parameters/historam/right_class_limit", right_class_limit, 2);
+    node_handle.param("/segmentation/parameters/historam/left_class_limit", left_class_limit, 1);
+    node_handle.param("/segmentation/parameters/historam/right_class_limit", right_class_limit, 1);
     node_handle.param("/segmentation/parameters/historam/bounding_box_threshold", bounding_box_threshold, (float)0.35);
     node_handle.param("/segmentation/parameters/historam/decrease_factor", histogram_decrease_factor, (float)2.0);
 }
