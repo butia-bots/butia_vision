@@ -28,6 +28,8 @@ bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &r
     std::vector<sensor_msgs::Image> &vector_segmented_msg_image = res.segmented_rgb_images;
 
     for (it = descriptions.begin(); it != descriptions.end(); it++) {
+        vector_segmented_msg_image.clear();
+
         cropImage(mat_initial_depth_image, (*it).bounding_box, cropped_initial_depth_image);
         cropImage(mat_initial_rgb_image, (*it).bounding_box, cropped_initial_rgb_image);
 
@@ -35,8 +37,6 @@ bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &r
         mask = cv::Mat_<uint8_t>(cv::Size(cropped_initial_depth_image.rows, cropped_initial_depth_image.cols), CV_8UC1);
 
         createMask();
-	cv::imshow("ds", mask);
-	cv::waitKey(1);
 
         for (int r = 0; r < mask.rows; r++) {
             for (int c = 0; c < mask.cols; c++) {
@@ -95,7 +95,6 @@ void ImageSegmenter::getMaxHistogramValue() {
 
 void ImageSegmenter::createMask() {
     bool object_founded;
-    bool validated;
     float initial_sill;
     float accumulated_sill;
     int initial_histogram_size = histogram_size;
@@ -168,13 +167,13 @@ bool ImageSegmenter::verifyState(int r, int c) {
     bool answer = false;
     for (int i = 1; i <= left_class_limit && answer == false; i++) {
         if (position_of_max_value - i >= 0) {
-            if ((cropped_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value - i].first) && (cropped_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value - i].second))
+            if ((cropped_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value - i].first) && (cropped_initial_depth_image(r, c) <= histogram_class_limits[position_of_max_value - i].second))
                 answer = true;
         }
     }
     for (int i = 1; i <= right_class_limit && answer == false; i++) {
-        if (position_of_max_value + i < histogram.size()) {
-            if ((cropped_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value + i].first) && (cropped_initial_depth_image(r, c) < histogram_class_limits[position_of_max_value + i].second))
+        if (position_of_max_value + i < histogram_size) {
+            if ((cropped_initial_depth_image(r, c) >= histogram_class_limits[position_of_max_value + i].first) && (cropped_initial_depth_image(r, c) <= histogram_class_limits[position_of_max_value + i].second))
                 answer = true;
         }
     }
