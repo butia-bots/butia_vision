@@ -70,18 +70,15 @@ void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::
     cv_image->image.copyTo(image);
 }
 
-void Image2Kinect::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geometry_msgs::PoseWithCovariance &pose)
+void Image2Kinect::rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Point &point)
 {
     const float bad_point = std::numeric_limits<float>::quiet_NaN();
 
-    geometry_msgs::Point &mean_position = pose.pose.position;
+    geometry_msgs::Point &mean_position = point;
 
     mean_position.x = 0.0f;
     mean_position.y = 0.0f;
     mean_position.z = 0.0f;
-    for(int i = 0 ; i < 36 ; i++){
-        pose.covariance[i] = 0.0f;
-    }
 
     std::vector<geometry_msgs::Point> points;
     for(int r = 0 ; r < depth.rows ; r++) {
@@ -122,7 +119,7 @@ void Image2Kinect::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geome
     mean_position.y /= points.size();
     mean_position.z /= points.size();
 
-    std::vector<geometry_msgs::Point>::iterator it;
+    /*std::vector<geometry_msgs::Point>::iterator it;
 
     for(it = points.begin() ; it != points.end() ; it++) {
         pose.covariance[6*0 + 0] += (it->x - mean_position.x)*(it->x - mean_position.x); //xx
@@ -141,7 +138,8 @@ void Image2Kinect::rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geome
         for(int j = 0 ; j < 3 ; j++) {
             pose.covariance[6*i + j] /= points.size();
         }
-    }
+    }*/
+
 }
 
 
@@ -150,6 +148,9 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
     int frame_id = recognitions.image_header.seq;
 
     ROS_INFO("Frame ID: %d", frame_id);
+
+    recognitions3d.header = recognitions.header;
+    recognitions3d.image_header = recognitions.image_header;
 
     vision_system_msgs::ImageRequest image_srv;
     image_srv.request.seq = frame_id;
@@ -183,14 +184,20 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
     std::vector<sensor_msgs::Image> &segmented_rgb_images = segmentation_srv.response.segmented_rgb_images;
     std::vector<sensor_msgs::Image>::iterator jt;
 
-    recognitions3d.header = recognitions.header;
-    recognitions3d.image_header = recognitions.image_header;
+  
     std::vector<vision_system_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
+
+    std_msgs::Header point_header;
+    point_header.seq = recognitions3d.header.seq;
+    point_header.stamp = recognitions3d.image_header.stamp;
+    point_header.frame_id = std::string("kinect_base");
 
     for(it = descriptions.begin(), jt = segmented_rgb_images.begin() ; it != descriptions.end() && jt != segmented_rgb_images.end() ; it++, jt++) {
         vision_system_msgs::Description3D description3d;
         description3d.label_class = it->label_class;
         description3d.probability = it->probability;
+        geometry_msgs::PointStamped &point = description3d.position;
+        point.header = point_header;
 
         cv::Rect roi;
         roi.x = (*it).bounding_box.minX;
@@ -200,10 +207,10 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
         segmented_depth_image = depth(roi);
         sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
         readImage(rgb_const_ptr, segmented_rgb_image);
-	cv::imshow("Seg", segmented_rgb_image);
-	cv::waitKey(1);
+	    cv::imshow("Seg", segmented_rgb_image);
+	    cv::waitKey(1);
 
-        rgbd2PoseWithCovariance(segmented_rgb_image, segmented_depth_image, description3d.pose);
+        rgbd2Point(segmented_rgb_image, segmented_depth_image, point.point);
         descriptions3d.push_back(description3d);
     }
 }

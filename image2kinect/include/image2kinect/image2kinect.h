@@ -16,7 +16,7 @@
 #include "sensor_msgs/Image.h"
 #include "sensor_msgs/CameraInfo.h"
 
-#include "geometry_msgs/PoseWithCovariance.h"
+#include "geometry_msgs/PointStamped.h"
 
 #include <cv_bridge/cv_bridge.h>
 
@@ -24,7 +24,7 @@ class Image2Kinect{
     public:
         Image2Kinect(ros::NodeHandle _nh);
 
-        void rgbd2PoseWithCovariance(cv::Mat &color, cv::Mat &depth, geometry_msgs::PoseWithCovariance &pose);
+        void rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Point &point);
 
         void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info);
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
@@ -48,7 +48,6 @@ class Image2Kinect{
 
         ros::ServiceClient image_request_client;
         ros::ServiceClient segmentation_request_client;
-
 
         int sub_queue_size;
         int pub_queue_size;
