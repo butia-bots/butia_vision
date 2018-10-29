@@ -19,6 +19,7 @@
   <depend>vision_system_msgs</depend>
   <depend>message_filters</depend>
   <depend>image_transport</depend>
+  <depend>tf</depend>
      
   <export></export>
 </package>

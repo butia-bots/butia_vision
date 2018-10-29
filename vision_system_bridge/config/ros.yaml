@@ -29,3 +29,6 @@ parameters:
   use_exact_time: true
   image_width: 640
   image_height: 480
+  offset_x: 0.1
+  offset_y: 0.1
+  offset_z: 1.2

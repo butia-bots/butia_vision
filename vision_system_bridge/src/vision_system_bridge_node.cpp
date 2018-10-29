@@ -1,4 +1,5 @@
 #include "vision_system_bridge/vision_system_bridge.h"
+#include <tf/transform_broadcaster.h>
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "vision_system_bridge_node");
@@ -6,6 +7,20 @@ int main(int argc, char **argv) {
 
     VisionSystemBridge vision_system_bridge(nh);
 
-    
-    ros::spin();
+    ros::Rate rate(30);
+
+    double offset_x, offset_y, offset_z;
+
+    nh.param("/vision_system_bridge/parameters/offset_x", offset_x, 0.1);
+    nh.param("/vision_system_bridge/parameters/offset_y", offset_y, 0.1);
+    nh.param("/vision_system_bridge/parameters/offset_z", offset_z, 1.2);
+    tf::Vector3 vec(offset_x, offset_y, offset_z);
+
+    tf::TransformBroadcaster broadcaster;
+
+    while(nh.ok()) {
+        broadcaster.sendTransform(tf::StampedTransform( tf::Transform(tf::Quaternion(0, 0, 0, 1), vec), ros::Time::now(),"base_link", "base_kinect"));
+        ros::spinOnce();
+        rate.sleep();
+    }   
 }
