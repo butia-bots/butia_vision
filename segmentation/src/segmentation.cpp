@@ -153,7 +153,7 @@ void ImageSegmenter::createMask() {
         }
     }
 
-	filterImage(mask);
+    filterImage(mask);
 
     histogram.clear();
     histogram_class_limits.clear();
