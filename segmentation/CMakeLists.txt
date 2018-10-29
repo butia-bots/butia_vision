@@ -4,7 +4,7 @@ project(segmentation)
 add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS roscpp vision_system_msgs cv_bridge)
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
 
 catkin_package(
     INCLUDE_DIRS include
