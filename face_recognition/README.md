@@ -21,10 +21,6 @@ The face_recognition package uses Openface, dlib, OpenCV and scikit-learn to per
 
     Publishes the recognized faces.
 
-* **`face_recognition3d:`** `/vision_system/fr/face_recognition3d` ([vision_system_msgs::Recognitions3D])
-
-    Publishes the recognized faces in 3D.
-
 * **`face_recognition_view:`** `/vision_system/fr/face_recognition_view` ([sensor_msgs::Image])
 
     Publishes an image of the recognized faces to debug the process.

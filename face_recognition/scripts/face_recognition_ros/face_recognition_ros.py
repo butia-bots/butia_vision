@@ -15,7 +15,7 @@ from dlib import rectangle, rectangles
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from vision_system_msgs.msg import BoundingBox, Description, Description3D, Recognitions, Recognitions3D
-from vision_system_msgs.srv import FaceClassifierTraining, Image2World
+from vision_system_msgs.srv import FaceClassifierTraining
 
 BRIDGE = CvBridge()
 PACK_DIR = rospkg.RosPack().get_path('face_recognition')
@@ -25,8 +25,6 @@ class FaceRecognitionROS():
         self.models_dir = os.path.join(PACK_DIR, 'models')
         self.dataset_dir = os.path.join(PACK_DIR, 'dataset')
        
-        self.num_recognitions = 0
-
         self.last_recognition = 0.0
 
         self.image_width = 0
@@ -480,13 +478,10 @@ class FaceRecognitionROS():
         recognized_faces = Recognitions()
         recognized_faces.image_header = ros_msg.header
 
-        recognized_faces.recognition_header.seq = self.num_recognitions
-        recognized_faces.recognition_header.stamp = rospy.get_rostime()
-        recognized_faces.recognition_header.frame_id = "face_recognition"
+        recognized_faces.header.stamp = rospy.get_rostime()
+        recognized_faces.header.frame_id = "face_recognition"
 
         recognized_faces.descriptions = faces_description
-
-        self.num_recognitions += 1
 
         rospy.loginfo("Recognition FPS: {:.2f} Hz.".format((1/(rospy.get_rostime().to_sec() - self.last_recognition))))
         self.last_recognition = rospy.get_rostime().to_sec()
@@ -499,32 +494,3 @@ class FaceRecognitionROS():
         ans = self.trainClassifier(ros_srv.classifier_type, ros_srv.classifier_name)
         return ans 
 
-<<<<<<< HEAD
-    def recognitions2Recognitions3D(self, recognitions, client):
-        try:
-           response = client(recognitions)
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            return None
-
-        recognitions3d = Recognitions3D()
-        recognitions3d.image_header = recognitions.image_header
-        recognitions3d.recognition_header = recognitions.recognition_header
-        
-        recognitions3d = Recognitions3D()
-        poses = response.poses
-
-        for i in range(0, len(recognitions.descriptions)):
-            description = Description3D()
-            description.label_class = recognitions.descriptions[i].label_class
-            description.probability = recognitions.descriptions[i].probability
-            description.pose = poses[i]
-
-            print('<{}, {}, {}, {}>'.format(description.label_class, poses[i].pose.position.x, poses[i].pose.position.y, poses[i].pose.position.z))
-
-            recognitions3d.descriptions.append(description)
-        
-        return recognitions3d
-
-=======
->>>>>>> master
