@@ -200,6 +200,8 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
         segmented_depth_image = depth(roi);
         sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
         readImage(rgb_const_ptr, segmented_rgb_image);
+	cv::imshow("Seg", segmented_rgb_image);
+	cv::waitKey(1);
 
         rgbd2PoseWithCovariance(segmented_rgb_image, segmented_depth_image, description3d.pose);
         descriptions3d.push_back(description3d);
