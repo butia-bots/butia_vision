@@ -59,13 +59,20 @@ class ImageSegmenter {
         ImageSegmenter(ros::NodeHandle _nh); //Constructor
         
         bool segment(vision_system_msgs::SegmentationRequest::Request &req, vision_system_msgs::SegmentationRequest::Response &res); //Service function
-	void filterImage(cv::Mat &image);
+	    void filterImage(cv::Mat &image);
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image); //Image Reader
         void cropImage(cv::Mat &image, vision_system_msgs::BoundingBox bounding_box, cv::Mat &destiny); //Image Cropper
         void calculateHistogram();
         void getMaxHistogramValue();
+        
         void createMask();
-        bool verifyState(int r, int c);
+        void createMaskHistogram();
+        void createMaskMedianFull();
+        void createMaskMedianCenter();
+
+        bool verifyStateHistogram(int r, int c);
+        bool verifyStateMedianFull(int r, int c);
+        bool verifyStateMedianCenter(int r, int c);
 
         void readParameters();
 };

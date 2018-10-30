@@ -2,7 +2,7 @@
 
 
 //----------------------------------Image Segmenter's Functions----------------------------------
-ImageSegmenter::ImageSegmenter(ros::NodeHandle _nh) : node_handle(_nh), segmentable_depth = 0 {
+ImageSegmenter::ImageSegmenter(ros::NodeHandle _nh) : node_handle(_nh), segmentable_depth(0) {
     readParameters();
     
     dif = (int *)malloc(3 * sizeof(int));
@@ -80,9 +80,9 @@ void ImageSegmenter::calculateHistogram() {
     //Creating the histogram
     for(int r = 0; r < mat_initial_depth_image.rows; r++) {
         for(int c = 0; c < mat_initial_depth_image.cols; c++) {
-            if ((cropped_initial_depth_image(r, c) <= lower_histogram_limit) || (cropped_initial_depth_image(r, c) >= upper_histogram_limit))
+            if ((cropped_initial_depth_image(r, c) <= lower_limit) || (cropped_initial_depth_image(r, c) >= upper_limit))
                 continue;
-            histogram[(int)((cropped_initial_depth_image(r, c)*histogram_size) / upper_histogram_limit)]++;
+            histogram[(int)((cropped_initial_depth_image(r, c)*histogram_size) / upper_limit)]++;
         }
     }
 }
@@ -100,6 +100,21 @@ void ImageSegmenter::getMaxHistogramValue() {
     }
 }
 
+void ImageSegmenter::createMask() {
+    if(model_id == "histogram") {
+        createMaskHistogram();
+    }
+    else if(model_id == "median_full") {
+        createMaskMedianFull();
+    }
+    else if(model_id == "median_center") {
+        createMaskMedianCenter();
+    }
+    else {
+        ROS_ERROR("Invalid model ID.");
+    }
+}
+
 
 void ImageSegmenter::createMaskHistogram() {
     bool object_founded;
@@ -113,7 +128,7 @@ void ImageSegmenter::createMaskHistogram() {
         histogram_class_limits.resize(histogram_size);
 
         //Filling the limits vector
-        initial_sill = upper_histogram_limit / histogram_size;
+        initial_sill = upper_limit / histogram_size;
         accumulated_sill = 0;
         for (int i = 0; i < histogram_size; i++) {
             histogram_class_limits[i].first = (int)accumulated_sill;
@@ -164,7 +179,7 @@ bool ImageSegmenter::verifyStateHistogram(int r, int c) {
     if (mask(r, c) == LIE)
         return false;
 
-    if ((cropped_initial_depth_image(r, c) <= lower_histogram_limit) || (cropped_initial_depth_image(r, c) >= upper_histogram_limit)) {
+    if ((cropped_initial_depth_image(r, c) <= lower_limit) || (cropped_initial_depth_image(r, c) >= upper_limit)) {
         mask(r, c) = LIE;
         return false;
     }
@@ -215,7 +230,7 @@ void ImageSegmenter::createMaskMedianFull() {
 
     for(int r = 0 ; r < cropped_initial_depth_image.rows ; r++) {
         for(int c = 0 ; c < cropped_initial_depth_image.cols ; c++) {
-            if(cropped_initial_depth_image(i, j) <= 0 || cropped_initial_depth_image(r, c) > 5001) continue;
+            if(cropped_initial_depth_image(r, c) <= lower_limit || cropped_initial_depth_image(r, c) >= upper_limit) continue;
             med.push_back(cropped_initial_depth_image(r, c));
         }    
     }
@@ -225,7 +240,7 @@ void ImageSegmenter::createMaskMedianFull() {
     if(med.size()%2 == 0)
         segmentable_depth =  (med[med.size()/2] + med[(med.size()/2) - 1])/2;
     else
-        segmentable_depth = med[(med.size()/2) - 1]);
+        segmentable_depth = med[(med.size()/2) - 1];
 
 
     for (int r = 0; r < cropped_initial_depth_image.rows; r++) {
@@ -251,26 +266,26 @@ bool ImageSegmenter::verifyStateMedianFull(int r, int c) {
     if (mask(r, c) == LIE)
         return false;
 
-    if ((cropped_initial_depth_image(r, c) <= lower_histogram_limit) || (cropped_initial_depth_image(r, c) >= upper_histogram_limit)) {
+    if ((cropped_initial_depth_image(r, c) <= lower_limit) || (cropped_initial_depth_image(r, c) >= upper_limit)) {
         mask(r, c) = LIE;
         return false;
     }
     
-    if ((cropped_initial_depth_image(r, c) >= segmentable - 100) && (cropped_initial_depth_image(r, c) < segmentable + 100)) {
+    if ((cropped_initial_depth_image(r, c) >= segmentable_depth - median_full_threshold) && (cropped_initial_depth_image(r, c) < segmentable_depth + median_full_threshold)) {
         mask(r, c) = TRUTH;
         return true;
     }
 
     bool answer = false;
     for (int i = 1; i <= left_class_limit && answer == false; i++) {
-        if (position_of_max_value - i >= 0) {
-            if ((cropped_initial_depth_image(r, c) >= segmentable_depth - median_center_threshold*(i+1)) && (cropped_initial_depth_image(r, c) <= segmentable_depth - median_center_threshold*i))
+        if (segmentable_depth - median_full_threshold*(i+1) > lower_limit) {
+            if ((cropped_initial_depth_image(r, c) >= segmentable_depth - median_full_threshold*(i+1)) && (cropped_initial_depth_image(r, c) <= segmentable_depth - median_full_threshold*i))
                 answer = true;
         }
     }
     for (int i = 1; i <= right_class_limit && answer == false; i++) {
-        if (position_of_max_value + i < histogram_size) {
-            if ((cropped_initial_depth_image(r, c) >= segmentable_depth + median_center_threshold*i) && (cropped_initial_depth_image(r, c) <= segmentable_depth + median_center_threshold*(i+1)))
+        if (segmentable_depth + median_full_threshold*(i+1) < upper_limit) {
+            if ((cropped_initial_depth_image(r, c) >= segmentable_depth + median_full_threshold*i) && (cropped_initial_depth_image(r, c) <= segmentable_depth + median_full_threshold*(i+1)))
                answer = true;
         }
     }
@@ -299,7 +314,7 @@ bool ImageSegmenter::verifyStateMedianFull(int r, int c) {
 
 void ImageSegmenter::createMaskMedianCenter() {
     int deriv[median_center_kernel_size];
-    for(int i = 0, i < median_center_kernel_size ; i++){
+    for(int i = 0 ; i < median_center_kernel_size ; i++){
         deriv[i] = i - (median_center_kernel_size/2);
     }
     std::vector<int> med;
@@ -320,7 +335,7 @@ void ImageSegmenter::createMaskMedianCenter() {
     if(med.size()%2 == 0)
         segmentable_depth =  (med[med.size()/2] + med[(med.size()/2) - 1])/2;
     else
-        segmentable_depth = med[(med.size()/2) - 1]);
+        segmentable_depth = med[(med.size()/2) - 1];
 
     for (int r = 0; r < cropped_initial_depth_image.rows; r++) {
         for (int c = 0; c < cropped_initial_depth_image.cols; c++) {
@@ -342,35 +357,36 @@ void ImageSegmenter::createMaskMedianCenter() {
 bool ImageSegmenter::verifyStateMedianCenter(int r, int c) {
     if (mask(r, c) == TRUTH)
         return true;
+
     if (mask(r, c) == LIE)
         return false;
 
-    if ((cropped_initial_depth_image(r, c) <= lower_histogram_limit) || (cropped_initial_depth_image(r, c) >= upper_histogram_limit)) {
+    if ((cropped_initial_depth_image(r, c) <= lower_limit) || (cropped_initial_depth_image(r, c) >= upper_limit)) {
         mask(r, c) = LIE;
         return false;
     }
     
-    if ((cropped_initial_depth_image(r, c) >= segmentable - 100) && (cropped_initial_depth_image(r, c) < segmentable + 100)) {
+    if ((cropped_initial_depth_image(r, c) >= segmentable_depth - median_center_threshold) && (cropped_initial_depth_image(r, c) < segmentable_depth + median_center_threshold)) {
         mask(r, c) = TRUTH;
         return true;
     }
 
     bool answer = false;
     for (int i = 1; i <= left_class_limit && answer == false; i++) {
-        if (position_of_max_value - i >= 0) {
+        if (segmentable_depth - median_center_threshold*(i+1) > lower_limit) {
             if ((cropped_initial_depth_image(r, c) >= segmentable_depth - median_center_threshold*(i+1)) && (cropped_initial_depth_image(r, c) <= segmentable_depth - median_center_threshold*i))
                 answer = true;
         }
     }
     for (int i = 1; i <= right_class_limit && answer == false; i++) {
-        if (position_of_max_value + i < histogram_size) {
+        if (segmentable_depth + median_center_threshold*(i+1) < upper_limit) {
             if ((cropped_initial_depth_image(r, c) >= segmentable_depth + median_center_threshold*i) && (cropped_initial_depth_image(r, c) <= segmentable_depth + median_center_threshold*(i+1)))
                answer = true;
         }
     }
 
     if (answer == true) {
-	mask(r, c) = VERIFYING;
+	    mask(r, c) = VERIFYING;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 if ((dif[i] == 0) && (dif[j] == 0))
