@@ -65,7 +65,7 @@ class ImageSegmenter {
         void calculateHistogram();
         void getMaxHistogramValue();
         
-        void createMask();
+        void createMask(std::string _model_id);
         void createMaskHistogram();
         void createMaskMedianFull();
         void createMaskMedianCenter();

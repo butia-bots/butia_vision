@@ -44,7 +44,7 @@ bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &r
         mat_segmented_image = cv::Mat_<cv::Vec3b>(cv::Size(cropped_initial_depth_image.cols, cropped_initial_depth_image.rows), CV_8UC3);
         mask = cv::Mat_<uint8_t>(cv::Size(cropped_initial_depth_image.cols, cropped_initial_depth_image.rows), CV_8UC1);
 
-        createMask();
+        createMask(req.model_id);
 
         for (int r = 0; r < mask.rows; r++) {
             for (int c = 0; c < mask.cols; c++) {
@@ -100,14 +100,15 @@ void ImageSegmenter::getMaxHistogramValue() {
     }
 }
 
-void ImageSegmenter::createMask() {
-    if(model_id == "histogram") {
+void ImageSegmenter::createMask(std::string _model_id = "") {
+    if(_model_id == "") _model_id = model_id;
+    if(_model_id == "histogram") {
         createMaskHistogram();
     }
-    else if(model_id == "median_full") {
+    else if(_model_id == "median_full") {
         createMaskMedianFull();
     }
-    else if(model_id == "median_center") {
+    else if(_model_id == "median_center") {
         createMaskMedianCenter();
     }
     else {

@@ -37,6 +37,7 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
                 descriptions.erase(it_descriptions);
         }
 
+        image_segmentation_service.request.model_id = "median_full";
         image_segmentation_service.request.descriptions = descriptions;
         image_segmentation_service.request.initial_rgbd_image = rgbd_image;
         if (!image_segmentation_client.call(image_segmentation_service))

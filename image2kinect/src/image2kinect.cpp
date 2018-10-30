@@ -218,6 +218,7 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
 void Image2Kinect::objectRecognitionCallback(vision_system_msgs::Recognitions recognitions)
 {
     vision_system_msgs::Recognitions3D recognitions3d;
+    segmentation_model_id = "median_center";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     object_recognition_pub.publish(recognitions3d);
 }
@@ -225,6 +226,7 @@ void Image2Kinect::objectRecognitionCallback(vision_system_msgs::Recognitions re
 void Image2Kinect::faceRecognitionCallback(vision_system_msgs::Recognitions recognitions)
 {
     vision_system_msgs::Recognitions3D recognitions3d;
+    segmentation_model_id = "median_center";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     face_recognition_pub.publish(recognitions3d);
 }
@@ -232,6 +234,7 @@ void Image2Kinect::faceRecognitionCallback(vision_system_msgs::Recognitions reco
 void Image2Kinect::peopleTrackingCallback(vision_system_msgs::Recognitions recognitions)
 {
     vision_system_msgs::Recognitions3D recognitions3d;
+    segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     people_tracking_pub.publish(recognitions3d);
 }

@@ -71,6 +71,8 @@ class Image2Kinect{
         int width;
         int height;
 
+        std::string segmentation_model_id;
+
         void createTabels();
         void readParameters();
 };
