@@ -29,6 +29,8 @@ parameters:
   use_exact_time: true
   image_width: 640
   image_height: 480
-  offset_x: 0.1
-  offset_y: 0.1
-  offset_z: 1.2
+  robot_tf: base_link
+  kinect_tf: base_kinect2
+  offset_x: 0.1315
+  offset_y: 0.0020
+  offset_z: 1.2120
