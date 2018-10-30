@@ -13,8 +13,8 @@ ImageSegmenter::ImageSegmenter(ros::NodeHandle _nh) : node_handle(_nh), segmenta
     service = node_handle.advertiseService(param_segmentation_service, &ImageSegmenter::segment, this);
 }
 
-void ImageSegmenter::filterImage(cv::Mat &image)
-{
+
+void ImageSegmenter::filterImage(cv::Mat &image) {
 	cv:medianBlur(image, image, 5);
 }
 

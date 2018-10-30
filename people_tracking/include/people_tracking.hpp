@@ -14,17 +14,28 @@
 #include "vision_system_msgs/Recognitions.h"
 #include "vision_system_msgs/Description.h"
 #include "vision_system_msgs/SegmentationRequest.h"
+#include "vision_system_msgs/StartTracking.h"
+#include "vision_system_msgs/StopTracking.h"
 
 
 
 class PeopleTracker {
     private:
         ros::NodeHandle node_handle; //Internal NodeHandle
+
         ros::Subscriber people_detection_subscriber; //Subscriber that reads the people detection topic
+
         ros::ServiceClient image_request_client; //Service that gets the RGBD image
         ros::ServiceClient image_segmentation_client; //Service that segments the person
 
+        ros::ServiceServer start_service;
+        ros::ServiceServer stop_service;
+
         int image_size;
+        int frame_id;
+
+        std::vector<vision_system_msgs::Description> descriptions
+
         float bounding_box_size_threshold;
         float probability_threshold;
 
@@ -32,8 +43,8 @@ class PeopleTracker {
         cv::Mat mat_grayscale_segmented_image;
 
         int min_hessian;
-        //cv::Ptr<cv::xfeatures2d::SURF> surf_detector;
-        //cv::Ptr<cv::xfeatures2d::SIFT> sift_detector;
+        cv::Ptr<cv::xfeatures2d::SURF> surf_detector;
+        cv::Ptr<cv::xfeatures2d::SIFT> sift_detector;
         cv::FlannBasedMatcher matcher;
 
         cv::Mat descriptors;
@@ -42,7 +53,6 @@ class PeopleTracker {
         std::vector<cv::KeyPoint> keypoints;
 
         std::vector<std::vector<cv::DMatch>> matches;
-        std::vector<std::vector<cv::DMatch>> actual_matches;
 
         std::vector<cv::DMatch> good_matches;
         std::vector<cv::DMatch> actual_good_matches;
@@ -51,8 +61,13 @@ class PeopleTracker {
         std::vector<int> actual_bad_matches;
 
         std::string param_detector_type;
-        int param_k;
+        std::string param_start_service;
+        std::string param_stop_service;
+        std::string param_people_detection_topic;
+        std::string param_image_request_service;
+        std::string param_segmentation_request_service;
 
+        int param_k;
         float minimal_minimal_distance;
         float matches_check_factor;
 
@@ -66,10 +81,15 @@ class PeopleTracker {
 
         void peopleDetectionCallBack(const vision_system_msgs::Recognitions::ConstPtr &person_detected); //CallBack
 
+        bool startTracking(bool &req, bool &res);
+        bool stopTracking(bool &req, bool &res);
+
         void readImage(const sensor_msgs::Image::ConstPtr &source, cv::Mat &destiny);
         void extractFeatures(cv::Mat &descriptors_destiny);
         bool matchFeatures();
         void registerMatch();
+
+        void readParameters();
 };
 
 

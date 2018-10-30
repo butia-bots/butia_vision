@@ -19,6 +19,8 @@ add_service_files(
   FaceClassifierTraining.srv
   ImageRequest.srv
   SegmentationRequest.srv
+  StartTracking.srv
+  StopTracking.srv
 )
 
 generate_messages(
