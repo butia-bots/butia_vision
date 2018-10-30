@@ -27,7 +27,7 @@ publishers:
 clients:
 
   image_request:
-    service: /vision_system/vsb/image_request
+    service: /vision_system/is/image_request
 
   segmentation_request:
     service: /vision_system/seg/image_segmentation

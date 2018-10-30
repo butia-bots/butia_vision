@@ -3,8 +3,8 @@ project(vision_system_bridge)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED COMPONENTS roscpp std_msgs sensor_msgs std_srvs cv_bridge vision_system_msgs message_filters image_transport)
-find_package(OpenCV REQUIRED)
+find_package(catkin REQUIRED COMPONENTS roscpp std_msgs sensor_msgs std_srvs cv_bridge tf vision_system_msgs message_filters image_transport)
+find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
 
 catkin_package(
     INCLUDE_DIRS include/${PROJECT_NAME}

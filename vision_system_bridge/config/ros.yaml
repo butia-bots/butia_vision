@@ -1,3 +1,4 @@
+
 subscribers:
   
   queue_size: 5
@@ -24,11 +25,10 @@ publishers:
   camera_info:
     topic: /vision_system/vsb/camera_info
 
-server:
-
-  image_request:
-    service: /vision_system/vsb/image_request
-
 parameters:
-  buffer_size: 150
   use_exact_time: true
+  image_width: 640
+  image_height: 480
+  offset_x: 0.1
+  offset_y: 0.1
+  offset_z: 1.2

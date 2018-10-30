@@ -3,9 +3,10 @@
 
 
 //------------------------------People Tracker's Functions------------------------------
-PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size(640*480), bounding_box_size_threshold(0.1), min_hessian(400), surf_detector(cv::xfeatures2d::SURF::create(min_hessian)), sift_detector(cv::xfeatures2d::SIFT::create()), param_detector_type("surf"), minimal_minimal_distance(0.02), matches_check_factor(0.7), initialized(false), param_k(8), probability_threshold(0.7) {
+PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size(640*480), bounding_box_size_threshold(0.1), min_hessian(400)//, surf_detector(cv::xfeatures2d::SURF::create(min_hessian)), sift_detector(cv::xfeatures2d::SIFT::create()), param_detector_type("surf"), minimal_minimal_distance(0.02), matches_check_factor(0.7), initialized(false), param_k(8), probability_threshold(0.7) {
+{
     people_detection_subscriber = node_handle.subscribe("/vision_system/or/people_detection", 150, &PeopleTracker::peopleDetectionCallBack, this);
-    image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>("/vision_system/vsb/image_request");
+    image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>("/vision_system/is/image_request");
     image_segmentation_client = node_handle.serviceClient<vision_system_msgs::SegmentationRequest>("/vision_system/seg/image_segmentation");
 }
 
@@ -14,7 +15,11 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
     vision_system_msgs::ImageRequest image_request_service;
     vision_system_msgs::SegmentationRequest image_segmentation_service;
 
-    image_request_service.request.seq = person_detected->image_header.seq;
+    ROS_WARN("Person Detected seq: %d", person_detected->image_header.seq);
+
+    int frame_id = person_detected->image_header.seq;
+
+    image_request_service.request.seq = frame_id;
     if (!image_request_client.call(image_request_service))
         ROS_ERROR("Failed to call image request service!");
     else {
@@ -32,6 +37,7 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
                 descriptions.erase(it_descriptions);
         }
 
+        image_segmentation_service.request.model_id = "median_full";
         image_segmentation_service.request.descriptions = descriptions;
         image_segmentation_service.request.initial_rgbd_image = rgbd_image;
         if (!image_segmentation_client.call(image_segmentation_service))
@@ -74,7 +80,7 @@ void PeopleTracker::readImage(const sensor_msgs::Image::ConstPtr &source, cv::Ma
     cv_image->image.copyTo(destiny);
 }
 
-
+/*
 void PeopleTracker::extractFeatures(cv::Mat &descriptors_destiny) {
     keypoints.clear();
     descriptors_destiny = cv::Mat();
@@ -119,5 +125,5 @@ void PeopleTracker::registerMatch() {
         descriptors.push_back(actual_descriptors.at<int>(bad_matches[i]));
 
     matches_check_factor = matches_check_factor - (bad_matches.size() * matches_check_factor * matches_check_factor);
-}
+}*/
 //------------------------------People Tracker's Functions------------------------------

@@ -1,6 +1,6 @@
 # face_recognition
 ## Overview
-The face_recognition package uses Openface, OpenCV and scikit-learn to perform all four parts in a face recognize process:
+The face_recognition package uses Openface, dlib, OpenCV and scikit-learn to perform all four parts in a face recognize process:
 - detection (openface or opencv)
 - alignment (openface)
 - embeding (openface)
@@ -21,13 +21,6 @@ The face_recognition package uses Openface, OpenCV and scikit-learn to perform a
 
     Publishes the recognized faces.
 
-<<<<<<< HEAD
-* **`face_recognition3d:`** `/vision_system/fr/face_recognition3d` ([vision_system_msgs::Recognitions3D])
-
-    Publishes the recognized faces in 3D.
-
-=======
->>>>>>> master
 * **`face_recognition_view:`** `/vision_system/fr/face_recognition_view` ([sensor_msgs::Image])
 
     Publishes an image of the recognized faces to debug the process.
@@ -36,7 +29,7 @@ The face_recognition package uses Openface, OpenCV and scikit-learn to perform a
 
     Ask for change of classifier model.
     
-## Services
+## Servers
 * **`classifier_training:`** `/vision_system/fr/classifier_training` ([vision_system_msgs::ClassifierTraining])
 
 

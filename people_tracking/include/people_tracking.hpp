@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include <opencv2/opencv.hpp>
-#include <opencv2/xfeatures2d.hpp>
+//#include <opencv2/xfeatures2d.hpp>
 #include <vector>
 #include <string>
 #include <utility>
@@ -32,8 +32,8 @@ class PeopleTracker {
         cv::Mat mat_grayscale_segmented_image;
 
         int min_hessian;
-        cv::Ptr<cv::xfeatures2d::SURF> surf_detector;
-        cv::Ptr<cv::xfeatures2d::SIFT> sift_detector;
+        //cv::Ptr<cv::xfeatures2d::SURF> surf_detector;
+        //cv::Ptr<cv::xfeatures2d::SIFT> sift_detector;
         cv::FlannBasedMatcher matcher;
 
         cv::Mat descriptors;
