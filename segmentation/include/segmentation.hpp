@@ -2,6 +2,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include <algorithm>
 #include <vector>
 #include <utility>
 #include <string>
@@ -23,25 +24,33 @@ class ImageSegmenter {
         ros::NodeHandle node_handle;
         ros::ServiceServer service;
 
-	cv::Mat_<cv::Vec3b> mat_initial_rgb_image, cropped_initial_rgb_image;
-	cv::Mat_<uint16_t> mat_initial_depth_image, cropped_initial_depth_image;
+        cv::Mat_<cv::Vec3b> mat_initial_rgb_image, cropped_initial_rgb_image;
+        cv::Mat_<uint16_t> mat_initial_depth_image, cropped_initial_depth_image;
+        cv::Mat_<uint8_t> mask;
 
-        int histogram_size;
-        int upper_histogram_limit;
-        int lower_histogram_limit;
+        int *dif;
+
+        std::string model_id;
+        
+        int upper_limit;
+        int lower_limit;
         int left_class_limit;
         int right_class_limit;
+
+        int histogram_size;
         float bounding_box_threshold;
         float histogram_decrease_factor;
-
         std::vector<int> histogram;
         std::vector<std::pair<int, int>> histogram_class_limits;
-
         int max_histogram_value;
         int position_of_max_value;
 
-        cv::Mat_<uint8_t> mask;
-        int *dif;
+        int median_full_threshold;
+
+        int median_center_kernel_size;
+        int median_center_threshold;
+
+        int segmentable_depth;
 
         std::string param_segmentation_service;
 

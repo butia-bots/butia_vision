@@ -1,0 +1,17 @@
+model_id: median_full
+lower_limit: 0
+upper_limit: 5001
+left_class_limit: 1
+right_class_limit: 1
+
+histogram:
+  size: 20
+  bounding_box_threshold: 0.35
+  decrease_factor: 2
+
+mendian_full:
+  threshold: 100
+
+median_center:
+  kernel_size: 5
+  threshold: 100
