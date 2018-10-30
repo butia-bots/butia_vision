@@ -237,6 +237,8 @@ void ImageSegmenter::createMaskMedianFull() {
 
     std::sort(med.begin(), med.end());
 
+    if(med.size() == 0) return;
+
     if(med.size()%2 == 0)
         segmentable_depth =  (med[med.size()/2] + med[(med.size()/2) - 1])/2;
     else
@@ -331,6 +333,8 @@ void ImageSegmenter::createMaskMedianCenter() {
     }
 
     std::sort(med.begin(), med.end());
+
+    if(med.size() == 0) return;
 
     if(med.size()%2 == 0)
         segmentable_depth =  (med[med.size()/2] + med[(med.size()/2) - 1])/2;

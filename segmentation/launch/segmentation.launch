@@ -1,0 +1,7 @@
+<launch>
+  <rosparam command="load" ns="segmentation" file="$(find segmentation)/config/ros.yaml"/>
+  <rosparam command="load" ns="segmentation" file="$(find segmentation)/config/segmentation.yaml"/>
+
+  <node name="segmentation_node" pkg="segmentation" type="segmentation_node" output="screen"/>
+
+</launch>
