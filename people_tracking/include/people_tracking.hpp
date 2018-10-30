@@ -38,10 +38,17 @@ class PeopleTracker {
 
         cv::Mat descriptors;
         cv::Mat actual_descriptors;
+
         std::vector<cv::KeyPoint> keypoints;
+
         std::vector<std::vector<cv::DMatch>> matches;
+        std::vector<std::vector<cv::DMatch>> actual_matches;
+
         std::vector<cv::DMatch> good_matches;
+        std::vector<cv::DMatch> actual_good_matches;
+
         std::vector<int> bad_matches;
+        std::vector<int> actual_bad_matches;
 
         std::string param_detector_type;
         int param_k;
@@ -50,6 +57,8 @@ class PeopleTracker {
         float matches_check_factor;
 
         bool initialized;
+        bool person_founded;
+        int number_of_matches_on_better_match;
 
 
     public:

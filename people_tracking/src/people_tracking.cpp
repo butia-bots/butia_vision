@@ -40,20 +40,29 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
             ROS_INFO("Image segmentation service called!");
             segmented_images = image_segmentation_service.response.segmented_rgb_images;
             
+            actual_bad_matches.clear();
+            actual_good_matches.clear();
+            number_of_matches_on_better_match = 0;
+            prsron_founded = false;
             for (it_images = segmented_images.begin(); it_images != segmented_images.end(); it_images++) {
                 sensor_msgs::Image::ConstPtr constptr_segmented_image(new sensor_msgs::Image(*it_images));
                 readImage(constptr_segmented_image, mat_rgb_segmented_image);
 
-                cv::imshow("Image", mat_rgb_segmented_image);
-                cv::waitKey(1);
-            }
-            /*cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
+                cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
+                extractFeatures(actual_descriptors);
 
-            extractFeatures(actual_descriptors);
-            if (matchFeatures())
-                ROS_INFO("Person founded!");
-            else
-                ROS_INFO("Person not founded!");*/
+                if (matchFeatures()) && (good_matches.size() > number_of_matches_on_better_match)) {
+                        actual_good_matches = good_matches;
+                        actual_bad_matches = bad_matches;
+                        actual_matches = matches;
+                        peson_founded = true;
+                        ROS_INFO("Same person!");
+                } else
+                    ROS_INFO("Another person!");
+            }
+
+            if (person_founded)
+                registerMatch();
         }
     }
 }
@@ -83,7 +92,6 @@ bool PeopleTracker::matchFeatures() {
     bad_matches.clear();
 
     matcher.knnMatch(actual_descriptors, descriptors, matches, param_k);
-    ROS_INFO("Fez o match!");
 
     float minimal_distance = 100;
     for(int i = 0; i < actual_descriptors.rows; i++) {
@@ -102,7 +110,6 @@ bool PeopleTracker::matchFeatures() {
     if (good_matches.size() < descriptors.rows * matches_check_factor)
         return false;
 
-    registerMatch();
     return true;
 }
 
