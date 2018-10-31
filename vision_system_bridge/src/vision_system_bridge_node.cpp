@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
     double offset_x, offset_y, offset_z;
 
     nh.param("/vision_system_bridge/parameters/robot_tf", robot_tf, std::string("base_link"));
-    nh.param("/vision_system_bridge/parameters/kinect_tf", kinect_tf, std::string("base_kinect2"));
+    nh.param("/vision_system_bridge/parameters/kinect_tf", kinect_tf, std::string("kinect2_link"));
     nh.param("/vision_system_bridge/parameters/offset_x", offset_x, 0.1315);
     nh.param("/vision_system_bridge/parameters/offset_y", offset_y, 0.0020);
     nh.param("/vision_system_bridge/parameters/offset_z", offset_z, 1.2120);
@@ -25,5 +25,5 @@ int main(int argc, char **argv) {
         broadcaster.sendTransform(tf::StampedTransform( tf::Transform(tf::Quaternion(0, 0, 0, 1), vec), ros::Time::now(), robot_tf, kinect_tf));
         ros::spinOnce();
         rate.sleep();
-    }   
+    } 
 }
