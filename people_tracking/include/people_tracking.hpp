@@ -1,10 +1,10 @@
 #include <ros/ros.h>
 #include <opencv2/opencv.hpp>
-//#include <opencv2/xfeatures2d.hpp>
 #include <vector>
 #include <string>
 #include <utility>
 
+#include "opencv2/xfeatures2d.hpp"
 #include "sensor_msgs/Image.h"
 #include "cv_bridge/cv_bridge.h"
 #include "image_transport/image_transport.h"
@@ -34,7 +34,7 @@ class PeopleTracker {
         int image_size;
         int frame_id;
 
-        std::vector<vision_system_msgs::Description> descriptions
+        std::vector<vision_system_msgs::Description> descriptions;
 
         float bounding_box_size_threshold;
         float probability_threshold;
@@ -52,7 +52,7 @@ class PeopleTracker {
 
         std::vector<cv::KeyPoint> keypoints;
 
-        std::vector<std::vector<cv::DMatch>> matches;
+        std::vector<cv::DMatch> matches;
 
         std::vector<cv::DMatch> good_matches;
         std::vector<cv::DMatch> actual_good_matches;
@@ -81,8 +81,8 @@ class PeopleTracker {
 
         void peopleDetectionCallBack(const vision_system_msgs::Recognitions::ConstPtr &person_detected); //CallBack
 
-        bool startTracking(bool &req, bool &res);
-        bool stopTracking(bool &req, bool &res);
+        bool startTracking(vision_system_msgs::StartTracking::Request &req, vision_system_msgs::StartTracking::Response &res);
+        bool stopTracking(vision_system_msgs::StopTracking::Request &req, vision_system_msgs::StopTracking::Response &res);
 
         void readImage(const sensor_msgs::Image::ConstPtr &source, cv::Mat &destiny);
         void extractFeatures(cv::Mat &descriptors_destiny);

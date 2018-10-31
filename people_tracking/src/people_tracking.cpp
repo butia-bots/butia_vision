@@ -19,6 +19,7 @@ PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size
 void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitions::ConstPtr &person_detected) {
     vision_system_msgs::ImageRequest image_request_service;
     vision_system_msgs::SegmentationRequest image_segmentation_service;
+    vision_system_msgs::RGBDImage rgbd_image;
 
     ROS_WARN("Person Detected seq: %d", person_detected->image_header.seq);
 
@@ -31,27 +32,88 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
         else {
             ROS_INFO("Image request service called!");
 
-            vision_system_msgs::RGBDImage rgbd_image = image_request_service.response.rgbd_image;
+            rgbd_image = image_request_service.response.rgbd_image;
 
             std::vector<vision_system_msgs::Description>::iterator it_descriptions;
-            std::vector<sensor_msgs::Image> segmentimage_request_service.request.seq = frame_id;
+            std::vector<sensor_msgs::Image> segmented_images;
+            image_request_service.request.seq = frame_id;
+            if (!image_request_client.call(image_request_service))
+                ROS_ERROR("Failed to call image request service!");
+            else {
+                ROS_INFO("Image request service called!");
+
+                vision_system_msgs::RGBDImage rgbd_image = image_request_service.response.rgbd_image;
+
+                std::vector<vision_system_msgs::Description> descriptions = person_detected->descriptions;
+                std::vector<vision_system_msgs::Description>::iterator it_descriptions;
+                std::vector<sensor_msgs::Image> segmented_images;
+                std::vector<sensor_msgs::Image>::iterator it_images;
+
+                for (it_descriptions = descriptions.begin(); it_descriptions != descriptions.end(); it_descriptions++) {
+                    if (((*it_descriptions).bounding_box.width * (*it_descriptions).bounding_box.height < bounding_box_size_threshold * image_size) || ((*it_descriptions).probability < probability_threshold))
+                        descriptions.erase(it_descriptions);
+                }
+
+                image_segmentation_service.request.model_id = "median_full";
+                image_segmentation_service.request.descriptions = descriptions;
+                image_segmentation_service.request.initial_rgbd_image = rgbd_image;
+                if (!image_segmentation_client.call(image_segmentation_service))
+                    ROS_ERROR("Failed to call image segmentation service!");
+                else {
+                    ROS_INFO("Image segmentation service called!");
+                    segmented_images = image_segmentation_service.response.segmented_rgb_images;
+                    
+                    actual_bad_matches.clear();
+                    actual_good_matches.clear();
+                    number_of_matches_on_better_match = 0;
+                    person_founded = false;
+                    for (it_images = segmented_images.begin(); it_images != segmented_images.end(); it_images++) {
+                        sensor_msgs::Image::ConstPtr constptr_segmented_image(new sensor_msgs::Image(*it_images));
+                        readImage(constptr_segmented_image, mat_rgb_segmented_image);
+
+                        cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
+                        extractFeatures(actual_descriptors);
+
+                        if ((matchFeatures()) && (good_matches.size() > number_of_matches_on_better_match)) {
+                                actual_good_matches = good_matches;
+                                actual_bad_matches = bad_matches;
+                                person_founded = true;
+                                ROS_INFO("Same person!");
+                        } else
+                            ROS_INFO("Another person!");
+                    }
+
+                    if (person_founded)
+                        registerMatch();
+                }
+            }
+        }
+    } else {
+        image_request_service.request.seq = frame_id;
         if (!image_request_client.call(image_request_service))
-            ROS_ERROR("Failed to call image request service!");
+            ROS_ERROR("Failed to call image reqdescriptions = person_detected->descriptions;est service!");
         else {
             ROS_INFO("Image request service called!");
 
-            vision_system_msgs::RGBDImage rgbd_image = image_request_service.response.rgbd_image;
+            rgbd_image = image_request_service.response.rgbd_image;
+            std::vector<vision_system_msgs::Description>::iterator it;
+            std::vector<vision_system_msgs::Description>::iterator max_it;
 
-            std::vector<vision_system_msgs::Description> descriptions = person_detected->descriptions;
-            std::vector<vision_system_msgs::Description>::iterator it_descriptions;
+            vision_system_msgs::BoundingBox max_description;
+            max_description.width = 0;
+            max_description.height = 0;
+
             std::vector<sensor_msgs::Image> segmented_images;
-            std::vector<sensor_msgs::Image>::iterator it_images;ed_images;
-            std::vector<sensor_msgs::Image>::iterator it_images;
 
-            for (it_descriptions = descriptions.begin(); it_descriptions != descriptions.end(); it_descriptions++) {
-                if (((*it_descriptions).bounding_box.width * (*it_descriptions).bounding_box.height < bounding_box_size_threshold * image_size) || ((*it_descriptions).probability < probability_threshold))
-                    descriptions.erase(it_descriptions);
+            for (it = descriptions.begin(); it != descriptions.end(); it++) {
+                if ((*it).bounding_box.width * (*it).bounding_box.height > max_description.width * max_description.height) {
+                    max_it = it;
+                    max_description = (*it).bounding_box;
+                }
             }
+
+            descriptions.clear();
+            descriptions.push_back(*max_it);
 
             image_segmentation_service.request.model_id = "median_full";
             image_segmentation_service.request.descriptions = descriptions;
@@ -62,28 +124,11 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
                 ROS_INFO("Image segmentation service called!");
                 segmented_images = image_segmentation_service.response.segmented_rgb_images;
                 
-                actual_bad_matches.clear();
-                actual_good_matches.clear();
-                number_of_matches_on_better_match = 0;
-                person_founded = false;
-                for (it_images = segmented_images.begin(); it_images != segmented_images.end(); it_images++) {
-                    sensor_msgs::Image::ConstPtr constptr_segmented_image(new sensor_msgs::Image(*it_images));
-                    readImage(constptr_segmented_image, mat_rgb_segmented_image);
+                sensor_msgs::Image::ConstPtr constptr_segmented_image(new sensor_msgs::Image(*segmented_images.begin()));
+                readImage(constptr_segmented_image, mat_rgb_segmented_image);
 
-                    cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
-                    extractFeatures(actual_descriptors);
-
-                    if (matchFeatures()) && (good_matches.size() > number_of_matches_on_better_match)) {
-                            actual_good_matches = good_matches;
-                            actual_bad_matches = bad_matches;
-                            person_founded = true;
-                            ROS_INFO("Same person!");
-                    } else
-                        ROS_INFO("Another person!");
-                }
-
-                if (person_founded)
-                    registerMatch();
+                cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
+                extractFeatures(descriptors);
             }
         }
     }
@@ -113,24 +158,24 @@ bool PeopleTracker::matchFeatures() {
     good_matches.clear();
     bad_matches.clear();
 
-    matcher.knnMatch(actual_descriptors, descriptors, matches, param_k);
+    matcher.match(actual_descriptors, descriptors, matches);
 
     float minimal_distance = 100;
     for(int i = 0; i < actual_descriptors.rows; i++) {
-        double distance = matches[0][i].distance;
+        double distance = matches[i].distance;
         if(distance < minimal_distance) 
             minimal_distance = distance;
     }    
     
-    for(int i = 0; i node_handle.param("", param_image_request_service, std::string("/vision_system/is/image_request"));
-        if(matches[0]node_handle.param("", param_image_request_service, std::string("/vision_system/is/image_request"));
-            good_matcnode_handle.param("", param_image_request_service, std::string("/vision_system/is/image_request"));
+    for (int i = 0; i < matches.size(); i++) {
+        if (matches[i].distance <= std::max(2 * minimal_distance, minimal_minimal_distance))
+            good_matches.push_back(matches[i]);
         else
-            bad_matchnode_handle.param("", param_image_request_service, std::string("/vision_system/is/image_request"));
+            bad_matches.push_back(i);
     }
 
-    if (good_matches.node_handle.param("", param_image_request_service, std::string("/vision_system/is/image_request"));
-        return false;node_handle.param("", param_image_request_service, std::string("/vision_system/is/image_request"));
+    if (good_matches.size() < (matches.size() * matches_check_factor * matches_check_factor))
+        return false;
 
     return true;
 }
@@ -144,7 +189,7 @@ void PeopleTracker::registerMatch() {
 }
 
 
-bool startTracking(vision_system_msgs::StartTracking::Request &req, vision_system_msgs::StartTracking::Response &res) {
+bool PeopleTracker::startTracking(vision_system_msgs::StartTracking::Request &req, vision_system_msgs::StartTracking::Response &res) {
     if (!req.start) {
         initialized = false;
         res.started = false;
@@ -161,8 +206,6 @@ bool startTracking(vision_system_msgs::StartTracking::Request &req, vision_syste
         ROS_INFO("Image request service called!");
 
         vision_system_msgs::RGBDImage rgbd_image = image_request_service.response.rgbd_image;
-
-        descriptions = person_detected->descriptions;
         std::vector<vision_system_msgs::Description>::iterator it;
         std::vector<vision_system_msgs::Description>::iterator max_it;
 
@@ -172,9 +215,9 @@ bool startTracking(vision_system_msgs::StartTracking::Request &req, vision_syste
 
         std::vector<sensor_msgs::Image> segmented_images;
 
-        for (it = descriptiodescriptions.erase(it_descriptions);nd(); it++) {
-            if ((*it).boundidescriptions.erase(it_descriptions);x.height > max_description.width * max_description.height) {
-                max_it = it;descriptions.erase(it_descriptions);
+        for (it = descriptions.begin(); it != descriptions.end(); it++) {
+            if ((*it).bounding_box.width * (*it).bounding_box.height > max_description.width * max_description.height) {
+                max_it = it;
                 max_description = (*it).bounding_box;
             }
         }
@@ -191,13 +234,11 @@ bool startTracking(vision_system_msgs::StartTracking::Request &req, vision_syste
             ROS_INFO("Image segmentation service called!");
             segmented_images = image_segmentation_service.response.segmented_rgb_images;
             
-            for (it_images = segmented_images.begin(); it_images != segmented_images.end(); it_images++) {
-                sensor_msgs::Image::ConstPtr constptr_segmented_image(new sensor_msgs::Image(*it_images));
-                readImage(constptr_segmented_image, mat_rgb_segmented_image);
+            sensor_msgs::Image::ConstPtr constptr_segmented_image(new sensor_msgs::Image(*segmented_images.begin()));
+            readImage(constptr_segmented_image, mat_rgb_segmented_image);
 
-                cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
-                extractFeatures(descriptors);
-            }
+            cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
+            extractFeatures(descriptors);
         }
     }
 
@@ -207,7 +248,7 @@ bool startTracking(vision_system_msgs::StartTracking::Request &req, vision_syste
 }
 
 
-bool stopTracking(vision_system_msgs::StopTracking::Request &req, vision_system_msgs::StopTracking::Response &res) {
+bool PeopleTracker::stopTracking(vision_system_msgs::StopTracking::Request &req, vision_system_msgs::StopTracking::Response &res) {
     if (req.stop) {
         initialized = false;
         res.stopped = true;
@@ -221,7 +262,7 @@ bool stopTracking(vision_system_msgs::StopTracking::Request &req, vision_system_
 
 
 void PeopleTracker::readParameters() {
-    node_handle.param("/people_tracking/thresholds/bounding_box_size", bounding_box_size_threshold, (float)(0.1);
+    node_handle.param("/people_tracking/thresholds/bounding_box_size", bounding_box_size_threshold, (float)(0.1));
     node_handle.param("/people_tracking/thresholds/probability", probability_threshold, (float)(0.7));
 
     node_handle.param("/people_tracking/match/minimal_hessian", min_hessian, (int)(400));
