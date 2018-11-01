@@ -1,0 +1,4 @@
+string name
+int num_images
+---
+std_srvs/Empty
