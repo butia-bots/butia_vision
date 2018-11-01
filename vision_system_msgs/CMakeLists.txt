@@ -27,6 +27,6 @@ generate_messages(
   sensor_msgs
 )
 
-catkin_package(CATKIN_DEPENDS message_runtime)
+catkin_package(CATKIN_DEPENDS message_runtime sensor_msgs)
 
 include_directories()
