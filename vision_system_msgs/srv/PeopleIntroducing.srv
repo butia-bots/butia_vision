@@ -1,4 +1,4 @@
 string name
-int num_images
+int32 num_images
 ---
-std_srvs/Empty
+bool response
