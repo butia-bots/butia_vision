@@ -1,3 +1,3 @@
 string label_class
 float64 probability
-geometry_msgs/PoseWithCovariance pose
+geometry_msgs/Point position

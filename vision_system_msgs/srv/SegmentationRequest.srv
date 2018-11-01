@@ -1,0 +1,8 @@
+string HISTOGRAM = 'histogram'
+string MEDIAN_FULL = 'median_full'
+string MEDIAN_CENTER = 'median_center'
+string model_id
+RGBDImage initial_rgbd_image
+Description[] descriptions
+---
+sensor_msgs/Image[] segmented_rgb_images

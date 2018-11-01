@@ -1,0 +1,5 @@
+<launch>
+  <rosparam command="load" ns="image2kinect" file="$(find image2kinect)/config/ros.yaml"/>
+
+  <node name="image2kinect_node" pkg="image2kinect" type="image2kinect_node" output="screen"/>
+</launch>

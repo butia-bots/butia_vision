@@ -4,3 +4,7 @@
 *.lua
 *.csv
 *.dat
+*.pb
+*.caffemodel
+*.pbtxt
+*.prototxt

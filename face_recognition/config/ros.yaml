@@ -1,7 +1,7 @@
 subscribers:
 
   camera_reading:
-    topic: /kinect2/qhd/image_color_rect
+    topic: /vision_system/vsb/image_rgb_raw
     queue_size: 1
   
   classifier_reload:
@@ -12,10 +12,6 @@ publishers:
 
   face_recognition:
     topic: /vision_system/fr/face_recognition
-    queue_size: 1
-  
-  face_recognition3d:
-    topic: /vision_system/fr/face_recognition3d
     queue_size: 1
 
   face_recognition_view:
