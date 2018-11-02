@@ -70,7 +70,7 @@ void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::
     cv_image->image.copyTo(image);
 }
 
-void Image2Kinect::rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Point &point)
+bool Image2Kinect::rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Point &point)
 {
     const float bad_point = std::numeric_limits<float>::quiet_NaN();
 
@@ -109,15 +109,14 @@ void Image2Kinect::rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Poi
     }
 
     if(points.size() <= 0) {
-        mean_position.x = bad_point;
-        mean_position.y = bad_point;
-        mean_position.z = bad_point;
-        return;
+        return false;
     } 
 
     mean_position.x /= points.size();
     mean_position.y /= points.size();
     mean_position.z /= points.size();
+
+    return true;
 
     /*std::vector<geometry_msgs::Point>::iterator it;
 
@@ -204,8 +203,8 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
 	    //cv::imshow("Seg", segmented_rgb_image);
 	    //cv::waitKey(1);
 
-        rgbd2Point(segmented_rgb_image, segmented_depth_image, point);
-        descriptions3d.push_back(description3d);
+        if(rgbd2Point(segmented_rgb_image, segmented_depth_image, point))
+            descriptions3d.push_back(description3d);
     }
 }
 

@@ -24,7 +24,7 @@ class Image2Kinect{
     public:
         Image2Kinect(ros::NodeHandle _nh);
 
-        void rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Point &point);
+        bool rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Point &point);
 
         void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info);
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
