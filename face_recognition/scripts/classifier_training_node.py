@@ -35,46 +35,63 @@ def peopleIntroducing(ros_srv):
     i = 1
     k = 0
     j = num_images
-    number = 1
+    number = [] 
+    for label in image_labels:
+        number.append(int(label.replace(image_type, '')))
+    
+    number.sort()
+    n = 1
     while j > 0:
-        if k < len(image_labels):
-            number = int(label.replace(image_type, ''))
-            if number != i:
-                add_image_labels.append(label)
-                j -= 1
-                number += 1
+        if k < len(number):
+            n = number[k] + 1
+            if number[k] == i:
+                k += 1
+            else:
+                add_image_labels.append((str(i) + image_type))
+                j -= 1      
+            i += 1 
+
         else:
-            image_labels.append(str(number) + image_type)
+            add_image_labels.append(str(n) + image_type)
             j -= 1
-            number += 1
+            n += 1
     
     num_images = ros_srv.num_images
 
     i = 0
     while i<num_images:
-        ros_image = rospy.wait_for_message(image_topic, Image, 1000)
+        try:
+            ros_image = rospy.wait_for_message(image_topic, Image, 1000)
+        except (ROSException, ROSInterruptException) as e:
+            print(e)
+            break
 
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_image, desired_encoding="bgr8")
 
-        face = face_recognition_ros.detectLargestFace(rgb_image)
+        face_recognition_ros.image_width = ros_image.width
+        face_recognition_ros.image_height = ros_image.height
 
-        bb = face_recognition_ros.dlibRectangle2RosBoundingBox(face)
-        color = (0, 255, 0)
-        cv2.rectangle(rgb_image, (bb.minX, bb.minY), (bb.minX + bb.width, bb.minY + bb.height), color, 2)    
+        face = face_recognition_ros.detectLargestFace(rgb_image)
+        
+        if face != None:
+            bb = face_recognition_ros.dlibRectangle2RosBoundingBox(face)
+            color = (0, 255, 0)
+            cv2.rectangle(rgb_image, (bb.minX, bb.minY), (bb.minX + bb.width, bb.minY + bb.height), color, 2)    
 
         cv2.imshow("Person", rgb_image)
 
         if cv2.waitKey(1) == 32:
             if face != None:
-                rospy.loginfo('Picture ' + add_image_labels[i] + ' was saved.')
-                cv2.imwrite(NAME_DIR + add_image_labels[i], rgb_image)
+                rospy.logwarn('Picture ' + add_image_labels[i] + ' was saved.')
+                cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), rgb_image)
                 i+= 1
             else:
-                rospy.logwarn("The face was not detected.")
-                
+                rospy.logerr("The face was not detected.")
+
+
     classifier_training = FaceClassifierTraining()
     classifier_training.classifier_type = ros_srv.classifier_type
-    classifier_training.classifier_name = 'classifier_' + ros_srv.classifier_type + '_' + '.pkl'
+    classifier_training.classifier_name = 'classifier_' + ros_srv.classifier_type + '_' + name + '.pkl'
 
     return classifierTraining(classifier_training)
 

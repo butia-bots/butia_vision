@@ -436,7 +436,7 @@ class FaceRecognitionROS():
             return False
 
         classifier.fit(embeddings, labels_num)
-        fName = self.models_dir + '/classifier/' + classifier_name
+        fName = self.models_dir + '/sklearn/' + classifier_name
         with open(fName, 'w') as f:
             pickle.dump((label_encoder, classifier), f)
         return True  
