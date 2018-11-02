@@ -10,9 +10,11 @@ from vision_system_msgs.srv import FaceClassifierTraining, FaceClassifierTrainin
 from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge
+import os
+from openface import helper
 
 BRIDGE = CvBridge()
-PACK_DIR = rospkg.RosPack().get_path('face_recognition')
+DATASET_DIR = os.path.join(rospkg.RosPack().get_path('face_recognition'), 'dataset')
 
 def classifierTraining(ros_srv):
     ans = face_recognition_ros.trainingProcess(ros_srv)
@@ -21,19 +23,55 @@ def classifierTraining(ros_srv):
     return ans
 
 def peopleIntroducing(ros_srv):
-    name = ros_srv.req.name
-    num_images = ros_srv.req.num_images
+    name = ros_srv.name
+    num_images = ros_srv.num_images
+    NAME_DIR = os.path.join(DATASET_DIR, 'raw', name)
+    helper.mkdirP(NAME_DIR)
+
+    image_type = '.jpg'
+
+    image_labels = os.listdir(NAME_DIR)
+    add_image_labels = []
+    i = 1
+    k = 0
+    j = num_images
+    number = 1
+    while j > 0:
+        if k < len(image_labels):
+            number = int(label.replace(image_type, ''))
+            if number != i:
+                add_image_labels.append(label)
+                j -= 1
+                number += 1
+        else:
+            image_labels.append(str(number) + image_type)
+            j -= 1
+            number += 1
+    
+    num_images = ros_srv.num_images
 
     i = 0
     while i<num_images:
         ros_image = rospy.wait_for_message(image_topic, Image, 1000)
 
-        rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
+        rgb_image = BRIDGE.imgmsg_to_cv2(ros_image, desired_encoding="bgr8")
 
         cv2.imshow("Person", rgb_image)
 
-        cv2.waitKey(1) == 32:
-            i+= 1
+        if cv2.waitKey(1) == 32:
+            face = face_recognition_ros.detectLargestFace(rgb_image)
+            if face != None:
+                rospy.loginfo('Picture ' + add_image_labels[i] + ' was saved.')
+                cv2.imwrite(NAME_DIR + add_image_labels[i], rgb_image)
+                i+= 1
+            else:
+                
+    
+    classifier_training = FaceClassifierTraining()
+    classifier_training.classifier_type = ros_srv.classifier_type
+    classifier_training.classifier_name = 'classifier_' + ros_srv.classifier_type + '_' + '.pkl'
+
+    return classifierTraining(classifier_training)
 
 
 face_recognition_ros = FaceRecognitionROS()
