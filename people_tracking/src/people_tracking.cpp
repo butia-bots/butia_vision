@@ -8,6 +8,8 @@ PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size
     
     people_detection_subscriber = node_handle.subscribe(param_people_detection_topic, 150, &PeopleTracker::peopleDetectionCallBack, this);
 
+    people_tracking_publisher = node_handle.advertise<vision_system_msgs::Recognitions>(param_people_tracking_topic, 1000);
+
     image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(param_image_request_service);
     image_segmentation_client = node_handle.serviceClient<vision_system_msgs::SegmentationRequest>(param_segmentation_request_service);
 
@@ -81,7 +83,6 @@ bool PeopleTracker::startTracking(vision_system_msgs::StartTracking::Request &re
 
     cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
     extractFeatures(descriptors[actual_iterator]);
-    ROS_INFO("Tracking started!");
     actual_iterator++;
     queue_actual_size++;
     initialized = true;
@@ -111,6 +112,8 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
 
     frame_id = person_detected->image_header.seq;
     descriptions = person_detected->descriptions;
+    message.header = person_detected->header;
+    message.image_header = person_detected->image_header;
     if (initialized == true) {
         image_request_service.request.seq = frame_id;
         if (!image_request_client.call(image_request_service))
@@ -143,7 +146,7 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
                 
                 number_of_matches_on_better_match = 0;
                 person_founded = false;
-                for (it_images = segmented_images.begin(); it_images != segmented_images.end(); it_images++) {
+                for (it_images = segmented_images.begin(), it_descriptions = descriptions.begin(); it_images != segmented_images.end(); it_images++, it_descriptions++) {
                     sensor_msgs::Image::ConstPtr constptr_segmented_image(new sensor_msgs::Image(*it_images));
                     readImage(constptr_segmented_image, mat_rgb_segmented_image);
 
@@ -155,17 +158,24 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
                             actual_better_segmented_image = mat_rgb_segmented_image;
                             number_of_matches_on_better_match = good_matches;
                             better_descriptors = actual_descriptors;
+                            better_bounding_box = (*it_descriptions).bounding_box;
+                            better_probability = (*it_descriptions).probability;
                             person_founded = true;
                         }
                     }
                 }
 
                 if (person_founded == true) {
-                    cv::imshow("Match", actual_better_segmented_image);
-                    cv::waitKey(10);
-
                     registerMatch();
-                    ROS_WARN("Features registered.");
+
+                    vision_system_msgs::Description desc;
+                    desc.label_class = "person";
+                    desc.bounding_box = better_bounding_box;
+                    desc.probability = better_probability;
+
+                    message.descriptions.push_back(desc);
+
+                    people_tracking_publisher.publish(message);
                 }
             }
         }
@@ -193,8 +203,6 @@ void PeopleTracker::extractFeatures(cv::Mat_<float> &destiny) {
         surf_detector->detectAndCompute(mat_grayscale_segmented_image, cv::Mat(), keypoints, destiny);
     else if (param_detector_type == "sift")
         sift_detector->detectAndCompute(mat_grayscale_segmented_image, cv::Mat(), keypoints, destiny);
-
-    ROS_INFO("Features extracted!");
 }
 
 
@@ -216,12 +224,9 @@ bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
             good_matches++;
     }
 
-    if (good_matches < (destiny.rows * matches_check_factor)) {
-        ROS_ERROR("Can't find the same person.");
+    if (good_matches < (destiny.rows * matches_check_factor))
         return false;
-    }
 
-    ROS_INFO("Same person found.");
     return true;
 }
 
@@ -254,6 +259,7 @@ void PeopleTracker::readParameters() {
     node_handle.param("/services/image_server/image_request", param_image_request_service, std::string("/vision_system/is/image_request"));
     node_handle.param("/services/segmentation/segmentation_request", param_segmentation_request_service, std::string("/vision_system/seg/image_segmentation"));
 
-    node_handle.param("/topics/object_recognition/people_tracking", param_people_detection_topic, std::string("/vision_system/or/people_detection"));
+    node_handle.param("/topics/object_recognition/people_detection", param_people_detection_topic, std::string("/vision_system/or/people_detection"));
+    node_handle.param("/topics/people_tracking/people_tracking", param_people_tracking_topic, std::string("/vision_system/pt/people_tracking"));
 }
 //----------------------------------------------------------------------------------------------------

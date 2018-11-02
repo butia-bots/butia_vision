@@ -22,10 +22,10 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 
 void Image2Kinect::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr& camera_info)
 {
-    bool recalculate_tabels = false;
+    bool recalculate_tables = false;
 
     if(width != camera_info->width || height != camera_info->height){
-        recalculate_tabels = true;
+        recalculate_tables = true;
         width = camera_info->width;
         height = camera_info->height;
     } 
@@ -33,12 +33,12 @@ void Image2Kinect::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr& camer
     double *it = camera_matrix_color.ptr<double>(0, 0);
     for(int i = 0 ; i < 9 ; i++, it++) {
         if(*it != camera_info->K[i]){
-            recalculate_tabels = true;
+            recalculate_tables = true;
             *it = camera_info->K[i];
         } 
     }
 
-    if(recalculate_tabels) createTabels();
+    if(recalculate_tables) createTabels();
 }
 
 void Image2Kinect::createTabels()

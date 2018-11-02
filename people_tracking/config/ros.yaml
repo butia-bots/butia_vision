@@ -10,3 +10,5 @@ services:
 topics:
   object_recognition:
     people_detection: "/vision_system/or/people_detection"
+  people_tracking:
+    people_tracking: "/vision_system/pt/people_tracking"

@@ -32,10 +32,14 @@ class PeopleTracker {
         ros::ServiceServer start_service; //Service that starts the tracking
         ros::ServiceServer stop_service; //Service that stops the tracking
 
+        ros::Publisher people_tracking_publisher; //Publish the matched person recognition
+
         int image_size; //Variable that stores the size of the camera image
 
         int frame_id; //Stores the frame id to request the image from server
         std::vector<vision_system_msgs::Description> descriptions; //Stores the descriptions of the people detected
+
+        vision_system_msgs::Recognitions message; //Message to publish
 
         //Stores the threshold to know if is confiable
         float bounding_box_size_threshold;
@@ -44,7 +48,6 @@ class PeopleTracker {
         //Stores the cv mat segmented images
         cv::Mat mat_rgb_segmented_image;
         cv::Mat mat_grayscale_segmented_image;
-        cv::Mat actual_better_segmented_image;
 
         int min_hessian; //Stores the hessian threshold to create the SURF detector
         cv::FlannBasedMatcher matcher; //Matcher
@@ -56,7 +59,6 @@ class PeopleTracker {
         //Descriptors
         std::vector<cv::Mat_<float>> descriptors;
         cv::Mat_<float> actual_descriptors;
-        cv::Mat_<float> better_descriptors;
 
         std::vector<cv::KeyPoint> keypoints; //Keypoints
 
@@ -69,6 +71,7 @@ class PeopleTracker {
         std::string param_start_service;
         std::string param_stop_service;
         std::string param_people_detection_topic;
+        std::string param_people_tracking_topic;
         std::string param_image_request_service;
         std::string param_segmentation_request_service;
         int param_k;
@@ -84,8 +87,12 @@ class PeopleTracker {
         int queue_actual_size;
         int actual_iterator;
 
-        int number_of_matches_on_better_match; //Stores the number of matches of better match
-
+        //Better match variables
+        int number_of_matches_on_better_match;
+        cv::Mat_<float> better_descriptors;
+        cv::Mat actual_better_segmented_image;
+        vision_system_msgs::BoundingBox better_bounding_box;
+        float better_probability;
 
     public:
         PeopleTracker(ros::NodeHandle _nh); //Constructor
