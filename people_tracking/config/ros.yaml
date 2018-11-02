@@ -1,0 +1,14 @@
+services:
+  people_tracking:
+    start_tracking: "/vision_system/pt/start"
+    stop_tracking: "/vision_system/pt/stop"
+  image_server:
+    image_request: "/vision_system/is/image_request"
+  segmentation:
+    segmentation_request: "/vision_system/seg/image_segmentation"
+
+topics:
+  object_recognition:
+    people_detection: "/vision_system/or/people_detection"
+  people_tracking:
+    people_tracking: "/vision_system/pt/people_tracking"

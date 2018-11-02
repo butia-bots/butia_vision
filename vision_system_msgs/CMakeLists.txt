@@ -20,6 +20,8 @@ add_service_files(
   ImageRequest.srv
   PeopleIntroducing.srv
   SegmentationRequest.srv
+  StartTracking.srv
+  StopTracking.srv
 )
 
 generate_messages(
