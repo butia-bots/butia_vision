@@ -10,7 +10,7 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 
     object_recognition_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(object_recognition_pub_topic, pub_queue_size);
     face_recognition_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(face_recognition_pub_topic, pub_queue_size);
-    people_tracking_pub = node_handle.advertise<vision_system_msgs::Description3D>(people_tracking_pub_topic, pub_queue_size);
+    people_tracking_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(people_tracking_pub_topic, pub_queue_size);
 
     image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(image_request_client_service);
     segmentation_request_client = node_handle.serviceClient<vision_system_msgs::SegmentationRequest>(segmentation_request_client_service);
@@ -22,10 +22,10 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 
 void Image2Kinect::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr& camera_info)
 {
-    bool recalculate_tabels = false;
+    bool recalculate_tables = false;
 
     if(width != camera_info->width || height != camera_info->height){
-        recalculate_tabels = true;
+        recalculate_tables = true;
         width = camera_info->width;
         height = camera_info->height;
     } 
@@ -33,12 +33,12 @@ void Image2Kinect::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr& camer
     double *it = camera_matrix_color.ptr<double>(0, 0);
     for(int i = 0 ; i < 9 ; i++, it++) {
         if(*it != camera_info->K[i]){
-            recalculate_tabels = true;
+            recalculate_tables = true;
             *it = camera_info->K[i];
         } 
     }
 
-    if(recalculate_tabels) createTabels();
+    if(recalculate_tables) createTabels();
 }
 
 void Image2Kinect::createTabels()
