@@ -70,7 +70,7 @@ void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::
     cv_image->image.copyTo(image);
 }
 
-void Image2Kinect::rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Point &point)
+bool Image2Kinect::rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Point &point)
 {
     const float bad_point = std::numeric_limits<float>::quiet_NaN();
 
@@ -109,15 +109,14 @@ void Image2Kinect::rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Poi
     }
 
     if(points.size() <= 0) {
-        mean_position.x = bad_point;
-        mean_position.y = bad_point;
-        mean_position.z = bad_point;
-        return;
+        return false;
     } 
 
     mean_position.x /= points.size();
     mean_position.y /= points.size();
     mean_position.z /= points.size();
+
+    return true;
 
     /*std::vector<geometry_msgs::Point>::iterator it;
 
@@ -183,21 +182,14 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
 
     std::vector<sensor_msgs::Image> &segmented_rgb_images = segmentation_srv.response.segmented_rgb_images;
     std::vector<sensor_msgs::Image>::iterator jt;
-
   
     std::vector<vision_system_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
-
-    std_msgs::Header point_header;
-    point_header.seq = recognitions3d.header.seq;
-    point_header.stamp = recognitions3d.image_header.stamp;
-    point_header.frame_id = std::string("kinect_base");
 
     for(it = descriptions.begin(), jt = segmented_rgb_images.begin() ; it != descriptions.end() && jt != segmented_rgb_images.end() ; it++, jt++) {
         vision_system_msgs::Description3D description3d;
         description3d.label_class = it->label_class;
         description3d.probability = it->probability;
-        geometry_msgs::PointStamped &point = description3d.position;
-        point.header = point_header;
+        geometry_msgs::Point &point = description3d.position;
 
         cv::Rect roi;
         roi.x = (*it).bounding_box.minX;
@@ -205,13 +197,14 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
         roi.width = (*it).bounding_box.width;
         roi.height = (*it).bounding_box.height;
         segmented_depth_image = depth(roi);
+
         sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
         readImage(rgb_const_ptr, segmented_rgb_image);
-	    cv::imshow("Seg", segmented_rgb_image);
-	    cv::waitKey(1);
+	    //cv::imshow("Seg", segmented_rgb_image);
+	    //cv::waitKey(1);
 
-        rgbd2Point(segmented_rgb_image, segmented_depth_image, point.point);
-        descriptions3d.push_back(description3d);
+        if(rgbd2Point(segmented_rgb_image, segmented_depth_image, point))
+            descriptions3d.push_back(description3d);
     }
 }
 

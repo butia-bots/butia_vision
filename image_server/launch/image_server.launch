@@ -1,4 +1,3 @@
-
 <launch>
   <rosparam command="load" ns="image_server" file="$(find image_server)/config/ros.yaml"/>
 

@@ -18,6 +18,7 @@ add_service_files(
   FILES
   FaceClassifierTraining.srv
   ImageRequest.srv
+  PeopleIntroducing.srv
   SegmentationRequest.srv
   StartTracking.srv
   StopTracking.srv
@@ -29,6 +30,6 @@ generate_messages(
   sensor_msgs
 )
 
-catkin_package(CATKIN_DEPENDS message_runtime)
+catkin_package(CATKIN_DEPENDS sensor_msgs std_msgs message_runtime)
 
 include_directories()

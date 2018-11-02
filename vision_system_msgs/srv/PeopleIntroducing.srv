@@ -1,0 +1,11 @@
+string LINEAR_SVM = 'lsvm'
+string RADIAL_SVM = 'rsvm'
+string GRID_SEARCH_SVM = 'gssvm'
+string GAUSSIAN_MIXTURE_MODELS = 'gmm'
+string DECISION_TREE = 'dt'
+string GAUSSIAN_NAIVE_BAYES = 'gnb'
+string name
+int32 num_images
+string classifier_type
+---
+bool response
