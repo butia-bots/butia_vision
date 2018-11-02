@@ -56,17 +56,22 @@ def peopleIntroducing(ros_srv):
 
         rgb_image = BRIDGE.imgmsg_to_cv2(ros_image, desired_encoding="bgr8")
 
+        face = face_recognition_ros.detectLargestFace(rgb_image)
+
+        bb = face_recognition_ros.dlibRectangle2RosBoundingBox(face)
+        color = (0, 255, 0)
+        cv2.rectangle(rgb_image, (bb.minX, bb.minY), (bb.minX + bb.width, bb.minY + bb.height), color, 2)    
+
         cv2.imshow("Person", rgb_image)
 
         if cv2.waitKey(1) == 32:
-            face = face_recognition_ros.detectLargestFace(rgb_image)
             if face != None:
                 rospy.loginfo('Picture ' + add_image_labels[i] + ' was saved.')
                 cv2.imwrite(NAME_DIR + add_image_labels[i], rgb_image)
                 i+= 1
             else:
+                rospy.logwarn("The face was not detected.")
                 
-    
     classifier_training = FaceClassifierTraining()
     classifier_training.classifier_type = ros_srv.classifier_type
     classifier_training.classifier_name = 'classifier_' + ros_srv.classifier_type + '_' + '.pkl'
