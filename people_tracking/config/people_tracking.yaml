@@ -9,3 +9,5 @@ people_tracking:
     k: 8
   detector:
     type: "sift"
+  queue:
+    size: 5
