@@ -8,11 +8,11 @@ The face_recognition package uses Openface, dlib, OpenCV and scikit-learn to per
 
 ## Topics
 ### Subscribed Topics
-* **`camera_reading:`** `/camera/rgb/image_raw` ([sensor_msgs/Image])
+* **`camera_reading:`** `/camera/rgb/image_raw` ([sensor_msgs::Image])
 
     The camera measurements.
 
-* **`classifier_reload:`** `/vision_system/fr/classifier_reload` ([vision_system_msgs/ClassifierReload])
+* **`classifier_reload:`** `/vision_system/fr/classifier_reload` ([vision_system_msgs::ClassifierReload])
 
     Ask for change of classifier model.
 
@@ -25,12 +25,12 @@ The face_recognition package uses Openface, dlib, OpenCV and scikit-learn to per
 
     Publishes an image of the recognized faces to debug the process.
 
-* **`classifier_reload:`** `/vision_system/fr/classifier_reload` ([vision_system_msgs/ClassifierReload])
+* **`classifier_reload:`** `/vision_system/fr/classifier_reload` ([vision_system_msgs::ClassifierReload])
 
     Ask for change of classifier model.
     
 ## Servers
-* **`classifier_training:`** `/vision_system/fr/classifier_training` ([vision_system_msgs::ClassifierTraining])
+* **`classifier_training:`** `/vision_system/fr/classifier_training` ([vision_system_msgs::FaceClassifierTraining])
 
 
     Ask for training of a new classifier model.

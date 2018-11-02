@@ -8,9 +8,18 @@ The people_tracking package uses OpenCV and object_recognition package to get th
 
     Publishes the recognized people.
 ### Published Topics
-* **`people_tracking:`** `/vision_system/pt/person_pose` ([vision_system_msgs::PersonPose])
+* **`people_tracking:`** `/vision_system/pt/people_tracking` ([vision_system_msgs::Recognitions])
 
-    Publishes the position of a person in the world.
+    Publishes the matched person.
+
+## Servers
+* **`start_tracking:`** `/vision_system/pt/start` ([vision_system_msgs::StartTracking])
+
+    Ask for the start of the people tracking.
+
+* **`start_tracking:`** `/vision_system/pt/stop` ([vision_system_msgs::StopTracking])
+
+    Ask for the stop of the people tracking.
 
 ## Nodes
 * **`people_tracking_node`**
