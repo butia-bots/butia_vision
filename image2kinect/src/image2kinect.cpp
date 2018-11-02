@@ -10,7 +10,7 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 
     object_recognition_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(object_recognition_pub_topic, pub_queue_size);
     face_recognition_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(face_recognition_pub_topic, pub_queue_size);
-    people_tracking_pub = node_handle.advertise<vision_system_msgs::Description3D>(people_tracking_pub_topic, pub_queue_size);
+    people_tracking_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(people_tracking_pub_topic, pub_queue_size);
 
     image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(image_request_client_service);
     segmentation_request_client = node_handle.serviceClient<vision_system_msgs::SegmentationRequest>(segmentation_request_client_service);
