@@ -1,7 +1,7 @@
 subscribers:
 
   camera_reading:
-    topic: /camera/rgb/image_raw
+    topic: /vision_system/vsb/image_rgb_raw
     queue_size: 1
   
   classifier_reload:
@@ -13,7 +13,7 @@ publishers:
   face_recognition:
     topic: /vision_system/fr/face_recognition
     queue_size: 1
-  
+
   face_recognition_view:
     topic: /vision_system/fr/face_recognition_view
     queue_size: 1
@@ -23,6 +23,9 @@ publishers:
     queue_size: 1
 
 services:
+
+  image2world:
+    service: /vision_system/iw/image2world
 
   classifier_training:
     service: /vision_system/fr/classifier_training

@@ -13,6 +13,7 @@ rospy
 std_msgs 
 cv_bridge
 )
+find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -69,12 +70,12 @@ cv_bridge
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
+#generate_messages(
+  #DEPENDENCIES
   #vision_system_msgs  # Or other packages containing msgs
   #std_msgs
   #sensor_msgs
-)
+#)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -120,6 +121,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
 # include
+  ${OpenCV_INCLUDE_DIRS}
 # ${catkin_INCLUDE_DIRS}
 )
 

@@ -2,27 +2,44 @@ verbose: False
 debug: False
 
 detector:
-  lib: opencv #opencv or dlib
-  opencv:
+  model_id: opencv_dnn
+
+  opencv_cascade:
     model: haarcascade_frontalface_alt.xml
     scale_factor: 1.3
     min_neighbors: 5
     cuda: True
 
+  opencv_dnn:
+    model: caffe #tensorflow or caffe
+    threshold: 0.5
+    scale_factor: 1.0
+    height: 300
+    mean: [104, 117, 123]
+
+  dlib_hog:
+    model: default
+    height: 300 #width is proportional
+
+  dlib_mmod:
+    model: mmod_human_face_detector.dat
+    height: 300 #width is proportional
+
 aligner:
-  lib: dlib #dlib
-  dlib: 
+  model_id: openface #openface
+  openface: 
     model: shape_predictor_68_face_landmarks.dat
     image_dimension: 96
 
 embosser:
-  lib: facenet #facenet
-  facenet:
+  model_id: openface #openface
+  openface:
     model: nn4.small2.v1.t7
+    image_dimension: 96
     cuda: True
 
 classifier:
-  lib: sklearn #sklearn
+  model_id: sklearn #sklearn
   sklearn:
     model: classifier.pkl
-    threshold: 0.5
+    threshold: 0.7

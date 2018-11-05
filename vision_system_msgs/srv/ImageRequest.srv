@@ -1,0 +1,4 @@
+uint64 seq
+---
+RGBDImage rgbd_image
+sensor_msgs/CameraInfo camera_info

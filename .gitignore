@@ -4,4 +4,7 @@
 *.lua
 *.csv
 *.dat
-test.py
+*.pb
+*.caffemodel
+*.pbtxt
+*.prototxt

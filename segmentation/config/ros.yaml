@@ -1,0 +1,3 @@
+servers:
+  image_segmentation:
+    service: /vision_system/seg/image_segmentation

@@ -1,0 +1,5 @@
+<launch>
+  <rosparam command="load" ns="image_server" file="$(find image_server)/config/ros.yaml"/>
+
+  <node name="image_server_node" pkg="image_server" type="image_server_node" output="screen"/>
+</launch>
