@@ -8,6 +8,7 @@ detector:
     model: haarcascade_frontalface_alt.xml
     scale_factor: 1.3
     min_neighbors: 5
+    height: 300
     cuda: True
 
   opencv_dnn:

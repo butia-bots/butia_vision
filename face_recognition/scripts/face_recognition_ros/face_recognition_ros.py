@@ -71,6 +71,7 @@ class FaceRecognitionROS():
         opencv_cascade_detector_cuda = rospy.get_param('/face_recognition/detector/opencv_cascade/cuda', True)
         opencv_cascade_detector_scale_factor = rospy.get_param('/face_recognition/detector/opencv_cascade/scale_factor', 1.3)
         opencv_cascade_detector_min_neighbors = rospy.get_param('/face_recognition/detector/opencv_cascade/min_neighbors', 5)
+        opencv_cascade_detector_height = rospy.get_param('/face_recognition/detector/opencv_cascade/height', 300)
 
         self.detectors_dict['opencv_cascade'] = {
             'load' : {
@@ -88,6 +89,7 @@ class FaceRecognitionROS():
                 'kwargs' : {
                     'scale_factor' : opencv_cascade_detector_scale_factor,
                     'min_neighbors' : opencv_cascade_detector_min_neighbors,
+                    'height' : opencv_cascade_detector_height, 
                     'debug' : self.debug,
                     'verbose' : self.verbose
                 }
@@ -265,12 +267,6 @@ class FaceRecognitionROS():
             bounding_box.height = rect.height()
         return bounding_box
 
-    def numpyndArray2dlibRectangles(self, array):
-        rects = rectangles()
-        for (x,y,w,h) in array:
-            rects.append(rectangle(x, y, x + w, y + h))
-        return rects
-
     def numpyArray2RosVector(self, array):
         vector = array.tolist()
         return vector
@@ -296,21 +292,21 @@ class FaceRecognitionROS():
         self.face_classifier = classifier_dict['function'](*classifier_dict['args'], **classifier_dict['kwargs'])
 
 
-    def detectFaces(self, rgb_image):
+    def detectFaces(self, bgr_image):
         detector_dict = self.detectors_dict[self.detector_model_id]['action']
-        face_rects = detector_dict['function'](self.face_detector, rgb_image, *detector_dict['args'], **detector_dict['kwargs'])
+        face_rects = detector_dict['function'](self.face_detector, bgr_image, *detector_dict['args'], **detector_dict['kwargs'])
         return face_rects
 
-    def detectLargestFace(self, rgb_image):
-        faces = self.detectFaces(rgb_image)
+    def detectLargestFace(self, bgr_image):
+        faces = self.detectFaces(bgr_image)
         if len(faces) > 0:
             return max(faces, key=lambda rect: rect.width() * rect.height())
         else:
             return None
     
-    def alignFace(self, rgb_image, face_rect):
+    def alignFace(self, bgr_image, face_rect):
         aligner_dict = self.aligners_dict[self.aligner_model_id]['action']
-        aligned_face = aligner_dict['function'](self.face_aligner, rgb_image, face_rect, *aligner_dict['args'], **aligner_dict['kwargs'])
+        aligned_face = aligner_dict['function'](self.face_aligner, bgr_image, face_rect, *aligner_dict['args'], **aligner_dict['kwargs'])
         return aligned_face
 
     def extractFeatures(self, aligned_face):
@@ -432,7 +428,7 @@ class FaceRecognitionROS():
         elif classifier_type == 'gnb':
             classifier = GaussianNB()
         elif classifier_type == 'knn':
-            classifier = KNeighborsClassifier(n_neighbors=5)
+            classifier = KNeighborsClassifier(n_neighbors=10)
         else:
             return False
 
@@ -445,12 +441,12 @@ class FaceRecognitionROS():
 
     def recognitionProcess(self, ros_msg):
         rospy.loginfo('Image ID: {}'.format(ros_msg.header.seq))
-        rgb_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
+        bgr_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="bgr8")
 
-        self.image_height = rgb_image.shape[0]
-        self.image_width = rgb_image.shape[1]
+        self.image_height = bgr_image.shape[0]
+        self.image_width = bgr_image.shape[1]
 
-        face_rects = self.detectFaces(rgb_image)
+        face_rects = self.detectFaces(bgr_image)
         if len(face_rects) == 0:
             rospy.loginfo("Recognition FPS: {:.2f} Hz.".format((1/(rospy.get_rostime().to_sec() - self.last_recognition))))
             self.last_recognition = rospy.get_rostime().to_sec()
@@ -460,7 +456,7 @@ class FaceRecognitionROS():
         for face_rect in face_rects:
             face_description = Description()
 
-            aligned_face = self.alignFace(rgb_image, face_rect)
+            aligned_face = self.alignFace(bgr_image, face_rect)
 
             features_array = self.extractFeatures(aligned_face)
 
