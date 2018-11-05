@@ -16,7 +16,7 @@
 #include "sensor_msgs/Image.h"
 #include "sensor_msgs/CameraInfo.h"
 
-#include "geometry_msgs/PointStamped.h"
+#include "geometry_msgs/Point.h"
 
 #include <cv_bridge/cv_bridge.h>
 
@@ -24,7 +24,7 @@ class Image2Kinect{
     public:
         Image2Kinect(ros::NodeHandle _nh);
 
-        bool rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Point &point);
+        bool rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::Point &point, std_msgs::ColorRGBA &color);
 
         void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info);
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);

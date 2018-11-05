@@ -70,23 +70,28 @@ void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::
     cv_image->image.copyTo(image);
 }
 
-bool Image2Kinect::rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Point &point)
+bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::Point &point, std_msgs::ColorRGBA &color)
 {
     const float bad_point = std::numeric_limits<float>::quiet_NaN();
 
     geometry_msgs::Point &mean_position = point;
+    std_msgs::ColorRGBA &mean_color = color;
 
     mean_position.x = 0.0f;
     mean_position.y = 0.0f;
     mean_position.z = 0.0f;
 
+    mean_color.r = 0.0f;
+    mean_color.g = 0.0f;
+    mean_color.b = 0.0f;
+
     std::vector<geometry_msgs::Point> points;
-    for(int r = 0 ; r < depth.rows ; r++) {
+    for(int r = 0 ; r < image_depth.rows ; r++) {
 
-        uint16_t *it_depth = depth.ptr<uint16_t>(r);
-        cv::Vec3b *it_color = color.ptr<cv::Vec3b>(r);
+        uint16_t *it_depth = image_depth.ptr<uint16_t>(r);
+        cv::Vec3b *it_color = image_color.ptr<cv::Vec3b>(r);
 
-        for(int c = 0 ; c < depth.cols ; c++, it_depth++, it_color++) {
+        for(int c = 0 ; c < image_depth.cols ; c++, it_depth++, it_color++) {
             if(it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0){
                 geometry_msgs::Point point;
                 
@@ -102,6 +107,10 @@ bool Image2Kinect::rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Poi
                 mean_position.y += point.y;
                 mean_position.z += point.z;
 
+                mean_color.r += it_color->val[0];
+                mean_color.g += it_color->val[1];
+                mean_color.b += it_color->val[2];
+
                 points.push_back(point);
 
             }
@@ -115,6 +124,10 @@ bool Image2Kinect::rgbd2Point(cv::Mat &color, cv::Mat &depth, geometry_msgs::Poi
     mean_position.x /= points.size();
     mean_position.y /= points.size();
     mean_position.z /= points.size();
+
+    mean_color.r /= points.size();
+    mean_color.g /= points.size();
+    mean_color.b /= points.size();
 
     return true;
 
@@ -189,6 +202,7 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
         vision_system_msgs::Description3D description3d;
         description3d.label_class = it->label_class;
         description3d.probability = it->probability;
+        std_msgs::ColorRGBA &color =  description3d.color;
         geometry_msgs::Point &point = description3d.position;
 
         cv::Rect roi;
@@ -203,7 +217,7 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
 	    //cv::imshow("Seg", segmented_rgb_image);
 	    //cv::waitKey(1);
 
-        if(rgbd2Point(segmented_rgb_image, segmented_depth_image, point))
+        if(rgbd2RGBPoint(segmented_rgb_image, segmented_depth_image, point, color))
             descriptions3d.push_back(description3d);
     }
 }
