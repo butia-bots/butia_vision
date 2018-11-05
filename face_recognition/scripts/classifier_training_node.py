@@ -12,6 +12,7 @@ import cv2
 from cv_bridge import CvBridge
 import os
 from openface import helper
+import numpy as np
 
 BRIDGE = CvBridge()
 DATASET_DIR = os.path.join(rospkg.RosPack().get_path('face_recognition'), 'dataset')
@@ -72,13 +73,13 @@ def peopleIntroducing(ros_srv):
         face_recognition_ros.image_height = ros_image.height
 
         face = face_recognition_ros.detectLargestFace(rgb_image)
-        
+        s_rgb_image = rgb_image.copy() 
         if face != None:
             bb = face_recognition_ros.dlibRectangle2RosBoundingBox(face)
             color = (0, 255, 0)
-            cv2.rectangle(rgb_image, (bb.minX, bb.minY), (bb.minX + bb.width, bb.minY + bb.height), color, 2)    
+            cv2.rectangle(s_rgb_image, (bb.minX, bb.minY), (bb.minX + bb.width, bb.minY + bb.height), color, 2)    
 
-        cv2.imshow("Person", rgb_image)
+        cv2.imshow("Person", s_rgb_image)
 
         if cv2.waitKey(1) == 32:
             if face != None:
