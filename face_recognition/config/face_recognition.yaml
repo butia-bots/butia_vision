@@ -36,7 +36,7 @@ embosser:
   openface:
     model: nn4.small2.v1.t7
     image_dimension: 96
-    cuda: True
+    cuda: False
 
 classifier:
   model_id: sklearn #sklearn

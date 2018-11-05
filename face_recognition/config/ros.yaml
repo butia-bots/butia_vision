@@ -24,8 +24,5 @@ publishers:
 
 services:
 
-  image2world:
-    service: /vision_system/iw/image2world
-
   classifier_training:
     service: /vision_system/fr/classifier_training
