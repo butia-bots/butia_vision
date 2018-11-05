@@ -412,7 +412,6 @@ class FaceRecognitionROS():
         labels_num = label_encoder.transform(labels)
         num_classes = len(label_encoder.classes_)
 
-        #tentar transformar essa cadeia de if's em um dicionario, como eh feito no FaceDetector
         if classifier_type == 'lsvm':
             classifier = SVC(C=1, kernel='linear', probability=True)
         elif classifier_type == 'rsvm':
@@ -432,6 +431,8 @@ class FaceRecognitionROS():
             classifier = DecisionTreeClassifier(max_depth=20)
         elif classifier_type == 'gnb':
             classifier = GaussianNB()
+        elif classifier_type == 'knn':
+            classifier = KNeighborsClassifier(n_neighbors=5)
         else:
             return False
 
