@@ -12,7 +12,7 @@ detector:
 
   opencv_dnn:
     model: caffe #tensorflow or caffe
-    threshold: 0.7
+    threshold: 0.5
     scale_factor: 1.0
     height: 300
     mean: [104, 117, 123]
@@ -36,7 +36,7 @@ embosser:
   openface:
     model: nn4.small2.v1.t7
     image_dimension: 96
-    cuda: False
+    cuda: True
 
 classifier:
   model_id: sklearn #sklearn
