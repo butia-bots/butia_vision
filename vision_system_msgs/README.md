@@ -43,6 +43,7 @@ The vision_system_msgs package has all messages and services used by the system.
     string GAUSSIAN_MIXTURE_MODELS = 'gmm'
     string DECISION_TREE = 'dt'
     string GAUSSIAN_NAIVE_BAYES = 'gnb'
+    string K_NEAREST_NEIGHBORS = 'knn'
     string classifier_type
     string classifier_name
     ---
@@ -54,8 +55,32 @@ The vision_system_msgs package has all messages and services used by the system.
     RGBDImage rgbd_image
     sensor_msgs/CameraInfo camera_info
 
+### PeopleIntroducing
+    string LINEAR_SVM = 'lsvm'
+    string RADIAL_SVM = 'rsvm'
+    string GRID_SEARCH_SVM = 'gssvm'
+    string GAUSSIAN_MIXTURE_MODELS = 'gmm'
+    string DECISION_TREE = 'dt'
+    string GAUSSIAN_NAIVE_BAYES = 'gnb'
+    string K_NEAREST_NEIGHBORS = 'knn'
+    string name
+    int32 num_images
+    string classifier_type
+    ---
+    bool response
+
 ### SegmentationRequest
     RGBDImage initial_rgbd_image
     Description[] descriptions
     ---
     sensor_msgs/Image[] segmented_rgb_images
+
+### StartTracking
+    bool start
+    ---
+    bool started
+
+### StopTracking
+    bool stop
+    ---
+    bool stopped

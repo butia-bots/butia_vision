@@ -8,7 +8,8 @@ detector:
     model: haarcascade_frontalface_alt.xml
     scale_factor: 1.3
     min_neighbors: 5
-    cuda: False
+    height: 300
+    cuda: True
 
   opencv_dnn:
     model: caffe #tensorflow or caffe

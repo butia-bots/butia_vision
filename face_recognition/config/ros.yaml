@@ -22,7 +22,10 @@ publishers:
     topic: /vision_system/fr/classifier_reload
     queue_size: 1
 
-services:
+servers:
+
+  people_introducing:
+    service: /vision_system/fr/people_introducing
 
   classifier_training:
     service: /vision_system/fr/classifier_training

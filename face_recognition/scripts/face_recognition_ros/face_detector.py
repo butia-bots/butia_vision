@@ -51,10 +51,31 @@ def loadDlibMmodModel(models_dir, model = 'mmod_human_face_detector.dat', debug=
 
 @action(action_name='detection')
 @debug
-def detectFacesOpencvCascade(detector, image, scale_factor=1.3, min_neighbors=5, verbose=True, debug=False):
-    faces = detector.detectMultiScale(image, scale_factor, min_neighbors)
-    faces = numpyndArray2dlibRectangles(faces)
-    return faces
+def detectFacesOpencvCascade(detector, image, scale_factor=1.3, min_neighbors=5, height = 300, verbose=True, debug=False):
+    image_height = image.shape[0]
+    image_width = image.shape[1]
+    width = 0
+    if height != image_height:
+        relation = float(image_width) / image_height
+        width = int(relation * height)
+    else:
+        width = image_width
+    
+    scale_height = float(image_height) / height
+    scale_width = float(image_width) / width
+
+    image_small = cv2.resize(image, (width, height))
+    image_gray = cv2.cvtColor(image_small, cv2.COLOR_BGR2GRAY)
+
+    faces = detector.detectMultiScale(image_gray)
+    rects = rectangles()
+    for (x, y, width, height) in faces:
+        x1 = int(x * scale_width)
+        y1 = int(y * scale_height)
+        x2 = int((x + width) * scale_width)
+        y2 = int((y + height) * scale_height)
+        rects.append(rectangle(x1, y1, x2, y2))
+    return rects
 
 @action(action_name='detection')
 @debug

@@ -30,6 +30,11 @@ The face_recognition package uses Openface, dlib, OpenCV and scikit-learn to per
     Ask for change of classifier model.
     
 ## Servers
+* **`people_introducing:`** `/vision_system/fr/people_introducing` ([vision_system_msgs::PeopleIntroducing])
+
+
+    Ask for the system meet a new person and training of a new classifier model after.
+
 * **`classifier_training:`** `/vision_system/fr/classifier_training` ([vision_system_msgs::FaceClassifierTraining])
 
 
