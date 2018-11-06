@@ -5,10 +5,23 @@ YoloRecognition::YoloRecognition(ros::NodeHandle _nh) : node_handle(_nh)
     readParameters();
 
     bounding_boxes_sub = node_handle.subscribe(bounding_boxes_topic, bounding_boxes_qs, &YoloRecognition::yoloRecognitionCallback, this);
+
     recognized_objects_pub = node_handle.advertise<vision_system_msgs::Recognitions>(object_recognition_topic, object_recognition_qs);
-    recognized_objects3d_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(object_recognition3d_topic, object_recognition3d_qs);
     recognized_people_pub = node_handle.advertise<vision_system_msgs::Recognitions>(people_detection_topic, people_detection_qs);
-    image2world_client = node_handle.serviceClient<vision_system_msgs::Image2World>(image2world_client_service);
+    object_list_updated_pub = node_handle.advertise<std_msgs::Header>(object_list_updated_topic, object_list_updated_qs);
+
+    list_objects_server = node_handle.advertiseService(list_objects_service, &YoloRecognition::getObjectList, this);
+
+    object_list_updated_header.stamp = ros::Time::now();
+    object_list_updated_header.frame_id = "objects_list";
+
+    object_list_updated_pub.publish(object_list_updated_header);
+}
+
+bool YoloRecognition::getObjectList(vision_system_msgs::ListClasses::Request &req, vision_system_msgs::ListClasses::Response &res)
+{
+    res.classes = possible_classes;
+    return true;
 }
 
 void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bbs)
@@ -21,7 +34,7 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
     std::vector<darknet_ros_msgs::BoundingBox>::iterator it;
 
     for(it = bounding_boxes.begin() ; it != bounding_boxes.end() ; it++) {
-        if(it->Class == person_identifier) {
+        if(it->Class == person_identifier && it->probability >= threshold) {
             vision_system_msgs::Description person;
             person.label_class = person_identifier;
             person.probability = it->probability;
@@ -31,15 +44,17 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
             person.bounding_box.height = it->ymax - it->ymin;
             people.push_back(person);
         }
-        else {
-            vision_system_msgs::Description object;
-            object.label_class = it->Class;
-            object.probability = it->probability;
-            object.bounding_box.minX = it->xmin;
-            object.bounding_box.minY = it->ymin;
-            object.bounding_box.width = it->xmax - it->xmin;
-            object.bounding_box.height = it->ymax - it->ymin;
-            objects.push_back(object);
+        else if(it->probability >= threshold) {
+            if(std::find(possible_classes.begin(), possible_classes.end(), std::string(it->Class)) != possible_classes.end()) {
+                vision_system_msgs::Description object;
+                object.label_class = it->Class;
+                object.probability = it->probability;
+                object.bounding_box.minX = it->xmin;
+                object.bounding_box.minY = it->ymin;
+                object.bounding_box.width = it->xmax - it->xmin;
+                object.bounding_box.height = it->ymax - it->ymin;
+                objects.push_back(object);
+            }
         }
     }
 
@@ -66,13 +81,17 @@ void YoloRecognition::readParameters()
     node_handle.param("/object_recognition/publishers/object_recognition/topic", object_recognition_topic, std::string("/vision_system/or/object_recognition"));
     node_handle.param("/object_recognition/publishers/object_recognition/queue_size", object_recognition_qs, 1);
 
-    node_handle.param("/object_recognition/publishers/object_recognition3d/topic", object_recognition3d_topic, std::string("/vision_system/or/object_recognition3d"));
-    node_handle.param("/object_recognition/publishers/object_recognition3d/queue_size", object_recognition3d_qs, 1);
-
     node_handle.param("/object_recognition/publishers/people_detection/topic", people_detection_topic, std::string("/vision_system/or/people_detection"));
     node_handle.param("/object_recognition/publishers/people_detection/queue_size", people_detection_qs, 1);
 
-    node_handle.param("/object_recognition/services/image2world/service", image2world_client_service, std::string("/vision_system/iw/image2world"));
+    node_handle.param("/object_recognition/publishers/object_list_updated/topic", object_list_updated_topic, std::string("/vision_system/or/object_list_updated"));
+    node_handle.param("/object_recognition/publishers/object_list_updated/queue_size", object_list_updated_qs, 1);
 
-    node_handle.param("/object_recognition/person/identifier", person_identifier, std::string("person"));
+    node_handle.param("/object_recognition/servers/list_objects/service", list_objects_service, std::string("/vision_system/or/list_objects"));
+
+    node_handle.param("/object_recognition/person_identifier", person_identifier, std::string("person"));
+
+    node_handle.param("/object_recognition/threshold", threshold, 0.5);
+    
+    node_handle.param("object_recognition/possible_classes", possible_classes, DEFAULT_CLASS_LIST);
 }

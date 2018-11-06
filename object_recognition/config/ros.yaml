@@ -18,10 +18,11 @@ publishers:
     topic: /vision_system/or/people_detection
     queue_size: 1
 
-  person:
-    identifier: "person"
+  object_list_updated:
+    topic: /vision_system/fr/object_list_updated
+    queue_size: 1
 
-service:
+servers:
 
-  image2world:
-    service: /vision_system/iw/image2world
+  list_objects:
+    service: /vision_system/fr/list_objects

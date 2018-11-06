@@ -22,7 +22,7 @@ publishers:
     topic: /vision_system/fr/classifier_reload
     queue_size: 1
 
-  class_list_updated:
+  face_list_updated:
     topic: /vision_system/fr/face_list_updated
     queue_size: 1
 
