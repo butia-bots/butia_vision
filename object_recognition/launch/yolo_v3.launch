@@ -9,6 +9,8 @@
   <arg name="yolo_config_path"           default="$(find darknet_ros)/yolo_network_config/cfg"/>
 
   <!-- Load parameters -->
+  <rosparam command="load" ns="object_recognition" file="$(find object_recognition)/config/ros.yaml"/>
+  <rosparam command="load" ns="object_recognition" file="$(find object_recognition)/config/object_recognition.yaml"/>
   <rosparam command="load" ns="darknet_ros" file="$(find darknet_ros)/config/ros.yaml"/>
   <rosparam command="load" ns="darknet_ros" file="$(find darknet_ros)/config/yolov3.yaml"/>
 
