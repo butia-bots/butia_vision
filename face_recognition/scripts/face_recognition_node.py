@@ -23,9 +23,9 @@ reload_subscriber = None
 
 recognition_publisher = None
 
-class_list_updated_publisher = None
+face_list_updated_publisher = None
 
-class_list_header = Header()
+face_list_header = Header()
 
 view_publisher = None
 
@@ -41,9 +41,9 @@ def imageCallback(image_msg):
     
 def classifierReloadCallback(ros_msg):
     face_recognition_ros.loadClassifier(ros_msg.model_name)
-    class_list_header.seq += 1 
-    class_list_header.stamp = rospy.get_rostime()
-    class_list_updated_publisher.publish(class_list_header)
+    face_list_header.seq += 1 
+    face_list_header.stamp = rospy.get_rostime()
+    face_list_updated_publisher.publish(face_list_header)
 
 def recognizedFaces2ViewImage(image_msg, recognized_faces_msg):
     cv_image = BRIDGE.imgmsg_to_cv2(image_msg, desired_encoding = 'rgb8')
@@ -64,7 +64,6 @@ def recognizedFaces2ViewImage(image_msg, recognized_faces_msg):
     return image_view_msg
 
 def getFacesList(req):
-    print(face_recognition_ros.face_classifier[0].classes_)
     list_faces = face_recognition_ros.face_classifier[0].classes_.tolist()
     return ListClassesResponse(list_faces)
 
@@ -86,8 +85,8 @@ if __name__ == '__main__':
     face_recognition_view_topic = rospy.get_param("/face_recognition/publishers/face_recognition_view/topic", "/vision_system/fr/face_recognition_view")
     face_recognition_view_qs = rospy.get_param("/face_recognition/publishers/face_recognition_view/queue_size", 1)
 
-    class_list_updated_topic = rospy.get_param("/face_recognition/publishers/class_list_updated/topic", "/vision_system/fr/class_list_updated")
-    class_list_updated_qs = rospy.get_param("/face_recognition/publishers/class_list_updated/queue_size", 1)
+    face_list_updated_topic = rospy.get_param("/face_recognition/publishers/face_list_updated/topic", "/vision_system/fr/face_list_updated")
+    face_list_updated_qs = rospy.get_param("/face_recognition/publishers/face_list_updated/queue_size", 1)
 
     list_faces_service = rospy.get_param("/face_recognition/servers/list_faces/service", "/vision_system/fr/list_faces")
 
@@ -99,13 +98,13 @@ if __name__ == '__main__':
 
     view_publisher = rospy.Publisher(face_recognition_view_topic, Image, queue_size=face_recognition_view_topic)
 
-    class_list_updated_publisher = rospy.Publisher(class_list_updated_topic, Header, queue_size=class_list_updated_topic)
+    face_list_updated_publisher = rospy.Publisher(face_list_updated_topic, Header, queue_size=face_list_updated_topic)
 
     list_faces_server = rospy.Service(list_faces_service, ListClasses, getFacesList)
 
-    class_list_header.stamp = rospy.get_rostime()
-    class_list_header.frame_id = "list_faces"
+    face_list_header.stamp = rospy.get_rostime()
+    face_list_header.frame_id = "list_faces"
 
-    class_list_updated_publisher.publish(class_list_header)
+    face_list_updated_publisher.publish(face_list_header)
 
     rospy.spin()

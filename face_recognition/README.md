@@ -16,6 +16,10 @@ The face_recognition package uses Openface, dlib, OpenCV and scikit-learn to per
 
     Ask for change of classifier model.
 
+* **`face_list_updated:`** `/vision_system/fr/face_list_updated` ([std_msgs::Header])
+
+    Version control of the face list.
+
 ## Published Topics
 * **`face_recognition:`** `/vision_system/fr/face_recognition` ([vision_system_msgs::Recognitions])
 
@@ -32,13 +36,16 @@ The face_recognition package uses Openface, dlib, OpenCV and scikit-learn to per
 ## Servers
 * **`people_introducing:`** `/vision_system/fr/people_introducing` ([vision_system_msgs::PeopleIntroducing])
 
-
-    Ask for the system meet a new person and training of a new classifier model after.
+    Responds for the system meet a new person and training of a new classifier model after.
 
 * **`classifier_training:`** `/vision_system/fr/classifier_training` ([vision_system_msgs::FaceClassifierTraining])
 
+    Responds for training of a new classifier model.
 
-    Ask for training of a new classifier model.
+* **`list_faces:`** `/vision_system/fr/list_faces` ([vision_system_msgs::ListClasses])
+
+    Responds with the list of possible faces to recognize.
+
 ## Nodes
 * **`face_recognition_node`**
 
