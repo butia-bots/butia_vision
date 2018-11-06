@@ -2,6 +2,7 @@
 
 import rospy
 import rospkg
+import time
 
 from face_recognition_ros import FaceRecognitionROS
 from vision_system_msgs.msg import ClassifierReload
@@ -22,6 +23,12 @@ def classifierTraining(ros_srv):
     if(ans):
         classifier_reload.publish(ClassifierReload(ros_srv.classifier_name))
     return ans
+
+def regressiveCounter(sec):
+    for i  in range(0, sec):
+        print(str(sec-i) + '...')
+        time.sleep(1)
+        
 
 def peopleIntroducing(ros_srv):
     name = ros_srv.name
@@ -80,14 +87,15 @@ def peopleIntroducing(ros_srv):
             cv2.rectangle(s_rgb_image, (bb.minX, bb.minY), (bb.minX + bb.width, bb.minY + bb.height), color, 2)    
 
         cv2.imshow("Person", s_rgb_image)
+        
+        regressiveCounter(3)
 
-        if cv2.waitKey(1) == 32:
-            if face != None:
-                rospy.logwarn('Picture ' + add_image_labels[i] + ' was saved.')
-                cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), rgb_image)
-                i+= 1
-            else:
-                rospy.logerr("The face was not detected.")
+        if face != None:
+            rospy.logwarn('Picture ' + add_image_labels[i] + ' was  saved.')
+            cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), rgb_image)
+            i+= 1
+        else:
+            rospy.logerr("The face was not detected.")
 
 
     cv2.destroyAllWindows()
