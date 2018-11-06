@@ -428,7 +428,7 @@ class FaceRecognitionROS():
         elif classifier_type == 'gnb':
             classifier = GaussianNB()
         elif classifier_type == 'knn':
-            classifier = KNeighborsClassifier(n_neighbors=10)
+            classifier = KNeighborsClassifier(n_neighbors=10, weights='distance')
         else:
             return False
 

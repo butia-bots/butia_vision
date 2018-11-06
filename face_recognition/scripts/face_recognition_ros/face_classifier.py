@@ -12,13 +12,14 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.mixture import GMM
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsClassifier, RadiusNeighborsClassifier
 
 @load(model_id='sklearn')
 @debug
 def loadSklearnModel(models_dir, model='classifier.pkl', debug=False):
     with open(os.path.join(models_dir, 'sklearn', model), 'rb') as model_file:
         (cl_label, classifier_model) = pickle.load(model_file)
+        print cl_label.classes_
         return (cl_label, classifier_model)
 
 @action(action_name='classify')
