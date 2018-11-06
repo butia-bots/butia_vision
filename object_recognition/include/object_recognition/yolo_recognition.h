@@ -2,22 +2,21 @@
 
 #include <vector>
 #include <string>
-#include <algorithms>
+#include <algorithm>
 
 #include "darknet_ros_msgs/BoundingBoxes.h"
 
 #include "vision_system_msgs/Recognitions.h"
-#include "vision_system_msgs/Image2World.h"
-#include "vision_system_msgs/Recognitions3D.h"
+#include "vision_system_msgs/ListClasses.h"
 
 //A class that will set the parameters in rosparam server and make a interface of object_recognition and darknet_ros packages
 
-std::vector<std::string> DEFAULT_CLASS_LIST = ["person", "bicycle", "bench", "backpack", "umbrella", "handbag", "suitcase", "sports ball",
+std::vector<std::string> DEFAULT_CLASS_LIST = {"person", "bicycle", "bench", "backpack", "umbrella", "handbag", "suitcase", "sports ball",
                                                "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", 
                                                "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", 
                                                "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", 
                                                "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", 
-                                               "vase", "scissors", "teddy bear", "hair drier", "toothbrush"];
+                                               "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
 
 class YoloRecognition{
     public:
@@ -26,8 +25,6 @@ class YoloRecognition{
         bool getObjectList(vision_system_msgs::ListClasses::Request &req, vision_system_msgs::ListClasses::Response &res);
 
         void yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bbs);
-
-        bool recognitions2Recognitions3D(vision_system_msgs::Recognitions& recognitions, vision_system_msgs::Recognitions3D &recognitions3d);
 
     private:
         ros::NodeHandle node_handle;

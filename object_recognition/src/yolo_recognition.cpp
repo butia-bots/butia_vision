@@ -91,7 +91,7 @@ void YoloRecognition::readParameters()
 
     node_handle.param("/object_recognition/person_identifier", person_identifier, std::string("person"));
 
-    node_handle.param("/object_recognition/threshold", threshold, 0.5);
+    node_handle.param("/object_recognition/threshold", threshold, (float)0.5);
     
     node_handle.param("object_recognition/possible_classes", possible_classes, DEFAULT_CLASS_LIST);
 }
