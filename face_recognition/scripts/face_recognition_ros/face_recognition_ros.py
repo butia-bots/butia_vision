@@ -270,7 +270,7 @@ class FaceRecognitionROS():
     def numpyArray2RosVector(self, array):
         vector = array.tolist()
         return vector
-
+        
 
     def loadDetector(self):
         detector_dict = self.detectors_dict[self.detector_model_id]['load']

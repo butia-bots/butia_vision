@@ -22,6 +22,10 @@ publishers:
     topic: /vision_system/fr/classifier_reload
     queue_size: 1
 
+  class_list_updated:
+    topic: /vision_system/fr/face_list_updated
+    queue_size: 1
+
 servers:
 
   people_introducing:
@@ -29,3 +33,6 @@ servers:
 
   classifier_training:
     service: /vision_system/fr/classifier_training
+
+  list_faces:
+    service: /vision_system/fr/list_faces
