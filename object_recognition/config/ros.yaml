@@ -19,10 +19,10 @@ publishers:
     queue_size: 1
 
   object_list_updated:
-    topic: /vision_system/fr/object_list_updated
+    topic: /vision_system/or/object_list_updated
     queue_size: 1
 
 servers:
 
   list_objects:
-    service: /vision_system/fr/list_objects
+    service: /vision_system/or/list_objects
