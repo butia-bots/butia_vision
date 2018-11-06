@@ -22,10 +22,17 @@ publishers:
     topic: /vision_system/fr/classifier_reload
     queue_size: 1
 
-services:
+  face_list_updated:
+    topic: /vision_system/fr/face_list_updated
+    queue_size: 1
 
-  image2world:
-    service: /vision_system/iw/image2world
+servers:
+
+  people_introducing:
+    service: /vision_system/fr/people_introducing
 
   classifier_training:
     service: /vision_system/fr/classifier_training
+
+  list_faces:
+    service: /vision_system/fr/list_faces

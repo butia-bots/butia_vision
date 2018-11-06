@@ -2,12 +2,13 @@ verbose: False
 debug: False
 
 detector:
-  model_id: opencv_dnn
+  model_id: opencv_cascade
 
   opencv_cascade:
     model: haarcascade_frontalface_alt.xml
     scale_factor: 1.3
     min_neighbors: 5
+    height: 300
     cuda: True
 
   opencv_dnn:
@@ -36,7 +37,7 @@ embosser:
   openface:
     model: nn4.small2.v1.t7
     image_dimension: 96
-    cuda: True
+    cuda: False
 
 classifier:
   model_id: sklearn #sklearn

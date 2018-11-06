@@ -18,6 +18,7 @@ add_service_files(
   FILES
   FaceClassifierTraining.srv
   ImageRequest.srv
+  ListClasses.srv
   PeopleIntroducing.srv
   SegmentationRequest.srv
   StartTracking.srv
