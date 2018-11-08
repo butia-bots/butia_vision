@@ -3,12 +3,14 @@ project(object_recognition)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED roscpp darknet_ros_msgs vision_system_msgs geometry_msgs)
+find_package(catkin REQUIRED roscpp darknet_ros_msgs vision_system_msgs geometry_msgs cv_bridge)
+
+find_package(OpenCV REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME}
   LIBRARIES object_recognition
-  CATKIN_DEPENDS roscpp vision_system_msgs darknet_ros_msgs geometry_msgs
+  CATKIN_DEPENDS roscpp vision_system_msgs darknet_ros_msgs geometry_msgs cv_bridge
 )
 
 include_directories(
@@ -23,6 +25,10 @@ add_library(${PROJECT_NAME}
 
 add_executable(${PROJECT_NAME}_node src/object_recognition_node.cpp)
 
+install(PROGRAMS
+  scripts/people_detection_node.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
