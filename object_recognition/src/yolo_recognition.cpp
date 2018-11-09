@@ -59,7 +59,7 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
                 object.bounding_box.minY = it->ymin;
                 object.bounding_box.width = it->xmax - it->xmin;
                 object.bounding_box.height = it->ymax - it->ymin;
-                /*objects.push_back(object);
+                objects.push_back(object);
                 if(std::find(DRINKS.begin(), DRINKS.end(), std::string(it->Class)) != DRINKS.end())
                     drinks.push_back(object);
                 else if(std::find(SNACKS.begin(), SNACKS.end(), std::string(it->Class)) != SNACKS.end())
@@ -67,28 +67,28 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
                 else if(std::find(FRUITS.begin(), FRUITS.end(), std::string(it->Class)) != FRUITS.end())
                     fruits.push_back(object);
                 else if(std::find(DAILY.begin(), DAILY.end(), std::string(it->Class)) != DAILY.end())
-                    daily.push_back(object);*/
+                    daily.push_back(object);
             }
         }
     }
 
-    std::vector<vision_system_msgs::Description>::iterator it;
+    std::vector<vision_system_msgs::Description>::iterator jt;
 
     ROS_INFO("DRINKS: ");
-    for(it = drinks.begin() ; it != drinks.end() ; it++) {
-        //ROS_INFO(*it);
+    for(jt = drinks.begin() ; jt != drinks.end() ; jt++) {
+        ROS_INFO("%s", jt->label_class);
     }
     ROS_INFO("\n\nSNACKS: ");
-    for(it = snacks.begin() ; it != snacks.end() ; it++) {
-        //ROS_INFO(*it);
+    for(jt = snacks.begin() ; jt != snacks.end() ; jt++) {
+        ROS_INFO("%s", jt->label_class);
     }
     ROS_INFO("\n\nFRUITS: ");
-    for(it = fruits.begin() ; it != fruits.end() ; it++) {
-        //ROS_INFO(*it);
+    for(jt = fruits.begin() ; jt != fruits.end() ; jt++) {
+        ROS_INFO("%s", jt->label_class);    
     }
     ROS_INFO("\n\nDAILY: ");
-    for(it = daily.begin() ; it != daily.end() ; it++) {
-        //ROS_INFO(*it);
+    for(jt = daily.begin() ; jt != daily.end() ; jt++) {
+        ROS_INFO("%s", jt->label_class);
     }
 
     if(objects.size() > 0) {
