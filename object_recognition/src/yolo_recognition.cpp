@@ -28,10 +28,10 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
 {
     ROS_INFO("Image ID: %d", bbs.image_header.seq);
 
-    std::vector<vision_system_msgs::Description> drinks;
+    /*std::vector<vision_system_msgs::Description> drinks;
     std::vector<vision_system_msgs::Description> snacks;
     std::vector<vision_system_msgs::Description> fruits;
-    std::vector<vision_system_msgs::Description> daily;
+    std::vector<vision_system_msgs::Description> daily;*/
 
     std::vector<vision_system_msgs::Description> objects;
     std::vector<vision_system_msgs::Description> people;
@@ -60,21 +60,21 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
                 object.bounding_box.width = it->xmax - it->xmin;
                 object.bounding_box.height = it->ymax - it->ymin;
                 objects.push_back(object);
-                if(std::find(DRINKS.begin(), DRINKS.end(), std::string(it->Class)) != DRINKS.end())
+                /*if(std::find(DRINKS.begin(), DRINKS.end(), std::string(it->Class)) != DRINKS.end())
                     drinks.push_back(object);
                 else if(std::find(SNACKS.begin(), SNACKS.end(), std::string(it->Class)) != SNACKS.end())
                     snacks.push_back(object);
                 else if(std::find(FRUITS.begin(), FRUITS.end(), std::string(it->Class)) != FRUITS.end())
                     fruits.push_back(object);
                 else if(std::find(DAILY.begin(), DAILY.end(), std::string(it->Class)) != DAILY.end())
-                    daily.push_back(object);
+                    daily.push_back(object);*/
             }
         }
     }
 
     std::vector<vision_system_msgs::Description>::iterator jt;
 
-    ROS_INFO("DRINKS: ");
+    /*ROS_INFO("DRINKS: ");
     for(jt = drinks.begin() ; jt != drinks.end() ; jt++) {
         ROS_INFO("%s", jt->label_class);
     }
@@ -89,7 +89,7 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
     ROS_INFO("\n\nDAILY: ");
     for(jt = daily.begin() ; jt != daily.end() ; jt++) {
         ROS_INFO("%s", jt->label_class);
-    }
+    }*/
 
     if(objects.size() > 0) {
         pub_object_msg.header = bbs.header;
