@@ -1,6 +1,0 @@
-<launch>
-  <rosparam command="load" ns="vision_system_bridge" file="$(find vision_system_bridge)/config/ros.yaml"/>
-
-  <node name="vision_system_bridge_node" pkg="vision_system_bridge" type="vision_system_bridge_node" output="screen"/>
-
-</launch>

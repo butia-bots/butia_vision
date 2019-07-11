@@ -15,9 +15,9 @@
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
-class VisionSystemBridge {
+class ButiaVisionBridge {
     public:
-        VisionSystemBridge(ros::NodeHandle &nh);
+        ButiaVisionBridge(ros::NodeHandle &nh);
 
         void kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb, const sensor_msgs::Image::ConstPtr &image_depth, const sensor_msgs::CameraInfo::ConstPtr &camera_info);
         

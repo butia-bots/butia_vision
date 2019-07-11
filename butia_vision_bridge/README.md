@@ -1,6 +1,6 @@
-# vision_system_bridge
+# butia_vision_bridge
 ## Overview
-The vision_system_bridge package is used to read images and camera info from kinect_bridge and publish them syncronized with a new seq. 
+The butia_vision_bridge package is used to read images and camera info from kinect_bridge and publish them syncronized with a new seq. 
 ## Subscribers
 * **`image_rgb:`** `/kinect2/qhd/image_color_rect` ([sensor_msgs::Image])
 
@@ -15,19 +15,19 @@ The vision_system_bridge package is used to read images and camera info from kin
     Camera infomation from kinect_bridge.
 
 ## Publishers
-* **`image_rgb:`** `/vision_system/vsb/image_rgb_raw` ([sensor_msgs::Image])
+* **`image_rgb:`** `/butia_vision/bvb/image_rgb_raw` ([sensor_msgs::Image])
 
     Publishs an image color that have a depth pair.
     
-* **`image_depth:`** `/vision_system/vsb/image_depth_raw` ([sensor_msgs::Image])
+* **`image_depth:`** `/butia_vision/bvb/image_depth_raw` ([sensor_msgs::Image])
 
     Publishs an image depth that have a color pair.
 
-* **`camera_info:`** `/vision_system/vsb/camera_info` ([sensor_msgs::CameraInfo])
+* **`camera_info:`** `/butia_vision/bvb/camera_info` ([sensor_msgs::CameraInfo])
 
     Publishs camera information.
 
 ## Nodes
-* **`vision_system_bridge`**
+* **`butia_vision_bridge`**
 
     Reads kinect_bridge topics syncronized, stores on buffers and publishs to the rest of the system.

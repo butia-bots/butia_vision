@@ -1,6 +1,6 @@
-#include "vision_system_bridge/vision_system_bridge.h"
+#include "butia_vision_bridge/butia_vision_bridge.h"
 
-VisionSystemBridge::VisionSystemBridge(ros::NodeHandle &nh) : node_handle(nh), it(nh), seq(0)
+ButiaVisionBridge::ButiaVisionBridge(ros::NodeHandle &nh) : node_handle(nh), it(nh), seq(0)
 {
     readParameters();
     
@@ -10,11 +10,11 @@ VisionSystemBridge::VisionSystemBridge(ros::NodeHandle &nh) : node_handle(nh), i
 
     if(use_exact_time) {
         exact_sync = new message_filters::Synchronizer<ExactSyncPolicy>(ExactSyncPolicy(sub_queue_size), *image_rgb_sub, *image_depth_sub, *camera_info_sub);
-        exact_sync->registerCallback(boost::bind(&VisionSystemBridge::kinectCallback, this, _1, _2, _3));
+        exact_sync->registerCallback(boost::bind(&ButiaVisionBridge::kinectCallback, this, _1, _2, _3));
     }
     else {
         approximate_sync = new message_filters::Synchronizer<ApproximateSyncPolicy>(ApproximateSyncPolicy(sub_queue_size),  *image_rgb_sub, *image_depth_sub, *camera_info_sub);
-        approximate_sync->registerCallback(boost::bind(&VisionSystemBridge::kinectCallback, this, _1, _2, _3));
+        approximate_sync->registerCallback(boost::bind(&ButiaVisionBridge::kinectCallback, this, _1, _2, _3));
     }
 
     image_rgb_pub = it.advertise(image_rgb_pub_topic, pub_queue_size);
@@ -22,24 +22,24 @@ VisionSystemBridge::VisionSystemBridge(ros::NodeHandle &nh) : node_handle(nh), i
     camera_info_pub = node_handle.advertise<sensor_msgs::CameraInfo>(camera_info_pub_topic, pub_queue_size);
 }
 
-void VisionSystemBridge::readParameters()
+void ButiaVisionBridge::readParameters()
 {
-    node_handle.param("/vision_system_bridge/subscribers/queue_size", sub_queue_size, 5);
-    node_handle.param("/vision_system_bridge/subscribers/image_rgb/topic", image_rgb_sub_topic, std::string("/kinect2/qhd/image_color_rect"));
-    node_handle.param("/vision_system_bridge/subscribers/image_depth/topic", image_depth_sub_topic, std::string("/kinect2/qhd/image_depth_rect"));
-    node_handle.param("/vision_system_bridge/subscribers/camera_info/topic", camera_info_sub_topic, std::string("/kinect2/qhd/camera_info"));
+    node_handle.param("/butia_vision_bridge/subscribers/queue_size", sub_queue_size, 5);
+    node_handle.param("/butia_vision_bridge/subscribers/image_rgb/topic", image_rgb_sub_topic, std::string("/kinect2/qhd/image_color_rect"));
+    node_handle.param("/butia_vision_bridge/subscribers/image_depth/topic", image_depth_sub_topic, std::string("/kinect2/qhd/image_depth_rect"));
+    node_handle.param("/butia_vision_bridge/subscribers/camera_info/topic", camera_info_sub_topic, std::string("/kinect2/qhd/camera_info"));
 
-    node_handle.param("/vision_system_bridge/publishers/queue_size", pub_queue_size, 5);   
-    node_handle.param("/vision_system_bridge/publishers/image_rgb/topic", image_rgb_pub_topic, std::string("/vision_system/vsb/image_rgb_raw"));
-    node_handle.param("/vision_system_bridge/publishers/image_depth/topic", image_depth_pub_topic, std::string("/vision_system/vsb/image_depth_raw"));
-    node_handle.param("/vision_system_bridge/publishers/camera_info/topic", camera_info_pub_topic, std::string("/vision_system/vsb/camera_info"));
+    node_handle.param("/butia_vision_bridge/publishers/queue_size", pub_queue_size, 5);   
+    node_handle.param("/butia_vision_bridge/publishers/image_rgb/topic", image_rgb_pub_topic, std::string("/butia_vision/bvb/image_rgb_raw"));
+    node_handle.param("/butia_vision_bridge/publishers/image_depth/topic", image_depth_pub_topic, std::string("/butia_vision/bvb/image_depth_raw"));
+    node_handle.param("/butia_vision_bridge/publishers/camera_info/topic", camera_info_pub_topic, std::string("/butia_vision/bvb/camera_info"));
 
-    node_handle.param("/vision_system_bridge/parameters/use_exact_time", use_exact_time, false);
-    node_handle.param("/vision_system_bridge/parameters/image_width", image_width, 640);
-    node_handle.param("/vision_system_bridge/parameters/image_height", image_height, 480);
+    node_handle.param("/butia_vision_bridge/parameters/use_exact_time", use_exact_time, false);
+    node_handle.param("/butia_vision_bridge/parameters/image_width", image_width, 640);
+    node_handle.param("/butia_vision_bridge/parameters/image_height", image_height, 480);
 }
 
-void VisionSystemBridge::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info, sensor_msgs::CameraInfo &info)
+void ButiaVisionBridge::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info, sensor_msgs::CameraInfo &info)
 {
     info = *(camera_info);
 
@@ -56,14 +56,14 @@ void VisionSystemBridge::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr 
     info.height = image_height;
 }
 
-void VisionSystemBridge::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image)
+void ButiaVisionBridge::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image)
 {
     cv_bridge::CvImageConstPtr cv_image;
     cv_image = cv_bridge::toCvShare(msg_image, msg_image->encoding);
     cv_image->image.copyTo(image);
 }
 
-void VisionSystemBridge::imageResize(cv::Mat &image)
+void ButiaVisionBridge::imageResize(cv::Mat &image)
 {
     cv::Mat cp_image;
 
@@ -73,7 +73,7 @@ void VisionSystemBridge::imageResize(cv::Mat &image)
 }
 
 
-void VisionSystemBridge::kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb, const sensor_msgs::Image::ConstPtr &image_depth, const sensor_msgs::CameraInfo::ConstPtr &camera_info)
+void ButiaVisionBridge::kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb, const sensor_msgs::Image::ConstPtr &image_depth, const sensor_msgs::CameraInfo::ConstPtr &camera_info)
 {
     ROS_INFO("INPUT ID: rgb = %d, depth = %d,  info = %d", image_rgb->header.seq, image_depth->header.seq, camera_info->header.seq);
 
@@ -82,7 +82,7 @@ void VisionSystemBridge::kinectCallback(const sensor_msgs::Image::ConstPtr &imag
     seq++;
 }
 
-void VisionSystemBridge::publish(const sensor_msgs::Image::ConstPtr &image_rgb_ptr, const sensor_msgs::Image::ConstPtr &image_depth_ptr, const sensor_msgs::CameraInfo::ConstPtr &camera_info_ptr)
+void ButiaVisionBridge::publish(const sensor_msgs::Image::ConstPtr &image_rgb_ptr, const sensor_msgs::Image::ConstPtr &image_depth_ptr, const sensor_msgs::CameraInfo::ConstPtr &camera_info_ptr)
 {
     cv::Mat rgb_image, depth_image;
     sensor_msgs::CameraInfo camera_info;
