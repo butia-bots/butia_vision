@@ -8,10 +8,10 @@ PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size
     
     people_detection_subscriber = node_handle.subscribe(param_people_detection_topic, 150, &PeopleTracker::peopleDetectionCallBack, this);
 
-    people_tracking_publisher = node_handle.advertise<vision_system_msgs::Recognitions>(param_people_tracking_topic, 1000);
+    people_tracking_publisher = node_handle.advertise<butia_vision_msgs::Recognitions>(param_people_tracking_topic, 1000);
 
-    image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(param_image_request_service);
-    image_segmentation_client = node_handle.serviceClient<vision_system_msgs::SegmentationRequest>(param_segmentation_request_service);
+    image_request_client = node_handle.serviceClient<butia_vision_msgs::ImageRequest>(param_image_request_service);
+    image_segmentation_client = node_handle.serviceClient<butia_vision_msgs::SegmentationRequest>(param_segmentation_request_service);
 
     start_service = node_handle.advertiseService(param_start_service, &PeopleTracker::startTracking, this);
     stop_service = node_handle.advertiseService(param_stop_service, &PeopleTracker::stopTracking, this);
@@ -23,15 +23,15 @@ PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size
 }
 
 
-bool PeopleTracker::startTracking(vision_system_msgs::StartTracking::Request &req, vision_system_msgs::StartTracking::Response &res) {
+bool PeopleTracker::startTracking(butia_vision_msgs::StartTracking::Request &req, butia_vision_msgs::StartTracking::Response &res) {
     if (!req.start) {
         initialized = false;
         res.started = false;
         return false;
     }
 
-    vision_system_msgs::ImageRequest image_request_service;
-    vision_system_msgs::SegmentationRequest image_segmentation_service;
+    butia_vision_msgs::ImageRequest image_request_service;
+    butia_vision_msgs::SegmentationRequest image_segmentation_service;
 
     image_request_service.request.seq = frame_id;
     if (!image_request_client.call(image_request_service)) {
@@ -44,11 +44,11 @@ bool PeopleTracker::startTracking(vision_system_msgs::StartTracking::Request &re
     
     ROS_INFO("Image request service called!");
 
-    vision_system_msgs::RGBDImage rgbd_image = image_request_service.response.rgbd_image;
-    std::vector<vision_system_msgs::Description>::iterator it;
-    std::vector<vision_system_msgs::Description>::iterator max_it;
+    butia_vision_msgs::RGBDImage rgbd_image = image_request_service.response.rgbd_image;
+    std::vector<butia_vision_msgs::Description>::iterator it;
+    std::vector<butia_vision_msgs::Description>::iterator max_it;
 
-    vision_system_msgs::BoundingBox max_description;
+    butia_vision_msgs::BoundingBox max_description;
     max_description.width = 0;
     max_description.height = 0;
 
@@ -91,7 +91,7 @@ bool PeopleTracker::startTracking(vision_system_msgs::StartTracking::Request &re
 }
 
 
-bool PeopleTracker::stopTracking(vision_system_msgs::StopTracking::Request &req, vision_system_msgs::StopTracking::Response &res) {
+bool PeopleTracker::stopTracking(butia_vision_msgs::StopTracking::Request &req, butia_vision_msgs::StopTracking::Response &res) {
     if (req.stop) {
         initialized = false;
         res.stopped = true;
@@ -104,9 +104,9 @@ bool PeopleTracker::stopTracking(vision_system_msgs::StopTracking::Request &req,
 }
 
 
-void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitions::ConstPtr &person_detected) {
-    vision_system_msgs::ImageRequest image_request_service;
-    vision_system_msgs::SegmentationRequest image_segmentation_service;
+void PeopleTracker::peopleDetectionCallBack(const butia_vision_msgs::Recognitions::ConstPtr &person_detected) {
+    butia_vision_msgs::ImageRequest image_request_service;
+    butia_vision_msgs::SegmentationRequest image_segmentation_service;
 
     ROS_WARN("Person Detected seq: %d", person_detected->image_header.seq);
 
@@ -121,9 +121,9 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
         else {
             ROS_INFO("Image request service called!");
 
-            vision_system_msgs::RGBDImage rgbd_image = image_request_service.response.rgbd_image;
+            butia_vision_msgs::RGBDImage rgbd_image = image_request_service.response.rgbd_image;
 
-            std::vector<vision_system_msgs::Description>::iterator it_descriptions;
+            std::vector<butia_vision_msgs::Description>::iterator it_descriptions;
             std::vector<sensor_msgs::Image>::iterator it_images;
 
             std::vector<sensor_msgs::Image> segmented_images;
@@ -168,7 +168,7 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
                 if (person_founded == true) {
                     registerMatch();
 
-                    vision_system_msgs::Description desc;
+                    butia_vision_msgs::Description desc;
                     desc.label_class = "person";
                     desc.bounding_box = better_bounding_box;
                     desc.probability = better_probability;
@@ -180,8 +180,8 @@ void PeopleTracker::peopleDetectionCallBack(const vision_system_msgs::Recognitio
             }
         }
     } else {
-        vision_system_msgs::StartTracking::Response start_tracking_response;
-        vision_system_msgs::StartTracking::Request start_tracking_request;
+        butia_vision_msgs::StartTracking::Response start_tracking_response;
+        butia_vision_msgs::StartTracking::Request start_tracking_request;
         start_tracking_request.start = true;
         startTracking(start_tracking_request, start_tracking_response);
     }
@@ -254,12 +254,12 @@ void PeopleTracker::readParameters() {
 
     node_handle.param("/people_tracking/detector/type", param_detector_type, std::string("surf"));
 
-    node_handle.param("/services/people_tracking/start_tracking", param_start_service, std::string("/vision_system/pt/start"));
-    node_handle.param("/services/people_tracking/stop_tracking", param_stop_service, std::string("/vision_system/pt/stop"));
-    node_handle.param("/services/image_server/image_request", param_image_request_service, std::string("/vision_system/is/image_request"));
-    node_handle.param("/services/segmentation/segmentation_request", param_segmentation_request_service, std::string("/vision_system/seg/image_segmentation"));
+    node_handle.param("/services/people_tracking/start_tracking", param_start_service, std::string("/butia_vision/pt/start"));
+    node_handle.param("/services/people_tracking/stop_tracking", param_stop_service, std::string("/butia_vision/pt/stop"));
+    node_handle.param("/services/image_server/image_request", param_image_request_service, std::string("/butia_vision/is/image_request"));
+    node_handle.param("/services/segmentation/segmentation_request", param_segmentation_request_service, std::string("/butia_vision/seg/image_segmentation"));
 
-    node_handle.param("/topics/object_recognition/people_detection", param_people_detection_topic, std::string("/vision_system/or/people_detection"));
-    node_handle.param("/topics/people_tracking/people_tracking", param_people_tracking_topic, std::string("/vision_system/pt/people_tracking"));
+    node_handle.param("/topics/object_recognition/people_detection", param_people_detection_topic, std::string("/butia_vision/or/people_detection"));
+    node_handle.param("/topics/people_tracking/people_tracking", param_people_tracking_topic, std::string("/butia_vision/pt/people_tracking"));
 }
 //----------------------------------------------------------------------------------------------------

@@ -6,8 +6,8 @@
 
 #include "darknet_ros_msgs/BoundingBoxes.h"
 
-#include "vision_system_msgs/Recognitions.h"
-#include "vision_system_msgs/ListClasses.h"
+#include "butia_vision_msgs/Recognitions.h"
+#include "butia_vision_msgs/ListClasses.h"
 
 std::vector<std::string> DEFAULT_CLASS_LIST = {"person", "bicycle", "bench", "backpack", "umbrella", "handbag", "suitcase", "sports ball",
                                                "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", 
@@ -32,7 +32,7 @@ class YoloRecognition{
     public:
         YoloRecognition(ros::NodeHandle _nh);
 
-        bool getObjectList(vision_system_msgs::ListClasses::Request &req, vision_system_msgs::ListClasses::Response &res);
+        bool getObjectList(butia_vision_msgs::ListClasses::Request &req, butia_vision_msgs::ListClasses::Response &res);
 
         void yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bbs);
 
@@ -41,8 +41,8 @@ class YoloRecognition{
 
         ros::Subscriber bounding_boxes_sub;
 
-        vision_system_msgs::Recognitions pub_object_msg;
-        vision_system_msgs::Recognitions pub_people_msg;
+        butia_vision_msgs::Recognitions pub_object_msg;
+        butia_vision_msgs::Recognitions pub_people_msg;
 
         ros::Publisher recognized_objects_pub;
         ros::Publisher recognized_people_pub;

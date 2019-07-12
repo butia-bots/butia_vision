@@ -3,13 +3,13 @@ project(segmentation)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED COMPONENTS roscpp vision_system_msgs cv_bridge)
+find_package(catkin REQUIRED COMPONENTS roscpp butia_vision_msgs cv_bridge)
 find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
 
 catkin_package(
     INCLUDE_DIRS include
     LIBRARIES ${PROJECT_NAME}
-    CATKIN_DEPENDS roscpp vision_system_msgs cv_bridge
+    CATKIN_DEPENDS roscpp butia_vision_msgs cv_bridge
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})

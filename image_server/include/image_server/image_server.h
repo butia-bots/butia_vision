@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "sensor_msgs/Image.h"
-#include "vision_system_msgs/ImageRequest.h"
+#include "butia_vision_msgs/ImageRequest.h"
 
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
@@ -18,7 +18,7 @@ class ImageServer {
 
         void imageCallback(const sensor_msgs::Image::ConstPtr &image_rgb, const sensor_msgs::Image::ConstPtr &image_depth, const sensor_msgs::CameraInfo::ConstPtr &camera_info);
 
-        bool imageRequestServer(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res);
+        bool imageRequestServer(butia_vision_msgs::ImageRequest::Request &req, butia_vision_msgs::ImageRequest::Response &res);
 
     private:
         ros::NodeHandle node_handle;

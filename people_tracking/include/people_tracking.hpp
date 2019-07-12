@@ -9,14 +9,14 @@
 #include "sensor_msgs/Image.h"
 #include "cv_bridge/cv_bridge.h"
 #include "image_transport/image_transport.h"
-#include "vision_system_msgs/ImageRequest.h"
-#include "vision_system_msgs/BoundingBox.h"
-#include "vision_system_msgs/RGBDImage.h"
-#include "vision_system_msgs/Recognitions.h"
-#include "vision_system_msgs/Description.h"
-#include "vision_system_msgs/SegmentationRequest.h"
-#include "vision_system_msgs/StartTracking.h"
-#include "vision_system_msgs/StopTracking.h"
+#include "butia_vision_msgs/ImageRequest.h"
+#include "butia_vision_msgs/BoundingBox.h"
+#include "butia_vision_msgs/RGBDImage.h"
+#include "butia_vision_msgs/Recognitions.h"
+#include "butia_vision_msgs/Description.h"
+#include "butia_vision_msgs/SegmentationRequest.h"
+#include "butia_vision_msgs/StartTracking.h"
+#include "butia_vision_msgs/StopTracking.h"
 
 
 
@@ -37,9 +37,9 @@ class PeopleTracker {
         int image_size; //Variable that stores the size of the camera image
 
         int frame_id; //Stores the frame id to request the image from server
-        std::vector<vision_system_msgs::Description> descriptions; //Stores the descriptions of the people detected
+        std::vector<butia_vision_msgs::Description> descriptions; //Stores the descriptions of the people detected
 
-        vision_system_msgs::Recognitions message; //Message to publish
+        butia_vision_msgs::Recognitions message; //Message to publish
 
         //Stores the threshold to know if is confiable
         float bounding_box_size_threshold;
@@ -91,17 +91,17 @@ class PeopleTracker {
         int number_of_matches_on_better_match;
         cv::Mat_<float> better_descriptors;
         cv::Mat actual_better_segmented_image;
-        vision_system_msgs::BoundingBox better_bounding_box;
+        butia_vision_msgs::BoundingBox better_bounding_box;
         float better_probability;
 
     public:
         PeopleTracker(ros::NodeHandle _nh); //Constructor
 
-        void peopleDetectionCallBack(const vision_system_msgs::Recognitions::ConstPtr &person_detected); //CallBack
+        void peopleDetectionCallBack(const butia_vision_msgs::Recognitions::ConstPtr &person_detected); //CallBack
 
         //Services' Functions
-        bool startTracking(vision_system_msgs::StartTracking::Request &req, vision_system_msgs::StartTracking::Response &res);
-        bool stopTracking(vision_system_msgs::StopTracking::Request &req, vision_system_msgs::StopTracking::Response &res);
+        bool startTracking(butia_vision_msgs::StartTracking::Request &req, butia_vision_msgs::StartTracking::Response &res);
+        bool stopTracking(butia_vision_msgs::StopTracking::Request &req, butia_vision_msgs::StopTracking::Response &res);
         
         void readImage(const sensor_msgs::Image::ConstPtr &source, cv::Mat &destiny); //Function that reads the image
 

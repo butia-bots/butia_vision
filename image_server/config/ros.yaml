@@ -3,18 +3,18 @@ subscribers:
   queue_size: 5
 
   image_rgb:
-    topic: /vision_system/vsb/image_rgb_raw
+    topic: /butia_vision/bvb/image_rgb_raw
 
   image_depth:
-    topic: /vision_system/vsb/image_depth_raw
+    topic: /butia_vision/bvb/image_depth_raw
 
   camera_info:
-    topic: /vision_system/vsb/camera_info
+    topic: /butia_vision/bvb/camera_info
 
 server:
 
   image_request:
-    service: /vision_system/is/image_request
+    service: /butia_vision/is/image_request
 
 parameters:
   buffer_size: 150

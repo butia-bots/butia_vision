@@ -8,13 +8,13 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   roscpp
   sensor_msgs
-  vision_system_msgs
+  butia_vision_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME}
   LIBRARIES image_server
-  CATKIN_DEPENDS image_transport message_filters roscpp sensor_msgs vision_system_msgs
+  CATKIN_DEPENDS image_transport message_filters roscpp sensor_msgs butia_vision_msgs
 )
 
 

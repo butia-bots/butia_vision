@@ -1,0 +1,6 @@
+<launch>
+  <rosparam command="load" ns="butia_vision_bridge" file="$(find butia_vision_bridge)/config/ros.yaml"/>
+
+  <node name="butia_vision_bridge_node" pkg="butia_vision_bridge" type="butia_vision_bridge_node" output="screen"/>
+
+</launch>

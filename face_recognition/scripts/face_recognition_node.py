@@ -10,9 +10,9 @@ from std_msgs.msg import Header
 
 from sensor_msgs.msg import Image
 
-from vision_system_msgs.msg import Recognitions, ClassifierReload
+from butia_vision_msgs.msg import Recognitions, ClassifierReload
 
-from vision_system_msgs.srv import ListClasses, ListClassesResponse
+from butia_vision_msgs.srv import ListClasses, ListClassesResponse
 
 BRIDGE = CvBridge()
 
@@ -73,22 +73,22 @@ if __name__ == '__main__':
     camera_read_topic = rospy.get_param("/face_recognition/subscribers/camera_reading/topic", "/usb_cam/image_raw")
     camera_read_qs = rospy.get_param("/face_recognition/subscribers/camera_reading/queue_size", 1)
 
-    classifier_reload_topic = rospy.get_param("/face_recognition/subscribers/classifier_reload/topic", "/vision_system/fr/classifier_reload")
+    classifier_reload_topic = rospy.get_param("/face_recognition/subscribers/classifier_reload/topic", "/butia_vision/fr/classifier_reload")
     classifier_reload_qs = rospy.get_param("/face_recognition/subscribers/classifier_reload/queue_size", 1)
 
-    face_recognition_topic = rospy.get_param("/face_recognition/publishers/face_recognition/topic", "/vision_system/fr/face_recognition")
+    face_recognition_topic = rospy.get_param("/face_recognition/publishers/face_recognition/topic", "/butia_vision/fr/face_recognition")
     face_recognition_qs = rospy.get_param("/face_recognition/publishers/face_recognition/queue_size", 1)
     
-    face_recognition3d_topic = rospy.get_param("/face_recognition/publishers/face_recognition3d/topic", "/vision_system/fr/face_recognition3d")
+    face_recognition3d_topic = rospy.get_param("/face_recognition/publishers/face_recognition3d/topic", "/butia_vision/fr/face_recognition3d")
     face_recognition3d_qs = rospy.get_param("/face_recognition/publishers/face_recognition3d/queue_size", 1)
 
-    face_recognition_view_topic = rospy.get_param("/face_recognition/publishers/face_recognition_view/topic", "/vision_system/fr/face_recognition_view")
+    face_recognition_view_topic = rospy.get_param("/face_recognition/publishers/face_recognition_view/topic", "/butia_vision/fr/face_recognition_view")
     face_recognition_view_qs = rospy.get_param("/face_recognition/publishers/face_recognition_view/queue_size", 1)
 
-    face_list_updated_topic = rospy.get_param("/face_recognition/publishers/face_list_updated/topic", "/vision_system/fr/face_list_updated")
+    face_list_updated_topic = rospy.get_param("/face_recognition/publishers/face_list_updated/topic", "/butia_vision/fr/face_list_updated")
     face_list_updated_qs = rospy.get_param("/face_recognition/publishers/face_list_updated/queue_size", 1)
 
-    list_faces_service = rospy.get_param("/face_recognition/servers/list_faces/service", "/vision_system/fr/list_faces")
+    list_faces_service = rospy.get_param("/face_recognition/servers/list_faces/service", "/butia_vision/fr/list_faces")
 
     image_subscriber = rospy.Subscriber(camera_read_topic, Image, imageCallback, queue_size=camera_read_qs, buff_size=2**24)
 

@@ -1,14 +1,14 @@
 services:
   people_tracking:
-    start_tracking: "/vision_system/pt/start"
-    stop_tracking: "/vision_system/pt/stop"
+    start_tracking: "/butia_vision/pt/start"
+    stop_tracking: "/butia_vision/pt/stop"
   image_server:
-    image_request: "/vision_system/is/image_request"
+    image_request: "/butia_vision/is/image_request"
   segmentation:
-    segmentation_request: "/vision_system/seg/image_segmentation"
+    segmentation_request: "/butia_vision/seg/image_segmentation"
 
 topics:
   object_recognition:
-    people_detection: "/vision_system/or/people_detection"
+    people_detection: "/butia_vision/or/people_detection"
   people_tracking:
-    people_tracking: "/vision_system/pt/people_tracking"
+    people_tracking: "/butia_vision/pt/people_tracking"

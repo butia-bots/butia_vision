@@ -1,4 +1,4 @@
-# vision_system
+# butia_vision
 
 ## Overview
 This is a group of ROS packages responsable for perform computer vision process of Butia Bots domestic robot (DoRIS) in Robocup@Home league. 
@@ -23,8 +23,8 @@ The vision system has three main packages and other four helpers.
 - people_tracking
 
 ### Helper Packages
-- vision_system_bridge
-- vision_system_msgs
+- butia_vision_bridge
+- butia_vision_msgs
 - segmentation
 - image2kinect
 - image_server

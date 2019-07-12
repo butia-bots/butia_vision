@@ -8,12 +8,12 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
     face_recognition_sub = node_handle.subscribe(face_recognition_sub_topic, sub_queue_size, &Image2Kinect::faceRecognitionCallback, this);
     people_tracking_sub = node_handle.subscribe(people_tracking_sub_topic, sub_queue_size, &Image2Kinect::peopleTrackingCallback, this);
 
-    object_recognition_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(object_recognition_pub_topic, pub_queue_size);
-    face_recognition_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(face_recognition_pub_topic, pub_queue_size);
-    people_tracking_pub = node_handle.advertise<vision_system_msgs::Recognitions3D>(people_tracking_pub_topic, pub_queue_size);
+    object_recognition_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(object_recognition_pub_topic, pub_queue_size);
+    face_recognition_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(face_recognition_pub_topic, pub_queue_size);
+    people_tracking_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(people_tracking_pub_topic, pub_queue_size);
 
-    image_request_client = node_handle.serviceClient<vision_system_msgs::ImageRequest>(image_request_client_service);
-    segmentation_request_client = node_handle.serviceClient<vision_system_msgs::SegmentationRequest>(segmentation_request_client_service);
+    image_request_client = node_handle.serviceClient<butia_vision_msgs::ImageRequest>(image_request_client_service);
+    segmentation_request_client = node_handle.serviceClient<butia_vision_msgs::SegmentationRequest>(segmentation_request_client_service);
 
     camera_matrix_color = cv::Mat::zeros(3, 3, CV_64F);
 }
@@ -155,7 +155,7 @@ bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geo
 }
 
 
-void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions &recognitions, vision_system_msgs::Recognitions3D& recognitions3d)
+void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &recognitions, butia_vision_msgs::Recognitions3D& recognitions3d)
 {
     int frame_id = recognitions.image_header.seq;
 
@@ -164,7 +164,7 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
     recognitions3d.header = recognitions.header;
     recognitions3d.image_header = recognitions.image_header;
 
-    vision_system_msgs::ImageRequest image_srv;
+    butia_vision_msgs::ImageRequest image_srv;
     image_srv.request.seq = frame_id;
     if (!image_request_client.call(image_srv)) {
         ROS_ERROR("Failed to call image_request service");
@@ -173,7 +173,7 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
 
     cv::Mat segmented_rgb_image, depth, segmented_depth_image;
 
-    vision_system_msgs::RGBDImage &rgbd_image = image_srv.response.rgbd_image;
+    butia_vision_msgs::RGBDImage &rgbd_image = image_srv.response.rgbd_image;
 
     sensor_msgs::Image::ConstPtr depth_const_ptr( new sensor_msgs::Image(rgbd_image.depth));
     sensor_msgs::CameraInfo::ConstPtr camera_info_const_ptr( new sensor_msgs::CameraInfo(image_srv.response.camera_info));
@@ -181,9 +181,9 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
     readImage(depth_const_ptr, depth);
     readCameraInfo(camera_info_const_ptr);
 
-    std::vector<vision_system_msgs::Description> &descriptions = recognitions.descriptions;
+    std::vector<butia_vision_msgs::Description> &descriptions = recognitions.descriptions;
 
-    vision_system_msgs::SegmentationRequest segmentation_srv;
+    butia_vision_msgs::SegmentationRequest segmentation_srv;
     segmentation_srv.request.initial_rgbd_image = rgbd_image;
     segmentation_srv.request.descriptions = descriptions;
     if (!segmentation_request_client.call(segmentation_srv)) {
@@ -191,15 +191,15 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
         return;
     }
 
-    std::vector<vision_system_msgs::Description>::iterator it;
+    std::vector<butia_vision_msgs::Description>::iterator it;
 
     std::vector<sensor_msgs::Image> &segmented_rgb_images = segmentation_srv.response.segmented_rgb_images;
     std::vector<sensor_msgs::Image>::iterator jt;
   
-    std::vector<vision_system_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
+    std::vector<butia_vision_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
 
     for(it = descriptions.begin(), jt = segmented_rgb_images.begin() ; it != descriptions.end() && jt != segmented_rgb_images.end() ; it++, jt++) {
-        vision_system_msgs::Description3D description3d;
+        butia_vision_msgs::Description3D description3d;
         description3d.label_class = it->label_class;
         description3d.probability = it->probability;
         std_msgs::ColorRGBA &color =  description3d.color;
@@ -222,25 +222,25 @@ void Image2Kinect::recognitions2Recognitions3d(vision_system_msgs::Recognitions 
     }
 }
 
-void Image2Kinect::objectRecognitionCallback(vision_system_msgs::Recognitions recognitions)
+void Image2Kinect::objectRecognitionCallback(butia_vision_msgs::Recognitions recognitions)
 {
-    vision_system_msgs::Recognitions3D recognitions3d;
+    butia_vision_msgs::Recognitions3D recognitions3d;
     segmentation_model_id = "median_center";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     object_recognition_pub.publish(recognitions3d);
 }
 
-void Image2Kinect::faceRecognitionCallback(vision_system_msgs::Recognitions recognitions)
+void Image2Kinect::faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions)
 {
-    vision_system_msgs::Recognitions3D recognitions3d;
+    butia_vision_msgs::Recognitions3D recognitions3d;
     segmentation_model_id = "median_center";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     face_recognition_pub.publish(recognitions3d);
 }
 
-void Image2Kinect::peopleTrackingCallback(vision_system_msgs::Recognitions recognitions)
+void Image2Kinect::peopleTrackingCallback(butia_vision_msgs::Recognitions recognitions)
 {
-    vision_system_msgs::Recognitions3D recognitions3d;
+    butia_vision_msgs::Recognitions3D recognitions3d;
     segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     people_tracking_pub.publish(recognitions3d);
@@ -249,15 +249,15 @@ void Image2Kinect::peopleTrackingCallback(vision_system_msgs::Recognitions recog
 void Image2Kinect::readParameters()
 {
     node_handle.param("/image2kinect/subscribers/queue_size", sub_queue_size, 5);
-    node_handle.param("/image2kinect/subscribers/object_recognition/topic", object_recognition_sub_topic, std::string("/vision_system/or/object_recognition"));
-    node_handle.param("/image2kinect/subscribers/face_recognition/topic", face_recognition_sub_topic, std::string("/vision_system/fr/face_recognition"));
-    node_handle.param("/image2kinect/subscribers/people_tracking/topic", people_tracking_sub_topic, std::string("/vision_system/pt/people_tracking"));
+    node_handle.param("/image2kinect/subscribers/object_recognition/topic", object_recognition_sub_topic, std::string("/butia_vision/or/object_recognition"));
+    node_handle.param("/image2kinect/subscribers/face_recognition/topic", face_recognition_sub_topic, std::string("/butia_vision/fr/face_recognition"));
+    node_handle.param("/image2kinect/subscribers/people_tracking/topic", people_tracking_sub_topic, std::string("/butia_vision/pt/people_tracking"));
 
     node_handle.param("/image2kinect/publishers/queue_size", pub_queue_size, 5);
-    node_handle.param("/image2kinect/publishers/object_recognition/topic", object_recognition_pub_topic, std::string("/vision_system/or/object_recognition3d"));
-    node_handle.param("/image2kinect/publishers/face_recognition/topic", face_recognition_pub_topic, std::string("/vision_system/fr/face_recognition3d"));
-    node_handle.param("/image2kinect/publishers/people_tracking/topic", people_tracking_pub_topic, std::string("/vision_system/pt/people_tracking3d"));
+    node_handle.param("/image2kinect/publishers/object_recognition/topic", object_recognition_pub_topic, std::string("/butia_vision/or/object_recognition3d"));
+    node_handle.param("/image2kinect/publishers/face_recognition/topic", face_recognition_pub_topic, std::string("/butia_vision/fr/face_recognition3d"));
+    node_handle.param("/image2kinect/publishers/people_tracking/topic", people_tracking_pub_topic, std::string("/butia_vision/pt/people_tracking3d"));
     
-    node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/vision_system/is/image_request"));
-    node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/vision_system/seg/image_segmentation"));
+    node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/butia_vision/is/image_request"));
+    node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/butia_vision/seg/image_segmentation"));
 }

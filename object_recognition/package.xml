@@ -53,7 +53,7 @@
   
   <depend>roscpp</depend>
   <depend>cv_bridge</depend>
-  <depend>vision_system_msgs</depend>
+  <depend>butia_vision_msgs</depend>
   <depend>darknet_ros_msgs</depend>
   <depend>geometry_msgs</depend>
 
