@@ -1,6 +1,6 @@
-# vision_system_msgs
+# butia_vision_msgs
 ## Overview
-The vision_system_msgs package has all messages and services used by the system.
+The butia_vision_msgs package has all messages and services used by the system.
 ## Messages
 ### BoundingBox
     int32 minX

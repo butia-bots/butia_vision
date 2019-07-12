@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(vision_system_msgs)
+project(butia_vision_msgs)
 
 find_package(catkin REQUIRED COMPONENTS std_msgs sensor_msgs genmsg message_generation)
 
