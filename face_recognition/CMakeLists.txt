@@ -72,7 +72,7 @@ find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
 ## Generate added messages and services with any dependencies listed here
 #generate_messages(
   #DEPENDENCIES
-  #vision_system_msgs  # Or other packages containing msgs
+  #butia_vision_msgs  # Or other packages containing msgs
   #std_msgs
   #sensor_msgs
 #)

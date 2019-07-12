@@ -3,13 +3,13 @@ project(image2kinect)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED roscpp vision_system_msgs geometry_msgs cv_bridge)
+find_package(catkin REQUIRED roscpp butia_vision_msgs geometry_msgs cv_bridge)
 find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
 
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME}
   LIBRARIES image2kinect
-  CATKIN_DEPENDS roscpp vision_system_msgs geometry_msgs cv_bridge
+  CATKIN_DEPENDS roscpp butia_vision_msgs geometry_msgs cv_bridge
 )
 
 

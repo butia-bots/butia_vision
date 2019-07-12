@@ -7,7 +7,7 @@ from imutils.object_detection import non_max_suppression
 import numpy as np
 from cv_bridge import CvBridge
 
-from vision_system_msgs.msg import Recognitions, Description
+from butia_vision_msgs.msg import Recognitions, Description
 from sensor_msgs.msg import Image
 
 BRIDGE = CvBridge()
@@ -79,10 +79,10 @@ if __name__ == '__main__':
 
     rospy.init_node('people_detection_node', anonymous = True)
 
-    image_subscriber = rospy.Subscriber('/vision_system/vsb/image_rgb_raw', Image, imageCallback, queue_size=1, buff_size=2**24)
+    image_subscriber = rospy.Subscriber('/butia_vision/vsb/image_rgb_raw', Image, imageCallback, queue_size=1, buff_size=2**24)
 
-    recognition_publisher = rospy.Publisher('/vision_system/or/people_detection', Recognitions, queue_size=1)
+    recognition_publisher = rospy.Publisher('/butia_vision/or/people_detection', Recognitions, queue_size=1)
 
-    view_publisher = rospy.Publisher('/vision_system/or/people_detection_view', Image, queue_size=1)
+    view_publisher = rospy.Publisher('/butia_vision/or/people_detection_view', Image, queue_size=1)
 
     rospy.spin()

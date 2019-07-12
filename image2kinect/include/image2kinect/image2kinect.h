@@ -5,13 +5,13 @@
 #include <string>
 #include <vector>
 
-#include "vision_system_msgs/Recognitions.h"
-#include "vision_system_msgs/Recognitions3D.h"
-#include "vision_system_msgs/Description.h"
-#include "vision_system_msgs/Description3D.h"
-#include "vision_system_msgs/RGBDImage.h"
-#include "vision_system_msgs/ImageRequest.h"
-#include "vision_system_msgs/SegmentationRequest.h"
+#include "butia_vision_msgs/Recognitions.h"
+#include "butia_vision_msgs/Recognitions3D.h"
+#include "butia_vision_msgs/Description.h"
+#include "butia_vision_msgs/Description3D.h"
+#include "butia_vision_msgs/RGBDImage.h"
+#include "butia_vision_msgs/ImageRequest.h"
+#include "butia_vision_msgs/SegmentationRequest.h"
 
 #include "sensor_msgs/Image.h"
 #include "sensor_msgs/CameraInfo.h"
@@ -29,11 +29,11 @@ class Image2Kinect{
         void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info);
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
         
-        void recognitions2Recognitions3d(vision_system_msgs::Recognitions &recognitions, vision_system_msgs::Recognitions3D &recognitions3d);
+        void recognitions2Recognitions3d(butia_vision_msgs::Recognitions &recognitions, butia_vision_msgs::Recognitions3D &recognitions3d);
 
-        void objectRecognitionCallback(vision_system_msgs::Recognitions recognitions);
-        void faceRecognitionCallback(vision_system_msgs::Recognitions recognitions);
-        void peopleTrackingCallback(vision_system_msgs::Recognitions recognitions);
+        void objectRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
+        void faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
+        void peopleTrackingCallback(butia_vision_msgs::Recognitions recognitions);
 
     private:
         ros::NodeHandle node_handle;

@@ -32,11 +32,11 @@ void ImageServer::resizeBuffers()
 void ImageServer::readParameters()
 {
     node_handle.param("/image_server/subscribers/queue_size", sub_queue_size, 5);
-    node_handle.param("/image_server/subscribers/image_rgb/topic", image_rgb_sub_topic, std::string("/vision_system/vsb/image_rgb_raw"));
-    node_handle.param("/image_server/subscribers/image_depth/topic", image_depth_sub_topic, std::string("/vision_system/vsb/image_depth_raw"));
-    node_handle.param("/image_server/subscribers/camera_info/topic", camera_info_sub_topic, std::string("/vision_system/vsb/camera_info"));
+    node_handle.param("/image_server/subscribers/image_rgb/topic", image_rgb_sub_topic, std::string("/butia_vision/bvb/image_rgb_raw"));
+    node_handle.param("/image_server/subscribers/image_depth/topic", image_depth_sub_topic, std::string("/butia_vision/bvb/image_depth_raw"));
+    node_handle.param("/image_server/subscribers/camera_info/topic", camera_info_sub_topic, std::string("/butia_vision/bvb/camera_info"));
 
-    node_handle.param("/image_server/server/image_request/service", image_request_server_service, std::string("/vision_system/is/image_request"));
+    node_handle.param("/image_server/server/image_request/service", image_request_server_service, std::string("/butia_vision/is/image_request"));
 
     node_handle.param("/image_server/parameters/buffer_size", buffer_size, 150);
     node_handle.param("/image_server/parameters/use_exact_time", use_exact_time, false);
@@ -55,7 +55,7 @@ void ImageServer::imageCallback(const sensor_msgs::Image::ConstPtr &image_rgb, c
     max_seq = seq;
 }
 
-bool ImageServer::imageRequestServer(vision_system_msgs::ImageRequest::Request &req, vision_system_msgs::ImageRequest::Response &res)
+bool ImageServer::imageRequestServer(butia_vision_msgs::ImageRequest::Request &req, butia_vision_msgs::ImageRequest::Response &res)
 {
     int req_seq = req.seq;
     ROS_INFO("REQUEST ID: %d", req_seq);

@@ -1,38 +1,38 @@
 subscribers:
 
   camera_reading:
-    topic: /vision_system/vsb/image_rgb_raw
+    topic: /butia_vision/bvb/image_rgb_raw
     queue_size: 1
   
   classifier_reload:
-    topic: /vision_system/fr/classifier_reload
+    topic: /butia_vision/fr/classifier_reload
     queue_size: 1
 
 publishers:
 
   face_recognition:
-    topic: /vision_system/fr/face_recognition
+    topic: /butia_vision/fr/face_recognition
     queue_size: 1
 
   face_recognition_view:
-    topic: /vision_system/fr/face_recognition_view
+    topic: /butia_vision/fr/face_recognition_view
     queue_size: 1
 
   classifier_reload:
-    topic: /vision_system/fr/classifier_reload
+    topic: /butia_vision/fr/classifier_reload
     queue_size: 1
 
   face_list_updated:
-    topic: /vision_system/fr/face_list_updated
+    topic: /butia_vision/fr/face_list_updated
     queue_size: 1
 
 servers:
 
   people_introducing:
-    service: /vision_system/fr/people_introducing
+    service: /butia_vision/fr/people_introducing
 
   classifier_training:
-    service: /vision_system/fr/classifier_training
+    service: /butia_vision/fr/classifier_training
 
   list_faces:
-    service: /vision_system/fr/list_faces
+    service: /butia_vision/fr/list_faces

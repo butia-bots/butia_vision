@@ -19,15 +19,15 @@ void ImageSegmenter::filterImage(cv::Mat &image) {
 }
 
 
-bool ImageSegmenter::segment(vision_system_msgs::SegmentationRequest::Request &req, vision_system_msgs::SegmentationRequest::Response &res) {
+bool ImageSegmenter::segment(butia_vision_msgs::SegmentationRequest::Request &req, butia_vision_msgs::SegmentationRequest::Response &res) {
     sensor_msgs::Image::ConstPtr constptr_initial_rgb_image(new sensor_msgs::Image(req.initial_rgbd_image.rgb));
     sensor_msgs::Image::ConstPtr constptr_initial_depth_image(new sensor_msgs::Image(req.initial_rgbd_image.depth));
 
     readImage(constptr_initial_rgb_image, mat_initial_rgb_image);
     readImage(constptr_initial_depth_image, mat_initial_depth_image);
 
-	std::vector<vision_system_msgs::Description> &descriptions = req.descriptions;
-	std::vector<vision_system_msgs::Description>::iterator it;
+	std::vector<butia_vision_msgs::Description> &descriptions = req.descriptions;
+	std::vector<butia_vision_msgs::Description>::iterator it;
 
     std::vector<sensor_msgs::Image> &vector_segmented_msg_image = res.segmented_rgb_images;
 
@@ -70,7 +70,7 @@ void ImageSegmenter::readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv
 }
 
 
-void ImageSegmenter::cropImage(cv::Mat &image, vision_system_msgs::BoundingBox bounding_box, cv::Mat &destiny) {
+void ImageSegmenter::cropImage(cv::Mat &image, butia_vision_msgs::BoundingBox bounding_box, cv::Mat &destiny) {
     cv::Rect region_of_interest(bounding_box.minX, bounding_box.minY, bounding_box.width, bounding_box.height);
     destiny = image(region_of_interest);
 }
@@ -414,7 +414,7 @@ bool ImageSegmenter::verifyStateMedianCenter(int r, int c) {
 
 
 void ImageSegmenter::readParameters() {
-    node_handle.param("/segmentation/servers/image_segmentation/service", param_segmentation_service, std::string("/vision_system/seg/image_segmentation"));
+    node_handle.param("/segmentation/servers/image_segmentation/service", param_segmentation_service, std::string("/butia_vision/seg/image_segmentation"));
 
     node_handle.param("/segmentation/model_id", model_id, std::string("median_full"));
     node_handle.param("/segmentation/lower_limit", lower_limit, 0);

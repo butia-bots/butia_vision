@@ -6,8 +6,8 @@ YoloRecognition::YoloRecognition(ros::NodeHandle _nh) : node_handle(_nh)
 
     bounding_boxes_sub = node_handle.subscribe(bounding_boxes_topic, bounding_boxes_qs, &YoloRecognition::yoloRecognitionCallback, this);
 
-    recognized_objects_pub = node_handle.advertise<vision_system_msgs::Recognitions>(object_recognition_topic, object_recognition_qs);
-    recognized_people_pub = node_handle.advertise<vision_system_msgs::Recognitions>(people_detection_topic, people_detection_qs);
+    recognized_objects_pub = node_handle.advertise<butia_vision_msgs::Recognitions>(object_recognition_topic, object_recognition_qs);
+    recognized_people_pub = node_handle.advertise<butia_vision_msgs::Recognitions>(people_detection_topic, people_detection_qs);
     object_list_updated_pub = node_handle.advertise<std_msgs::Header>(object_list_updated_topic, object_list_updated_qs);
 
     list_objects_server = node_handle.advertiseService(list_objects_service, &YoloRecognition::getObjectList, this);
@@ -18,7 +18,7 @@ YoloRecognition::YoloRecognition(ros::NodeHandle _nh) : node_handle(_nh)
     object_list_updated_pub.publish(object_list_updated_header);
 }
 
-bool YoloRecognition::getObjectList(vision_system_msgs::ListClasses::Request &req, vision_system_msgs::ListClasses::Response &res)
+bool YoloRecognition::getObjectList(butia_vision_msgs::ListClasses::Request &req, butia_vision_msgs::ListClasses::Response &res)
 {
     res.classes = possible_classes;
     return true;
@@ -28,20 +28,20 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
 {
     ROS_INFO("Image ID: %d", bbs.image_header.seq);
 
-    /*std::vector<vision_system_msgs::Description> drinks;
-    std::vector<vision_system_msgs::Description> snacks;
-    std::vector<vision_system_msgs::Description> fruits;
-    std::vector<vision_system_msgs::Description> daily;*/
+    /*std::vector<butia_vision_msgs::Description> drinks;
+    std::vector<butia_vision_msgs::Description> snacks;
+    std::vector<butia_vision_msgs::Description> fruits;
+    std::vector<butia_vision_msgs::Description> daily;*/
 
-    std::vector<vision_system_msgs::Description> objects;
-    std::vector<vision_system_msgs::Description> people;
+    std::vector<butia_vision_msgs::Description> objects;
+    std::vector<butia_vision_msgs::Description> people;
 
     std::vector<darknet_ros_msgs::BoundingBox> bounding_boxes = bbs.bounding_boxes;
     std::vector<darknet_ros_msgs::BoundingBox>::iterator it;
 
     for(it = bounding_boxes.begin() ; it != bounding_boxes.end() ; it++) {
         if(it->Class == person_identifier && it->probability >= threshold) {
-            vision_system_msgs::Description person;
+            butia_vision_msgs::Description person;
             person.label_class = person_identifier;
             person.probability = it->probability;
             person.bounding_box.minX = it->xmin;
@@ -52,7 +52,7 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
         }
         else if(it->probability >= threshold) {
             if(std::find(possible_classes.begin(), possible_classes.end(), std::string(it->Class)) != possible_classes.end()) {   
-                vision_system_msgs::Description object;
+                butia_vision_msgs::Description object;
                 object.label_class = it->Class;
                 object.probability = it->probability;
                 object.bounding_box.minX = it->xmin;
@@ -72,7 +72,7 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
         }
     }
 
-    std::vector<vision_system_msgs::Description>::iterator jt;
+    std::vector<butia_vision_msgs::Description>::iterator jt;
 
     /*ROS_INFO("DRINKS: ");
     for(jt = drinks.begin() ; jt != drinks.end() ; jt++) {
@@ -111,16 +111,16 @@ void YoloRecognition::readParameters()
     node_handle.param("/object_recognition/subscribers/bounding_boxes/topic", bounding_boxes_topic, std::string("/darknet_ros/bounding_boxes"));
     node_handle.param("/object_recognition/subscribers/bounding_boxes/queue_size", bounding_boxes_qs, 1);
 
-    node_handle.param("/object_recognition/publishers/object_recognition/topic", object_recognition_topic, std::string("/vision_system/or/object_recognition"));
+    node_handle.param("/object_recognition/publishers/object_recognition/topic", object_recognition_topic, std::string("/butia_vision/or/object_recognition"));
     node_handle.param("/object_recognition/publishers/object_recognition/queue_size", object_recognition_qs, 1);
 
-    node_handle.param("/object_recognition/publishers/people_detection/topic", people_detection_topic, std::string("/vision_system/or/people_detection"));
+    node_handle.param("/object_recognition/publishers/people_detection/topic", people_detection_topic, std::string("/butia_vision/or/people_detection"));
     node_handle.param("/object_recognition/publishers/people_detection/queue_size", people_detection_qs, 1);
 
-    node_handle.param("/object_recognition/publishers/object_list_updated/topic", object_list_updated_topic, std::string("/vision_system/or/object_list_updated"));
+    node_handle.param("/object_recognition/publishers/object_list_updated/topic", object_list_updated_topic, std::string("/butia_vision/or/object_list_updated"));
     node_handle.param("/object_recognition/publishers/object_list_updated/queue_size", object_list_updated_qs, 1);
 
-    node_handle.param("/object_recognition/servers/list_objects/service", list_objects_service, std::string("/vision_system/or/list_objects"));
+    node_handle.param("/object_recognition/servers/list_objects/service", list_objects_service, std::string("/butia_vision/or/list_objects"));
 
     node_handle.param("/object_recognition/person_identifier", person_identifier, std::string("person"));
 

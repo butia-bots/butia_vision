@@ -5,8 +5,8 @@ import rospkg
 import time
 
 from face_recognition_ros import FaceRecognitionROS
-from vision_system_msgs.msg import ClassifierReload
-from vision_system_msgs.srv import FaceClassifierTraining, FaceClassifierTrainingResponse, PeopleIntroducing
+from butia_vision_msgs.msg import ClassifierReload
+from butia_vision_msgs.srv import FaceClassifierTraining, FaceClassifierTrainingResponse, PeopleIntroducing
 
 from sensor_msgs.msg import Image
 import cv2
@@ -113,12 +113,12 @@ classifier_reload = None
 training_server = None
 
 if __name__ == '__main__':
-    classifier_reload_topic = rospy.get_param('/face_recognition/publishers/classifier_reload/topic', '/vision_system/fr/classifier_reload')
+    classifier_reload_topic = rospy.get_param('/face_recognition/publishers/classifier_reload/topic', '/butia_vision/fr/classifier_reload')
     classifier_reload_qs = rospy.get_param('/face_recognition/publishers/classifier_reload/queue_size', 1)
 
-    image_topic = rospy.get_param('/face_recognition/subscribers/camera_reading/topic', '/vision_system/vsb/image_rgb_raw')
-    people_introducing_service = rospy.get_param('/face_recognition/servers/people_introducing/service', '/vision_system/fr/people_introducing')
-    classifier_training_service = rospy.get_param('/face_recognition/servers/classifier_training/service','/vision_system/fr/classifier_training')
+    image_topic = rospy.get_param('/face_recognition/subscribers/camera_reading/topic', '/butia_vision/bvb/image_rgb_raw')
+    people_introducing_service = rospy.get_param('/face_recognition/servers/people_introducing/service', '/butia_vision/fr/people_introducing')
+    classifier_training_service = rospy.get_param('/face_recognition/servers/classifier_training/service','/butia_vision/fr/classifier_training')
 
     rospy.init_node('classifier_training_node', anonymous = True)
 
