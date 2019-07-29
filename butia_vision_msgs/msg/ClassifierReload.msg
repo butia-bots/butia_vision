@@ -1,1 +1,0 @@
-string model_name
