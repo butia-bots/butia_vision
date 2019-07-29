@@ -1,4 +1,0 @@
-string label_class
-float64 probability
-std_msgs/ColorRGBA color
-geometry_msgs/Point position
