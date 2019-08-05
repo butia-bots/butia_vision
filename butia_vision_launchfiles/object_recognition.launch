@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+    <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch"/>
+
+    <include file="$(find image_server)/launch/image_server.launch"/>
+
+    <include file="$(find segmentation)/launch/segmentation.launch"/>
+
+    <include file="$(find image2kinect)/launch/image2kinect.launch"/>
+
+    <include file="$(find object_recognition)/launch/yolo_v3.launch"/>
+</launch>
