@@ -34,3 +34,5 @@ def classifySklearn(classifier, array, threshold=0.5, verbose=True, debug=False)
         return (person.decode('utf-8'), confidence)
     else:
         return ('unknow', confidence)
+
+
