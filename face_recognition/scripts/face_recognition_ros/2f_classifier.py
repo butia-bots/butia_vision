@@ -19,7 +19,22 @@ class twofac_classifier(BaseEstimator):
             self.classifiers_dict[class_] = clone(self.one_class_ex)
             self.classifiers_dict[class_].fit((samples_dict[class_]).reshape(-1,1), [1] * len(samples_dict[class_]))
     
-    def predict_proba(self,rep)
+    def predict_proba(self, rep) {
+        response = self.multi_class.predict_proba(rep)
+        predictions = response.ravel()
+        maxI = np.argmax(predictions)
+        confidence = predictions[maxI]
+        if confidence > 0.5:
+            belong_class = self.one_class[maxI].predict(rep)
+            if
+        else:
+            return response
+            belong_class = self.one_class[maxI].predict(rep)
+            if belong_class[0] == 0:
+                return response
+            else:
+
+        }
     # retornar array com confiança ou, se for pro one class, retornar 0
         
 
