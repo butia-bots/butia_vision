@@ -1,3 +1,8 @@
+publishers:
+  image_segmentation_view:
+    topic: /butia_vision/seg/image_segmentation_view
+    queue_size: 1
+
 servers:
   image_segmentation:
     service: /butia_vision/seg/image_segmentation
