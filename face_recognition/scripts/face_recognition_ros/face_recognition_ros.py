@@ -10,6 +10,7 @@ from face_detector import *
 from face_aligner import *
 from face_embosser import *
 from face_classifier import *
+from two_fac_classifier import *
 from dlib import rectangle, rectangles
 
 from cv_bridge import CvBridge
@@ -429,6 +430,22 @@ class FaceRecognitionROS():
             classifier = GaussianNB()
         elif classifier_type == 'knn':
             classifier = KNeighborsClassifier(n_neighbors=10, weights='distance')
+        elif classifier_type == '2f_c':
+            param_grid = [
+            {'C': [1, 10, 100, 1000],
+             'kernel': ['linear']},
+            {'C': [1, 10, 100, 1000],
+             'gamma': [0.001, 0.0001],
+             'kernel': ['rbf']}
+            ]
+            classifier_multi = GridSearchCV(SVC(C=1, probability=True), param_grid, cv=5)
+            param_grid = {'nu': [0.1],
+              'gamma': [0.001, 0.0001, 0.00001 , "auto"],
+              'kernel': ['rbf'],
+              'tol' : [0.001]}
+            score = 'precision'
+            classifier_one = GridSearchCV(svm.OneClassSVM(), param_grid, cv=5, scoring='%s_macro' % score)
+            classifier = TwoFac_Classifier(classifier_multi,classifier_one, num_classes)
         else:
             return False
 
