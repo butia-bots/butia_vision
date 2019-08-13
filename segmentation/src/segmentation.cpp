@@ -11,6 +11,8 @@ ImageSegmenter::ImageSegmenter(ros::NodeHandle _nh) : node_handle(_nh), segmenta
     dif[2] = 1;
 
     service = node_handle.advertiseService(param_segmentation_service, &ImageSegmenter::segment, this);
+
+    segmented_image_pub = node_handle.advertise<sensor_msgs::Image>(image_segmentation_view_topic, image_segmentation_view_qs);
 }
 
 
@@ -53,6 +55,8 @@ bool ImageSegmenter::segment(butia_vision_msgs::SegmentationRequest::Request &re
                 mat_segmented_image(r, c)[2] = cropped_initial_rgb_image(r, c)[2] * mask(r, c);
             }
         }
+
+        segmented_image_pub.publish(mat_segmented_image);
 
         ros_segmented_rgb_image.image = mat_segmented_image;
         ros_segmented_rgb_image.toImageMsg(ros_segmented_msg_image);
@@ -415,6 +419,9 @@ bool ImageSegmenter::verifyStateMedianCenter(int r, int c) {
 
 void ImageSegmenter::readParameters() {
     node_handle.param("/segmentation/servers/image_segmentation/service", param_segmentation_service, std::string("/butia_vision/seg/image_segmentation"));
+    
+    node_handle.param("/segmentation/publishers/image_segmentation_view/topic", image_segmentation_view_topic, std::string("/butia_vision/seg/image_segmentation_view"));
+    node_handle.param("/segmentation/publishers/image_segmentation_view/topic", image_segmentation_view_qs, 1);
 
     node_handle.param("/segmentation/model_id", model_id, std::string("median_full"));
     node_handle.param("/segmentation/lower_limit", lower_limit, 0);
