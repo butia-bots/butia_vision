@@ -2,7 +2,7 @@ verbose: False
 debug: False
 
 detector:
-  model_id: opencv_cascade
+  model_id: opencv_dnn
 
   opencv_cascade:
     model: haarcascade_frontalface_alt.xml
@@ -42,5 +42,5 @@ embosser:
 classifier:
   model_id: sklearn #sklearn
   sklearn:
-  model: classifier_2f.pkl
-  threshold: 0.3
+    model: classifier_2f.pkl
+    threshold: 0.3
