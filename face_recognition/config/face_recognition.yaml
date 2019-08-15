@@ -42,5 +42,5 @@ embosser:
 classifier:
   model_id: sklearn #sklearn
   sklearn:
-    model: classifier_knn_igor.pkl
-    threshold: 0.7
+  model: classifier_2f.pkl
+  threshold: 0.3

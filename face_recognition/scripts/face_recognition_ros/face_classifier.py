@@ -8,8 +8,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
-from sklearn.grid_search import GridSearchCV
-from sklearn.mixture import GMM
+from sklearn.model_selection import GridSearchCV
+from sklearn.mixture import GaussianMixture as GMM
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier, RadiusNeighborsClassifier
@@ -28,7 +28,7 @@ def classifySklearn(classifier, array, threshold=0.5, verbose=True, debug=False)
     rep = array.reshape(1, -1)
     predictions = classifier_model.predict_proba(rep).ravel()
     maxI = np.argmax(predictions)
-    person = cl_label.inverse_transform(maxI)
+    person = cl_label.inverse_transform([maxI])[0]
     confidence = predictions[maxI]
     if confidence > threshold:
         return (person.decode('utf-8'), confidence)
