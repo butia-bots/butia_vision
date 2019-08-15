@@ -28,7 +28,7 @@ def classifySklearn(classifier, array, threshold=0.5, verbose=True, debug=False)
     rep = array.reshape(1, -1)
     predictions = classifier_model.predict_proba(rep).ravel()
     maxI = np.argmax(predictions)
-    person = cl_label.inverse_transform(maxI)
+    person = cl_label.inverse_transform([maxI])[0]
     confidence = predictions[maxI]
     if confidence > threshold:
         return (person.decode('utf-8'), confidence)
