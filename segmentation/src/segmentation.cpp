@@ -56,6 +56,8 @@ bool ImageSegmenter::segment(butia_vision_msgs::SegmentationRequest::Request &re
             }
         }
 
+        segmented_image_pub.publish(mat_segmented_image);
+
         ros_segmented_rgb_image.image = mat_segmented_image;
         ros_segmented_rgb_image.toImageMsg(ros_segmented_msg_image);
         segmented_image_pub.publish(ros_segmented_msg_image);
