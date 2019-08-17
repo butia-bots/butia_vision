@@ -225,7 +225,7 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
 void Image2Kinect::objectRecognitionCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
-    segmentation_model_id = "median_center";
+    segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     object_recognition_pub.publish(recognitions3d);
 }
@@ -233,7 +233,7 @@ void Image2Kinect::objectRecognitionCallback(butia_vision_msgs::Recognitions rec
 void Image2Kinect::faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
-    segmentation_model_id = "median_center";
+    segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     face_recognition_pub.publish(recognitions3d);
 }

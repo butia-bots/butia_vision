@@ -47,6 +47,7 @@ class ImageSegmenter {
         int max_histogram_value;
         int position_of_max_value;
 
+        bool median_outlier_rejection;
         int median_full_threshold;
 
         int median_center_kernel_size;

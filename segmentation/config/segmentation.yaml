@@ -1,5 +1,5 @@
 model_id: median_center
-lower_limit: 0
+lower_limit: 500
 upper_limit: 5001
 left_class_limit: 1
 right_class_limit: 1
@@ -10,7 +10,8 @@ histogram:
   decrease_factor: 2
 
 mendian_full:
-  threshold: 100
+  outlier_rejection: True
+  threshold: 50
 
 median_center:
   kernel_size: 5

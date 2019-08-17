@@ -17,7 +17,7 @@ ImageSegmenter::ImageSegmenter(ros::NodeHandle _nh) : node_handle(_nh), segmenta
 
 
 void ImageSegmenter::filterImage(cv::Mat &image) {
-	cv:medianBlur(image, image, 5);
+	cv::medianBlur(image, image, 5);
 }
 
 
@@ -38,6 +38,7 @@ bool ImageSegmenter::segment(butia_vision_msgs::SegmentationRequest::Request &re
 	cv_bridge::CvImage ros_segmented_rgb_image;
     sensor_msgs::Image ros_segmented_msg_image;
 	ros_segmented_rgb_image.encoding = req.initial_rgbd_image.rgb.encoding;
+    filterImage(mat_initial_depth_image);
 
     for (it = descriptions.begin(); it != descriptions.end(); it++) {
         cropImage(mat_initial_depth_image, it->bounding_box, cropped_initial_depth_image);
@@ -243,8 +244,14 @@ void ImageSegmenter::createMaskMedianFull() {
 
     if(med.size() == 0) return;
 
+    if(median_outlier_rejection) {
+        int new_final = (int) med.size()*0.75;
+        std::vector<int> new_med(med.begin(), med.begin() + new_final);
+        med = new_med;
+    }
+
     if(med.size()%2 == 0)
-        segmentable_depth =  (med[med.size()/2] + med[(med.size()/2) - 1])/2;
+        segmentable_depth = (med[med.size()/2] + med[(med.size()/2) - 1])/2;
     else
         segmentable_depth = med[(med.size()/2) - 1];
 
@@ -262,8 +269,6 @@ void ImageSegmenter::createMaskMedianFull() {
                 mask(r, c) = 0;
         }
     }
-
-    filterImage(mask);
 }
 
 bool ImageSegmenter::verifyStateMedianFull(int r, int c) {
@@ -432,6 +437,7 @@ void ImageSegmenter::readParameters() {
     node_handle.param("/segmentation/historam/bounding_box_threshold", bounding_box_threshold, (float)0.35);
     node_handle.param("/segmentation/historam/decrease_factor", histogram_decrease_factor, (float)2.0);
 
+    node_handle.param("/segmentation/median_full/outlier_rejection", median_outlier_rejection, true);
     node_handle.param("/segmentation/median_full/threshold", median_full_threshold, 100);
 
     node_handle.param("/segmentation/median_center/kernel_size", median_center_kernel_size, 5);
