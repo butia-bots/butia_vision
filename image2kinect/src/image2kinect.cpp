@@ -72,8 +72,6 @@ void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::
 
 bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::Point &point, std_msgs::ColorRGBA &color)
 {
-    const float bad_point = std::numeric_limits<float>::quiet_NaN();
-
     geometry_msgs::Point &mean_position = point;
     std_msgs::ColorRGBA &mean_color = color;
 
@@ -118,6 +116,7 @@ bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geo
     }
 
     if(points.size() <= 0) {
+        std::cout<< "ERROR"<< std::endl;
         return false;
     } 
 
@@ -214,8 +213,6 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
 
         sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
         readImage(rgb_const_ptr, segmented_rgb_image);
-	    //cv::imshow("Seg", segmented_rgb_image);
-	    //cv::waitKey(1);
 
         if(rgbd2RGBPoint(segmented_rgb_image, segmented_depth_image, point, color))
             descriptions3d.push_back(description3d);

@@ -438,7 +438,7 @@ void ImageSegmenter::readParameters() {
     node_handle.param("/segmentation/historam/decrease_factor", histogram_decrease_factor, (float)2.0);
 
     node_handle.param("/segmentation/median_full/outlier_rejection", median_outlier_rejection, true);
-    node_handle.param("/segmentation/median_full/threshold", median_full_threshold, 100);
+    node_handle.param("/segmentation/median_full/threshold", median_full_threshold, 20);
 
     node_handle.param("/segmentation/median_center/kernel_size", median_center_kernel_size, 5);
     node_handle.param("/segmentation/median_center/threshold", median_center_threshold, 100);
