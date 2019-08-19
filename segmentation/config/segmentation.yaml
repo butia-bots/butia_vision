@@ -11,7 +11,7 @@ histogram:
 
 mendian_full:
   outlier_rejection: True
-  threshold: 20
+  threshold: 50
 
 median_center:
   kernel_size: 5
