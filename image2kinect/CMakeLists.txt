@@ -3,7 +3,7 @@ project(image2kinect)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED roscpp butia_vision_msgs geometry_msgs cv_bridge)
+find_package(catkin REQUIRED roscpp butia_vision_msgs geometry_msgs cv_bridge tf)
 find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
 
 catkin_package(
