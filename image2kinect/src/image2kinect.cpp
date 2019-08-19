@@ -72,8 +72,6 @@ void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::
 
 bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::Point &point, std_msgs::ColorRGBA &color)
 {
-    const float bad_point = std::numeric_limits<float>::quiet_NaN();
-
     geometry_msgs::Point &mean_position = point;
     std_msgs::ColorRGBA &mean_color = color;
 
@@ -118,6 +116,7 @@ bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geo
     }
 
     if(points.size() <= 0) {
+        std::cout<< "ERROR"<< std::endl;
         return false;
     } 
 
@@ -214,18 +213,45 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
 
         sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
         readImage(rgb_const_ptr, segmented_rgb_image);
-	    //cv::imshow("Seg", segmented_rgb_image);
-	    //cv::waitKey(1);
 
         if(rgbd2RGBPoint(segmented_rgb_image, segmented_depth_image, point, color))
             descriptions3d.push_back(description3d);
+    }
+
+    publishTF(recognitions3d);
+}
+
+void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
+{
+    std::vector<butia_vision_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
+    std::vector<butia_vision_msgs::Description3D>::iterator it;
+
+    std::map<std::string, int> current_rec;
+
+    static tf::TransformBroadcaster br;
+    tf::Transform transform;
+    tf::Quaternion q;
+
+    for(it = descriptions3d.begin() ; it != descriptions3d.end() ; it++) {
+        if(current_rec.find(it->label_class) == current_rec.end()) {
+            current_rec[it->label_class] = 0;
+        }
+        else {
+            current_rec[it->label_class]++;
+        }
+
+        transform.setOrigin( tf::Vector3(it->position.x, it->position.y, it->position.z) );
+        q.setRPY(0, 0, 0);
+        transform.setRotation(q);
+        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), recognitions3d.image_header.frame_id,
+                                              it->label_class + std::to_string(current_rec[it->label_class])));
     }
 }
 
 void Image2Kinect::objectRecognitionCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
-    segmentation_model_id = "median_center";
+    segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     object_recognition_pub.publish(recognitions3d);
 }
@@ -233,7 +259,7 @@ void Image2Kinect::objectRecognitionCallback(butia_vision_msgs::Recognitions rec
 void Image2Kinect::faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
-    segmentation_model_id = "median_center";
+    segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     face_recognition_pub.publish(recognitions3d);
 }
