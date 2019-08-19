@@ -29,7 +29,6 @@ class TwoFac_Classifier(BaseEstimator):
         predictions = response.ravel()
         maxI = np.argmax(predictions)
         prediction = self.classifiers_dict[maxI].predict(rep)
-        print self.classifiers_dict[maxI].decision_function(rep)
         if (prediction[0] == 1):
             for i in range(len(predictions)):
                 if(i!= maxI):
