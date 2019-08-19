@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "butia_vision_msgs/Recognitions.h"
 #include "butia_vision_msgs/Recognitions3D.h"
@@ -12,6 +13,8 @@
 #include "butia_vision_msgs/RGBDImage.h"
 #include "butia_vision_msgs/ImageRequest.h"
 #include "butia_vision_msgs/SegmentationRequest.h"
+
+#include <tf/transform_broadcaster.h>
 
 #include "sensor_msgs/Image.h"
 #include "sensor_msgs/CameraInfo.h"
@@ -30,6 +33,8 @@ class Image2Kinect{
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
         
         void recognitions2Recognitions3d(butia_vision_msgs::Recognitions &recognitions, butia_vision_msgs::Recognitions3D &recognitions3d);
+
+        void publishTF(butia_vision_msgs::Recognitions3D &recognitions3d);
 
         void objectRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
         void faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
