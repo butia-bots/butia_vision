@@ -26,6 +26,7 @@ class TwoFac_Classifier(BaseEstimator):
     
     def predict_proba(self, rep):
         response = self.multi_class.predict_proba(rep)
+        return response
         predictions = response.ravel()
         maxI = np.argmax(predictions)
         prediction = self.classifiers_dict[maxI].predict(rep)
@@ -37,4 +38,3 @@ class TwoFac_Classifier(BaseEstimator):
         else:
             response = [0]*len(response[0])
             return np.array(response)
-        

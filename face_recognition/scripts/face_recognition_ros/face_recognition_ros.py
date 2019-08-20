@@ -432,12 +432,12 @@ class FaceRecognitionROS():
             classifier = KNeighborsClassifier(n_neighbors=10, weights='distance')
         elif classifier_type == '2f_c':
             param_grid = [
-            {'C': [100, 1000, 10000],
-             'gamma': [0.001, 0.0001],
+            {'C': [100, 1000, 10000, 100000],
+             'gamma': [1, 0.1, 0.01 ,0.001, 0.0001, 0.00001],
              'kernel': ['rbf']}
             ]
-            classifier_multi = GridSearchCV(SVC(probability=True), param_grid, cv=5)
-            classifier_one = svm.OneClassSVM(nu=0.001, gamma=1)
+            classifier_multi = GridSearchCV(SVC(probability=True), param_grid, cv=num_classes)
+            classifier_one = svm.OneClassSVM(nu=0.99999, gamma=1)
             classifier = TwoFac_Classifier(classifier_multi,classifier_one, num_classes)
         else:
             return False
