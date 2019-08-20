@@ -85,6 +85,11 @@ bool PeopleTracker::startTracking(butia_vision_msgs::StartTracking::Request &req
     extractFeatures(descriptors[actual_iterator]);
     actual_iterator++;
     queue_actual_size++;
+	cv::Mat keypoints_images; 
+	mat_grayscale_segmented_image.copyTo(keypoints_images);
+	cv:drawKeypoints(mat_grayscale_segmented_image, keypoints, keypoints_images, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
+	cv::imshow("Features",keypoints_images);
+	
     initialized = true;
     res.started = true;
     return true;
@@ -176,6 +181,17 @@ void PeopleTracker::peopleDetectionCallBack(const butia_vision_msgs::Recognition
                     message.descriptions.push_back(desc);
 
                     people_tracking_publisher.publish(message);
+					
+					cv::Rect roi;
+					roi.x = 0;
+					roi.y = 0;
+					roi.width = (desc.bounding_box.width);
+					roi.height = (desc.bounding_box.height);
+
+					cv::Mat crop = actual_better_segmented_image(roi); 
+					cv::imshow("crop", crop);
+
+					cv::waitKey(10);
                 }
             }
         }
@@ -198,11 +214,17 @@ void PeopleTracker::readImage(const sensor_msgs::Image::ConstPtr &source, cv::Ma
 void PeopleTracker::extractFeatures(cv::Mat_<float> &destiny) {
     keypoints.clear();
     destiny = cv::Mat();
-
+	//cv::Mat keypoints_images;
+	
     if (param_detector_type == "surf")
         surf_detector->detectAndCompute(mat_grayscale_segmented_image, cv::Mat(), keypoints, destiny);
     else if (param_detector_type == "sift")
         sift_detector->detectAndCompute(mat_grayscale_segmented_image, cv::Mat(), keypoints, destiny);
+	/*mat_grayscale_segmented_image.copyTo(keypoints_images);
+	cv:drawKeypoints(mat_grayscale_segmented_image, keypoints, keypoints_images, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
+	cv::imshow("Features",keypoints_images);
+	cv::waitKey(0);*/
+
 }
 
 
