@@ -19,10 +19,13 @@ int main(int argc, char **argv) {
     nh.param("/butia_vision_bridge/offset_z", offset_z, 1.2120);
     tf::Vector3 vec(offset_x, offset_y, offset_z);
 
+    tf::Quaternion quaternion;
+    quaternion.setRPY(-3.14159/2, 0, -3.14159/2);
+
     tf::TransformBroadcaster broadcaster;
 
     while(nh.ok()) {
-        broadcaster.sendTransform(tf::StampedTransform( tf::Transform(tf::Quaternion(0, 0, 0, 1), vec), ros::Time::now(), robot_tf, kinect_tf));
+        broadcaster.sendTransform(tf::StampedTransform( tf::Transform(quaternion, vec), ros::Time::now(), robot_tf, kinect_tf));
         ros::spinOnce();
         rate.sleep();
     } 
