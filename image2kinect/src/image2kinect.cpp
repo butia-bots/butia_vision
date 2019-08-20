@@ -70,7 +70,7 @@ void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::
     cv_image->image.copyTo(image);
 }
 
-bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::Point &point, std_msgs::ColorRGBA &color)
+bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::Point &point, std_msgs::ColorRGBA &color, int x_offset, int y_offset)
 {
     geometry_msgs::Point &mean_position = point;
     std_msgs::ColorRGBA &mean_color = color;
@@ -97,8 +97,8 @@ bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geo
 
                 float depth_value = *it_depth/1000.0;
 
-                point.x = depth_value * table_x.at<float>(0, c);
-                point.y = depth_value * table_y.at<float>(0, r);
+                point.x = depth_value * table_x.at<float>(0, c + x_offset);
+                point.y = depth_value * table_y.at<float>(0, r + y_offset);
                 point.z = depth_value;
 
                 mean_position.x += point.x;
@@ -214,7 +214,7 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
         readImage(rgb_const_ptr, segmented_rgb_image);
 
-        if(rgbd2RGBPoint(segmented_rgb_image, segmented_depth_image, point, color))
+        if(rgbd2RGBPoint(segmented_rgb_image, segmented_depth_image, point, color, (*it).bounding_box.minX, (*it).bounding_box.minY))
             descriptions3d.push_back(description3d);
     }
 

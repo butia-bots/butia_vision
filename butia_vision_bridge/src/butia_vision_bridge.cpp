@@ -34,9 +34,9 @@ void ButiaVisionBridge::readParameters()
     node_handle.param("/butia_vision_bridge/publishers/image_depth/topic", image_depth_pub_topic, std::string("/butia_vision/bvb/image_depth_raw"));
     node_handle.param("/butia_vision_bridge/publishers/camera_info/topic", camera_info_pub_topic, std::string("/butia_vision/bvb/camera_info"));
 
-    node_handle.param("/butia_vision_bridge/parameters/use_exact_time", use_exact_time, false);
-    node_handle.param("/butia_vision_bridge/parameters/image_width", image_width, 640);
-    node_handle.param("/butia_vision_bridge/parameters/image_height", image_height, 480);
+    node_handle.param("/butia_vision_bridge/use_exact_time", use_exact_time, false);
+    node_handle.param("/butia_vision_bridge/image_width", image_width, 640);
+    node_handle.param("/butia_vision_bridge/image_height", image_height, 480);
 }
 
 void ButiaVisionBridge::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info, sensor_msgs::CameraInfo &info)
