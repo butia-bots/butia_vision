@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
     tf::Vector3 vec(offset_x, offset_y, offset_z);
 
     tf::Quaternion quaternion;
-    quaternion.setRPY(-3.14159/2, 0, -3.14159/2);
+    quaternion.setRPY(-M_PI/2, 0, -M_PI/2);
 
     tf::TransformBroadcaster broadcaster;
 
