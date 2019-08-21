@@ -439,10 +439,10 @@ class FaceRecognitionROS():
             classifier_multi = GridSearchCV(SVC(probability=True), param_grid, cv=num_classes)
             param_grid = [
             {'nu': [0.1, 0.01, 0.001, 0.0001, 0.00001],
-             'gamma': [10, 1, 0.1, 0.01 ,0.001],
+             'gamma': [10, 1, 0.1, 0.01],
              'kernel': ['rbf']}
             ]
-            classifier_one = GridSearchCV(svm.OneClassSVM(), param_grid, cv=num_classes, scoring="recall")
+            classifier_one = GridSearchCV(svm.OneClassSVM(), param_grid, cv=num_classes, scoring="average_precision")
             classifier = TwoFac_Classifier(classifier_multi,classifier_one, num_classes)
         else:
             return False
