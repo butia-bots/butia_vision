@@ -1,4 +1,3 @@
-
 subscribers:
   
   queue_size: 5
@@ -11,6 +10,9 @@ subscribers:
 
   camera_info:
     topic: /kinect2/qhd/camera_info
+  
+  points:
+    topic: /kinect2/qhd/points
 
 publishers:
   
@@ -24,3 +26,6 @@ publishers:
 
   camera_info:
     topic: /butia_vision/bvb/camera_info
+
+  points:
+    topic: /butia_vision/bvb/points

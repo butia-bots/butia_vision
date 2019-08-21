@@ -7,14 +7,17 @@ ButiaVisionBridge::ButiaVisionBridge(ros::NodeHandle &nh) : node_handle(nh), it(
     image_rgb_sub = new image_transport::SubscriberFilter(it, image_rgb_sub_topic, sub_queue_size);
     image_depth_sub = new image_transport::SubscriberFilter(it, image_depth_sub_topic, sub_queue_size);
     camera_info_sub = new message_filters::Subscriber<sensor_msgs::CameraInfo>(node_handle, camera_info_sub_topic, sub_queue_size);
+    points_sub = new message_filters::Subscriber<sensor_msgs::PointCloud2>(node_handle, points_sub_topic, sub_queue_size);
 
     if(use_exact_time) {
-        exact_sync = new message_filters::Synchronizer<ExactSyncPolicy>(ExactSyncPolicy(sub_queue_size), *image_rgb_sub, *image_depth_sub, *camera_info_sub);
-        exact_sync->registerCallback(boost::bind(&ButiaVisionBridge::kinectCallback, this, _1, _2, _3));
+        exact_sync = new message_filters::Synchronizer<ExactSyncPolicy>(ExactSyncPolicy(sub_queue_size), *image_rgb_sub,
+                                                                        *image_depth_sub, *camera_info_sub, *points_sub);
+        exact_sync->registerCallback(boost::bind(&ButiaVisionBridge::kinectCallback, this, _1, _2, _3, _4));
     }
     else {
-        approximate_sync = new message_filters::Synchronizer<ApproximateSyncPolicy>(ApproximateSyncPolicy(sub_queue_size),  *image_rgb_sub, *image_depth_sub, *camera_info_sub);
-        approximate_sync->registerCallback(boost::bind(&ButiaVisionBridge::kinectCallback, this, _1, _2, _3));
+        approximate_sync = new message_filters::Synchronizer<ApproximateSyncPolicy>(ApproximateSyncPolicy(sub_queue_size),  *image_rgb_sub,
+                                                                                    *image_depth_sub, *camera_info_sub, *points_sub);
+        approximate_sync->registerCallback(boost::bind(&ButiaVisionBridge::kinectCallback, this, _1, _2, _3, _4));
     }
 
     image_rgb_pub = it.advertise(image_rgb_pub_topic, pub_queue_size);
@@ -28,11 +31,13 @@ void ButiaVisionBridge::readParameters()
     node_handle.param("/butia_vision_bridge/subscribers/image_rgb/topic", image_rgb_sub_topic, std::string("/kinect2/qhd/image_color_rect"));
     node_handle.param("/butia_vision_bridge/subscribers/image_depth/topic", image_depth_sub_topic, std::string("/kinect2/qhd/image_depth_rect"));
     node_handle.param("/butia_vision_bridge/subscribers/camera_info/topic", camera_info_sub_topic, std::string("/kinect2/qhd/camera_info"));
+    node_handle.param("/butia_vision_bridge/subscribers/points/topic", points_sub_topic, std::string("/kinect2/qhd/points"));
 
     node_handle.param("/butia_vision_bridge/publishers/queue_size", pub_queue_size, 5);   
     node_handle.param("/butia_vision_bridge/publishers/image_rgb/topic", image_rgb_pub_topic, std::string("/butia_vision/bvb/image_rgb_raw"));
     node_handle.param("/butia_vision_bridge/publishers/image_depth/topic", image_depth_pub_topic, std::string("/butia_vision/bvb/image_depth_raw"));
     node_handle.param("/butia_vision_bridge/publishers/camera_info/topic", camera_info_pub_topic, std::string("/butia_vision/bvb/camera_info"));
+    node_handle.param("/butia_vision_bridge/publishers/points/topic", points_pub_topic, std::string("/butia_vision/bvb/points"));
 
     node_handle.param("/butia_vision_bridge/use_exact_time", use_exact_time, false);
     node_handle.param("/butia_vision_bridge/image_width", image_width, 640);
