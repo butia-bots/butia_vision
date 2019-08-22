@@ -230,7 +230,8 @@ void PeopleTracker::extractFeatures(cv::Mat_<float> &destiny) {
 
 bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
     matches.clear();
-    good_matches = 0;
+    //std::vector< cv::DMatch > 
+	int good_matches;
 
     matcher.match(actual_descriptors, destiny, matches);
 
@@ -244,9 +245,15 @@ bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
     for (int i = 0; i < matches.size(); i++) {
         if (matches[i].distance <= std::max(2 * minimal_distance, minimal_minimal_distance))
             good_matches++;
+			//matches.push_back(matches[i]);
     }
+	
+	/*cv::Mat img_matches;
+	cv::drawKeypoints(mat_grayscale_segmented_image, keypoints, img_matches, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
+	cv::imshow("You have a new match",img_matches);
+	*/
 
-    if (good_matches < (destiny.rows * matches_check_factor))
+    if (good_matches/*.size()*/ < (destiny.rows * matches_check_factor))
         return false;
 
     return true;
