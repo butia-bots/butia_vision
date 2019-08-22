@@ -23,6 +23,7 @@ ButiaVisionBridge::ButiaVisionBridge(ros::NodeHandle &nh) : node_handle(nh), it(
     image_rgb_pub = it.advertise(image_rgb_pub_topic, pub_queue_size);
     image_depth_pub = it.advertise(image_depth_pub_topic, pub_queue_size);
     camera_info_pub = node_handle.advertise<sensor_msgs::CameraInfo>(camera_info_pub_topic, pub_queue_size);
+    points_pub = node_handle.advertise<sensor_msgs::PointCloud2>(points_pub_topic, pub_queue_size);
 }
 
 void ButiaVisionBridge::readParameters()
@@ -61,6 +62,12 @@ void ButiaVisionBridge::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &
     info.height = image_height;
 }
 
+void ButiaVisionBridge::readPointCloud(const sensor_msgs::PointCloud2::ConstPtr& msg_points, sensor_msgs::PointCloud2 &points)
+{
+    points = *(msg_points);
+}
+
+
 void ButiaVisionBridge::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image)
 {
     cv_bridge::CvImageConstPtr cv_image;
@@ -77,20 +84,14 @@ void ButiaVisionBridge::imageResize(cv::Mat &image)
     cv::resize(cp_image, image, cv::Size(image_width, image_height), 0, 0, cv::INTER_LINEAR);
 }
 
-
-void ButiaVisionBridge::kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb, const sensor_msgs::Image::ConstPtr &image_depth, const sensor_msgs::CameraInfo::ConstPtr &camera_info)
+void ButiaVisionBridge::kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb_ptr, const sensor_msgs::Image::ConstPtr &image_depth_ptr,
+                                       const sensor_msgs::CameraInfo::ConstPtr &camera_info_ptr, const sensor_msgs::PointCloud2::ConstPtr &points_ptr)
 {
-    ROS_INFO("INPUT ID: rgb = %d, depth = %d,  info = %d", image_rgb->header.seq, image_depth->header.seq, camera_info->header.seq);
+    ROS_INFO("INPUT ID: rgb = %d, depth = %d, info = %d, points = %d", image_rgb_ptr->header.seq, image_depth_ptr->header.seq, camera_info_ptr->header.seq, points_ptr->header.seq);
 
-    publish(image_rgb, image_depth, camera_info);
-
-    seq++;
-}
-
-void ButiaVisionBridge::publish(const sensor_msgs::Image::ConstPtr &image_rgb_ptr, const sensor_msgs::Image::ConstPtr &image_depth_ptr, const sensor_msgs::CameraInfo::ConstPtr &camera_info_ptr)
-{
     cv::Mat rgb_image, depth_image;
     sensor_msgs::CameraInfo camera_info;
+    sensor_msgs::PointCloud2 points;
 
     readImage(image_rgb_ptr, rgb_image);
     imageResize(rgb_image);
@@ -98,6 +99,8 @@ void ButiaVisionBridge::publish(const sensor_msgs::Image::ConstPtr &image_rgb_pt
     imageResize(depth_image);
 
     readCameraInfo(camera_info_ptr, camera_info);
+
+    readPointCloud(points_ptr, points);
 
     cv_bridge::CvImage rgb_cv_image(image_rgb_ptr->header, image_rgb_ptr->encoding, rgb_image);
     sensor_msgs::Image rgb_image_message;
@@ -111,7 +114,18 @@ void ButiaVisionBridge::publish(const sensor_msgs::Image::ConstPtr &image_rgb_pt
 
     camera_info.header.seq = seq;
 
+    points.header.seq = seq;
+    
+    publish(rgb_image_message, depth_image_message, camera_info, points);
+
+    seq++;
+}
+
+void ButiaVisionBridge::publish(sensor_msgs::Image &rgb_image_message, sensor_msgs::Image &depth_image_message,
+                                sensor_msgs::CameraInfo &camera_info_message, sensor_msgs::PointCloud2 &points_message)
+{
     image_rgb_pub.publish(rgb_image_message);
     image_depth_pub.publish(depth_image_message);
-    camera_info_pub.publish(camera_info);
+    camera_info_pub.publish(camera_info_message);
+    points_pub.publish(points_message);
 }

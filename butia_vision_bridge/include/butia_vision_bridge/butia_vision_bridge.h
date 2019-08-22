@@ -6,6 +6,7 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
@@ -25,11 +26,12 @@ class ButiaVisionBridge {
         
         void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info, sensor_msgs::CameraInfo &info);
         void readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image);
+        void readPointCloud(const sensor_msgs::PointCloud2::ConstPtr& msg_points, sensor_msgs::PointCloud2 &points);
 
         void imageResize(cv::Mat &image);
-
-        void publish(const sensor_msgs::Image::ConstPtr &image_rgb_ptr, const sensor_msgs::Image::ConstPtr &image_depth_ptr,
-                     const sensor_msgs::CameraInfo::ConstPtr &camera_info_ptr, const sensor_msgs::PointCloud2::ConstPtr &points);
+        
+        void publish(sensor_msgs::Image &image_rgb_ptr, sensor_msgs::Image &image_depth_ptr,
+                     sensor_msgs::CameraInfo &camera_info_ptr, sensor_msgs::PointCloud2 &points_ptr);
 
     private:
         ros::NodeHandle node_handle;

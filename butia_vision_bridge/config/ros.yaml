@@ -10,7 +10,7 @@ subscribers:
 
   camera_info:
     topic: /kinect2/qhd/camera_info
-  
+
   points:
     topic: /kinect2/qhd/points
 
