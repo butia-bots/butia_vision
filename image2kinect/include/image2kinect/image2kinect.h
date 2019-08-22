@@ -19,7 +19,7 @@
 #include "sensor_msgs/Image.h"
 #include "sensor_msgs/CameraInfo.h"
 
-#include "geometry_msgs/Point.h"
+#include "geometry_msgs/PoseWithCovariance.h"
 
 #include <cv_bridge/cv_bridge.h>
 
@@ -27,7 +27,7 @@ class Image2Kinect{
     public:
         Image2Kinect(ros::NodeHandle _nh);
 
-        bool rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::Point &point, std_msgs::ColorRGBA &color, int x_offset, int y_offset);
+        bool rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, int x_offset, int y_offset);
 
         void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info);
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);

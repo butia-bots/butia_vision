@@ -70,9 +70,9 @@ void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::
     cv_image->image.copyTo(image);
 }
 
-bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::Point &point, std_msgs::ColorRGBA &color, int x_offset, int y_offset)
+bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, int x_offset, int y_offset)
 {
-    geometry_msgs::Point &mean_position = point;
+    geometry_msgs::Point &mean_position = pose.pose.position;
     std_msgs::ColorRGBA &mean_color = color;
 
     mean_position.x = 0.0f;
@@ -130,7 +130,7 @@ bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geo
 
     return true;
 
-    /*std::vector<geometry_msgs::Point>::iterator it;
+    std::vector<geometry_msgs::Point>::iterator it;
 
     for(it = points.begin() ; it != points.end() ; it++) {
         pose.covariance[6*0 + 0] += (it->x - mean_position.x)*(it->x - mean_position.x); //xx
@@ -149,8 +149,7 @@ bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geo
         for(int j = 0 ; j < 3 ; j++) {
             pose.covariance[6*i + j] /= points.size();
         }
-    }*/
-
+    }
 }
 
 
@@ -197,12 +196,14 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
   
     std::vector<butia_vision_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
 
+    
+
     for(it = descriptions.begin(), jt = segmented_rgb_images.begin() ; it != descriptions.end() && jt != segmented_rgb_images.end() ; it++, jt++) {
         butia_vision_msgs::Description3D description3d;
         description3d.label_class = it->label_class;
         description3d.probability = it->probability;
         std_msgs::ColorRGBA &color =  description3d.color;
-        geometry_msgs::Point &point = description3d.position;
+        geometry_msgs::PoseWithCovariance &pose = description3d.pose;
 
         cv::Rect roi;
         roi.x = (*it).bounding_box.minX;
@@ -214,7 +215,7 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
         readImage(rgb_const_ptr, segmented_rgb_image);
 
-        if(rgbd2RGBPoint(segmented_rgb_image, segmented_depth_image, point, color, (*it).bounding_box.minX, (*it).bounding_box.minY))
+        if(rgbd2RGBPoseWithCovariance(segmented_rgb_image, segmented_depth_image, pose, color, (*it).bounding_box.minX, (*it).bounding_box.minY))
             descriptions3d.push_back(description3d);
     }
 
@@ -240,7 +241,7 @@ void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
             current_rec[it->label_class]++;
         }
 
-        transform.setOrigin( tf::Vector3(it->position.x, it->position.y, it->position.z) );
+        transform.setOrigin( tf::Vector3(it->pose.pose.position.x, it->pose.pose.position.y, it->pose.pose.position.z) );
         q.setRPY(0, 0, 0);
         transform.setRotation(q);
         br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), recognitions3d.image_header.frame_id,
