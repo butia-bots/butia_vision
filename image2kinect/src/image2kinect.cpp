@@ -11,6 +11,7 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
     object_recognition_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(object_recognition_pub_topic, pub_queue_size);
     face_recognition_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(face_recognition_pub_topic, pub_queue_size);
     people_tracking_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(people_tracking_pub_topic, pub_queue_size);
+    pose_publisher = node_handle.advertise<geometry_msgs::PoseWithCovarianceStamped>("/image2kinect/pose_with_covariance", pub_queue_size); //test
 
     image_request_client = node_handle.serviceClient<butia_vision_msgs::ImageRequest>(image_request_client_service);
     segmentation_request_client = node_handle.serviceClient<butia_vision_msgs::SegmentationRequest>(segmentation_request_client_service);
@@ -217,9 +218,19 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
 
         if(rgbd2RGBPoseWithCovariance(segmented_rgb_image, segmented_depth_image, pose, color, (*it).bounding_box.minX, (*it).bounding_box.minY))
             descriptions3d.push_back(description3d);
+        geometry_msgs::PoseWithCovarianceStamped pose2; //test
+        pose2.header = recognitions3d.image_header; //test
+        pose2.pose = pose; //test
+        publishPose(pose2); //test
     }
 
     publishTF(recognitions3d);
+}
+
+//test
+void Image2Kinect::publishPose(geometry_msgs::PoseWithCovarianceStamped &pose)
+{
+    pose_publisher.publish(pose);
 }
 
 void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)

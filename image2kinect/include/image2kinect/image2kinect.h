@@ -20,6 +20,7 @@
 #include "sensor_msgs/CameraInfo.h"
 
 #include "geometry_msgs/PoseWithCovariance.h"
+#include "geometry_msgs/PoseWithCovarianceStamped.h" //test
 
 #include <cv_bridge/cv_bridge.h>
 
@@ -35,6 +36,7 @@ class Image2Kinect{
         void recognitions2Recognitions3d(butia_vision_msgs::Recognitions &recognitions, butia_vision_msgs::Recognitions3D &recognitions3d);
 
         void publishTF(butia_vision_msgs::Recognitions3D &recognitions3d);
+        void publishPose(geometry_msgs::PoseWithCovarianceStamped &pose); //test
 
         void objectRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
         void faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
@@ -50,6 +52,7 @@ class Image2Kinect{
         ros::Publisher object_recognition_pub;
         ros::Publisher face_recognition_pub;
         ros::Publisher people_tracking_pub;
+        ros::Publisher pose_publisher; //test
 
         ros::ServiceClient image_request_client;
         ros::ServiceClient segmentation_request_client;
