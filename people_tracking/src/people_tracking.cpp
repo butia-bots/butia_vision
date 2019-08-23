@@ -230,12 +230,11 @@ void PeopleTracker::extractFeatures(cv::Mat_<float> &destiny) {
 
 bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
     matches.clear();
-    //std::vector< cv::DMatch > 
-	int good_matches;
+    std::vector< cv::DMatch > good_matches;
 
     matcher.match(actual_descriptors, destiny, matches);
 
-    float minimal_distance = 100;
+    float minimal_distance = 70;
     for(int i = 0; i < actual_descriptors.rows; i++) {
         double distance = matches[i].distance;
         if(distance < minimal_distance)
@@ -244,16 +243,18 @@ bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
     
     for (int i = 0; i < matches.size(); i++) {
         if (matches[i].distance <= std::max(2 * minimal_distance, minimal_minimal_distance))
-            good_matches++;
-			//matches.push_back(matches[i]);
+            //good_matches++;
+			good_matches.push_back(matches[i]);
     }
 	
-	/*cv::Mat img_matches;
+	ROS_INFO("O número de good matches %d",good_matches.size());
+	
+	cv::Mat img_matches;
 	cv::drawKeypoints(mat_grayscale_segmented_image, keypoints, img_matches, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
 	cv::imshow("You have a new match",img_matches);
-	*/
+	
 
-    if (good_matches/*.size()*/ < (destiny.rows * matches_check_factor))
+    if (good_matches.size() < (destiny.rows * matches_check_factor))
         return false;
 
     return true;
@@ -277,7 +278,7 @@ void PeopleTracker::readParameters() {
     node_handle.param("/people_tracking/queue/size", queue_size, (int)(20));
 
     node_handle.param("/people_tracking/match/minimal_hessian", min_hessian, (int)(400));
-    node_handle.param("/people_tracking/match/minimal_minimal_distance", minimal_minimal_distance, (float)(0.2));
+    node_handle.param("/people_tracking/match/minimal_minimal_distance", minimal_minimal_distance, (float)(0.02));
     node_handle.param("/people_tracking/match/check_factor", matches_check_factor, (float)(0.2));
     node_handle.param("/people_tracking/match/k", param_k, (int)(8));
 
