@@ -191,7 +191,7 @@ void PeopleTracker::peopleDetectionCallBack(const butia_vision_msgs::Recognition
 					cv::Mat crop = actual_better_segmented_image(roi); 
 					cv::imshow("crop", crop);
 
-					cv::waitKey(10);
+					cv::waitKey(1);
                 }
             }
         }
@@ -230,11 +230,12 @@ void PeopleTracker::extractFeatures(cv::Mat_<float> &destiny) {
 
 bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
     matches.clear();
-    std::vector< cv::DMatch > good_matches;
+    cv::FlannBasedMatcher matcher;
+	std::vector< cv::DMatch > good_matches;
 
     matcher.match(actual_descriptors, destiny, matches);
 
-    float minimal_distance = 70;
+    float minimal_distance = 100;
     for(int i = 0; i < actual_descriptors.rows; i++) {
         double distance = matches[i].distance;
         if(distance < minimal_distance)
@@ -246,8 +247,6 @@ bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
             //good_matches++;
 			good_matches.push_back(matches[i]);
     }
-	
-	ROS_INFO("O número de good matches %d",good_matches.size());
 	
 	cv::Mat img_matches;
 	cv::drawKeypoints(mat_grayscale_segmented_image, keypoints, img_matches, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
