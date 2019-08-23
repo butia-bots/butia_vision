@@ -24,10 +24,11 @@ class TwoFac_Classifier(BaseEstimator):
             sample = np.array(samples_dict[class_])
             self.classifiers_dict[class_] = clone(self.one_class_ex)
             self.classifiers_dict[class_].fit(sample, [1] * len(samples_dict[class_]))
-            print self.classifiers_dict[class_].best_params_
+            #print self.classifiers_dict[class_].best_params_
     
     def predict_proba(self, rep):
         response = self.multi_class.predict_proba(rep)
+        #return response
         predictions = response.ravel()
         maxI = np.argmax(predictions)
         prediction = self.classifiers_dict[maxI].predict(rep)
