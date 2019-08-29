@@ -140,7 +140,7 @@ void PeopleTracker::peopleDetectionCallBack(const butia_vision_msgs::Recognition
                 }
             }
 
-            image_segmentation_service.request.model_id = "histogram";
+            image_segmentation_service.request.model_id = "median_full";
             image_segmentation_service.request.descriptions = descriptions;
             image_segmentation_service.request.initial_rgbd_image = rgbd_image;
             if (!image_segmentation_client.call(image_segmentation_service))
@@ -171,7 +171,7 @@ void PeopleTracker::peopleDetectionCallBack(const butia_vision_msgs::Recognition
                 }
 
                 if (person_founded == true) {
-                    registerMatch();
+                    //registerMatch();
 
                     butia_vision_msgs::Description desc;
                     desc.label_class = "person";
@@ -230,22 +230,20 @@ void PeopleTracker::extractFeatures(cv::Mat_<float> &destiny) {
 
 bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
     matches.clear();
-    cv::FlannBasedMatcher matcher;
-	std::vector< cv::DMatch > good_matches;
+    good_matches = 0;
 
     matcher.match(actual_descriptors, destiny, matches);
 
-    float minimal_distance = 100;
+    /*float minimal_distance = 100;
     for(int i = 0; i < actual_descriptors.rows; i++) {
         double distance = matches[i].distance;
         if(distance < minimal_distance)
             minimal_distance = distance;
-    }    
+    } */  
     
     for (int i = 0; i < matches.size(); i++) {
-        if (matches[i].distance <= std::max(2 * minimal_distance, minimal_minimal_distance))
-            //good_matches++;
-			good_matches.push_back(matches[i]);
+        if (matches[i].distance <= minimal_minimal_distance)
+           good_matches++;
     }
 	
 	cv::Mat img_matches;
@@ -253,7 +251,7 @@ bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
 	cv::imshow("You have a new match",img_matches);
 	
 
-    if (good_matches.size() < (destiny.rows * matches_check_factor))
+    if (good_matches < (destiny.rows * matches_check_factor))
         return false;
 
     return true;
@@ -277,7 +275,7 @@ void PeopleTracker::readParameters() {
     node_handle.param("/people_tracking/queue/size", queue_size, (int)(20));
 
     node_handle.param("/people_tracking/match/minimal_hessian", min_hessian, (int)(400));
-    node_handle.param("/people_tracking/match/minimal_minimal_distance", minimal_minimal_distance, (float)(0.02));
+    node_handle.param("/people_tracking/match/minimal_minimal_distance", minimal_minimal_distance, (float)(10.0));
     node_handle.param("/people_tracking/match/check_factor", matches_check_factor, (float)(0.2));
     node_handle.param("/people_tracking/match/k", param_k, (int)(8));
 
