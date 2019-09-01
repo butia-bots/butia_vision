@@ -36,7 +36,7 @@ class Image2Kinect{
         void recognitions2Recognitions3d(butia_vision_msgs::Recognitions &recognitions, butia_vision_msgs::Recognitions3D &recognitions3d);
 
         void publishTF(butia_vision_msgs::Recognitions3D &recognitions3d);
-        void publishPose(geometry_msgs::PoseWithCovarianceStamped &pose); //test
+        void publishPose(butia_vision_msgs::Recognitions3D &recognitions3d); //test
 
         void objectRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
         void faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions);

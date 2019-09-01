@@ -218,19 +218,21 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
 
         if(rgbd2RGBPoseWithCovariance(segmented_rgb_image, segmented_depth_image, pose, color, (*it).bounding_box.minX, (*it).bounding_box.minY))
             descriptions3d.push_back(description3d);
-        geometry_msgs::PoseWithCovarianceStamped pose2; //test
-        pose2.header = recognitions3d.image_header; //test
-        pose2.pose = pose; //test
-        publishPose(pose2); //test
     }
 
+    publishPose(recognitions3d);
     publishTF(recognitions3d);
 }
 
 //test
-void Image2Kinect::publishPose(geometry_msgs::PoseWithCovarianceStamped &pose)
+void Image2Kinect::publishPose(butia_vision_msgs::Recognitions3D &recognitions3d)
 {
-    pose_publisher.publish(pose);
+    std::vector<butia_vision_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
+    std::vector<butia_vision_msgs::Description3D>::iterator it;
+
+    for(it = descriptions3d.begin() ; it != descriptions3d.end() ; it++) {
+        pose_publisher.publish(it->pose);
+    }
 }
 
 void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
