@@ -231,7 +231,10 @@ void Image2Kinect::publishPose(butia_vision_msgs::Recognitions3D &recognitions3d
     std::vector<butia_vision_msgs::Description3D>::iterator it;
 
     for(it = descriptions3d.begin() ; it != descriptions3d.end() ; it++) {
-        pose_publisher.publish(it->pose);
+        geometry_msgs::PoseWithCovarianceStamped pose;
+        pose.header = recognitions3d.image_header;
+        pose.pose = it->pose;
+        pose_publisher.publish(pose);
     }
 }
 
