@@ -2,7 +2,11 @@ verbose: False
 debug: False
 
 detector:
+<<<<<<< HEAD
   model_id: dlib_hog
+=======
+  model_id: opencv_dnn
+>>>>>>> origin/face-recognition-edition
 
   opencv_cascade:
     model: haarcascade_frontalface_alt.xml
@@ -42,5 +46,5 @@ embosser:
 classifier:
   model_id: sklearn #sklearn
   sklearn:
-    model: classifier.pkl
-    threshold: 0.7
+    model: classifier_2f.pkl
+    threshold: 0.3

@@ -24,6 +24,8 @@ class ImageSegmenter {
         ros::NodeHandle node_handle;
         ros::ServiceServer service;
 
+        ros::Publisher segmented_image_pub;
+
         cv::Mat_<cv::Vec3b> mat_initial_rgb_image, cropped_initial_rgb_image;
         cv::Mat_<uint16_t> mat_initial_depth_image, cropped_initial_depth_image;
         cv::Mat_<uint8_t> mask;
@@ -45,6 +47,7 @@ class ImageSegmenter {
         int max_histogram_value;
         int position_of_max_value;
 
+        bool median_outlier_rejection;
         int median_full_threshold;
 
         int median_center_kernel_size;
@@ -53,6 +56,8 @@ class ImageSegmenter {
         int segmentable_depth;
 
         std::string param_segmentation_service;
+        std::string image_segmentation_view_topic;
+        int image_segmentation_view_qs;
 
     
     public:
