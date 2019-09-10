@@ -1,7 +1,5 @@
 #include "people_tracking.hpp"
 
-
-
 //-------------------------------------People Tracker's Functions-------------------------------------
 PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size(640*480), initialized(false), actual_iterator(0), queue_actual_size(0) {
     readParameters();
@@ -83,13 +81,14 @@ bool PeopleTracker::startTracking(butia_vision_msgs::StartTracking::Request &req
 
     cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
     extractFeatures(descriptors[actual_iterator]);
-    actual_iterator++;
-    queue_actual_size++;
-	cv::Mat keypoints_images; 
+		
+	first_keypoint = keypoints;    
+	first_descriptors = actual_descriptors;	
+	actual_iterator++;
+    queue_actual_size++; 
 	mat_grayscale_segmented_image.copyTo(keypoints_images);
-	cv:drawKeypoints(mat_grayscale_segmented_image, keypoints, keypoints_images, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
+	//cv:drawKeypoints(mat_grayscale_segmented_image, keypoints, keypoints_images, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
 	cv::imshow("Features",keypoints_images);
-	
     initialized = true;
     res.started = true;
     return true;
@@ -171,7 +170,7 @@ void PeopleTracker::peopleDetectionCallBack(const butia_vision_msgs::Recognition
                 }
 
                 if (person_founded == true) {
-                    //registerMatch();
+                    registerMatch();
 
                     butia_vision_msgs::Description desc;
                     desc.label_class = "person";
@@ -191,7 +190,6 @@ void PeopleTracker::peopleDetectionCallBack(const butia_vision_msgs::Recognition
 					cv::Mat crop = actual_better_segmented_image(roi); 
 					cv::imshow("crop", crop);
 
-					cv::waitKey(1);
                 }
             }
         }
@@ -214,42 +212,52 @@ void PeopleTracker::readImage(const sensor_msgs::Image::ConstPtr &source, cv::Ma
 void PeopleTracker::extractFeatures(cv::Mat_<float> &destiny) {
     keypoints.clear();
     destiny = cv::Mat();
-	//cv::Mat keypoints_images;
-	
+
     if (param_detector_type == "surf")
         surf_detector->detectAndCompute(mat_grayscale_segmented_image, cv::Mat(), keypoints, destiny);
     else if (param_detector_type == "sift")
         sift_detector->detectAndCompute(mat_grayscale_segmented_image, cv::Mat(), keypoints, destiny);
-	/*mat_grayscale_segmented_image.copyTo(keypoints_images);
-	cv:drawKeypoints(mat_grayscale_segmented_image, keypoints, keypoints_images, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
-	cv::imshow("Features",keypoints_images);
-	cv::waitKey(0);*/
-
 }
 
+bool compdmatch(cv::DMatch &a, cv::DMatch &b){
+	return a.distance<b.distance;
+}
 
 bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
     matches.clear();
     good_matches = 0;
 
-    matcher.match(actual_descriptors, destiny, matches);
-
-    /*float minimal_distance = 100;
-    for(int i = 0; i < actual_descriptors.rows; i++) {
+    matcher.match(first_descriptors, first_descriptors, matches);
+	
+    float minimal_distance = 100;
+    for(int i = 0; i < first_descriptors.rows; i++) {
         double distance = matches[i].distance;
         if(distance < minimal_distance)
             minimal_distance = distance;
-    } */  
+    }  
     
     for (int i = 0; i < matches.size(); i++) {
-        if (matches[i].distance <= minimal_minimal_distance)
+        if (matches[i].distance <= std::max(2*minimal_distance, minimal_minimal_distance))
            good_matches++;
     }
 	
+	std::cout << "Número de keypoints - first:  " << first_keypoint.size() << std::endl;
+	std::cout << "Número de keypoints - compare:  " << keypoints.size() << std::endl; 
+	std::cout << "Tamanho do vetor de matches:  " << matches.size() << std::endl;
+	std::cout << "Numero de good matches:  " << good_matches << std::endl;
+	
+	//std::sort(matches.begin(),matches.end(),compdmatch);
+
+	/*for(int i = 0 ; matches.size(); i++){
+		std::cout << matches[i].distance << std::endl;
+	}*/
+	//std::vector<cv::DMatch> new_matches(matches.begin(),matches.begin()+30);
+	
 	cv::Mat img_matches;
-	cv::drawKeypoints(mat_grayscale_segmented_image, keypoints, img_matches, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
+	cv::drawMatches(keypoints_images, first_keypoint,keypoints_images, first_keypoint, matches, img_matches, cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 	cv::imshow("You have a new match",img_matches);
 	
+	cv::waitKey(1);
 
     if (good_matches < (destiny.rows * matches_check_factor))
         return false;
@@ -275,7 +283,7 @@ void PeopleTracker::readParameters() {
     node_handle.param("/people_tracking/queue/size", queue_size, (int)(20));
 
     node_handle.param("/people_tracking/match/minimal_hessian", min_hessian, (int)(400));
-    node_handle.param("/people_tracking/match/minimal_minimal_distance", minimal_minimal_distance, (float)(10.0));
+    node_handle.param("/people_tracking/match/minimal_minimal_distance", minimal_minimal_distance, (float)(0.2));
     node_handle.param("/people_tracking/match/check_factor", matches_check_factor, (float)(0.2));
     node_handle.param("/people_tracking/match/k", param_k, (int)(8));
 
