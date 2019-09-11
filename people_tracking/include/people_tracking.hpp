@@ -67,6 +67,7 @@ class PeopleTracker {
         int good_matches;
 	
 	//Debug
+	cv::Mat debug;
 	cv::Mat keypoints_images;
 	std::vector<cv::KeyPoint> first_keypoint;
 	cv::Mat_<float> first_descriptors;	

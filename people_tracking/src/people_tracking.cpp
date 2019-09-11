@@ -81,14 +81,14 @@ bool PeopleTracker::startTracking(butia_vision_msgs::StartTracking::Request &req
 
     cv::cvtColor(mat_rgb_segmented_image, mat_grayscale_segmented_image, CV_RGB2GRAY);
     extractFeatures(descriptors[actual_iterator]);
-		
 	first_keypoint = keypoints;    
-	first_descriptors = actual_descriptors;	
+	first_descriptors = descriptors[actual_iterator];	
 	actual_iterator++;
-    queue_actual_size++; 
+    	queue_actual_size++; 
 	mat_grayscale_segmented_image.copyTo(keypoints_images);
-	//cv:drawKeypoints(mat_grayscale_segmented_image, keypoints, keypoints_images, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
-	cv::imshow("Features",keypoints_images);
+	mat_grayscale_segmented_image.copyTo(debug);
+	cv:drawKeypoints(mat_grayscale_segmented_image, first_keypoint, debug, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
+	cv::imshow("Features original",debug);
     initialized = true;
     res.started = true;
     return true;
@@ -168,9 +168,9 @@ void PeopleTracker::peopleDetectionCallBack(const butia_vision_msgs::Recognition
                         }
                     }
                 }
-
+		std::cout << "Tamanho dos descriptors:  " << descriptors.size() << std::endl;
                 if (person_founded == true) {
-                    registerMatch();
+                    //registerMatch();
 
                     butia_vision_msgs::Description desc;
                     desc.label_class = "person";
@@ -227,7 +227,7 @@ bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
     matches.clear();
     good_matches = 0;
 
-    matcher.match(first_descriptors, first_descriptors, matches);
+    matcher.match(first_descriptors, destiny, matches);
 	
     float minimal_distance = 100;
     for(int i = 0; i < first_descriptors.rows; i++) {
@@ -252,9 +252,12 @@ bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
 		std::cout << matches[i].distance << std::endl;
 	}*/
 	//std::vector<cv::DMatch> new_matches(matches.begin(),matches.begin()+30);
-	
+	cv::Mat debug2;	
 	cv::Mat img_matches;
-	cv::drawMatches(keypoints_images, first_keypoint,keypoints_images, first_keypoint, matches, img_matches, cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+	cv::drawMatches(keypoints_images, first_keypoint,mat_grayscale_segmented_image, keypoints, matches, img_matches, cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+	mat_grayscale_segmented_image.copyTo(debug2);
+	cv:drawKeypoints(mat_grayscale_segmented_image, keypoints, debug2, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
+	cv::imshow("Features",debug2);	
 	cv::imshow("You have a new match",img_matches);
 	
 	cv::waitKey(1);
