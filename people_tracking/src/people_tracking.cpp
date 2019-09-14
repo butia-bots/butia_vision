@@ -84,11 +84,11 @@ bool PeopleTracker::startTracking(butia_vision_msgs::StartTracking::Request &req
 	first_keypoint = keypoints;    
 	first_descriptors = descriptors[actual_iterator];	
 	actual_iterator++;
-    	queue_actual_size++; 
+    queue_actual_size++; 
 	mat_grayscale_segmented_image.copyTo(keypoints_images);
 	mat_grayscale_segmented_image.copyTo(debug);
-	cv:drawKeypoints(mat_grayscale_segmented_image, first_keypoint, debug, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
-	cv::imshow("Features original",debug);
+	//cv:drawKeypoints(mat_grayscale_segmented_image, first_keypoint, debug, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
+	//cv::imshow("Features original",debug);
     initialized = true;
     res.started = true;
     return true;
@@ -168,7 +168,7 @@ void PeopleTracker::peopleDetectionCallBack(const butia_vision_msgs::Recognition
                         }
                     }
                 }
-		std::cout << "Tamanho dos descriptors:  " << descriptors.size() << std::endl;
+
                 if (person_founded == true) {
                     //registerMatch();
 
@@ -228,45 +228,48 @@ bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
     good_matches = 0;
 
     matcher.match(first_descriptors, actual_descriptors, matches);
-	
-    float minimal_distance = 100;
-    for(int i = 0; i < first_descriptors.rows; i++) {
+	std::sort(matches.begin(),matches.end(),compdmatch);
+
+    float minimal_distance = matches[0].distance;
+    /*for(int i = 0; i < first_descriptors.rows; i++) {
         double distance = matches[i].distance;
         if(distance < minimal_distance)
             minimal_distance = distance;
-    }  
-    
+    }*/
+
     for (int i = 0; i < matches.size(); i++) {
         if (matches[i].distance <= std::max(2*minimal_distance, minimal_minimal_distance))
            good_matches++;
     }
-	std::cout << "Minimal distance:  " << minimal_distance << std::endl;
-	std::cout << "Número de keypoints - first:  " << first_keypoint.size() << std::endl;
-	std::cout << "Número de keypoints - compare:  " << keypoints.size() << std::endl; 
-	std::cout << "Tamanho do vetor de matches:  " << matches.size() << std::endl;
-	std::cout << "Numero de good matches:  " << good_matches << std::endl;
-	
-	std::sort(matches.begin(),matches.end(),compdmatch);
 
-	
-	int intermed = (matches.size()/2);
+	int intermed = (matches.size()/4);
 	std::vector<cv::DMatch> new_matches(matches.begin(),matches.begin()+intermed);
+
+	for (int i = 0; i < new_matches.size(); i++) {
+		std::cout << new_matches[i].distance << std::endl;
+    }
+
 	cv::Mat debug2;	
 	cv::Mat img_matches;
 	cv::drawMatches(keypoints_images, first_keypoint, mat_grayscale_segmented_image, keypoints, new_matches, img_matches, cv::Scalar::all(-1), cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 	mat_grayscale_segmented_image.copyTo(debug2);
 	cv:drawKeypoints(mat_grayscale_segmented_image, keypoints, debug2, cv::Scalar(0,255,0),cv::DrawMatchesFlags::DEFAULT );
-	cv::imshow("Features",debug2);	
+	//cv::imshow("Features",debug2);	
 	cv::imshow("You have a new match",img_matches);
 	
 	cv::waitKey(1);
-		
-	std::cout << "Destiny.rows:  " << destiny.rows << std::endl;
+	float p = (((float)good_matches)/((float)matches.size()));
+	std::cout << "Minimal distance:  " << minimal_distance << std::endl;
+	std::cout << "Número de keypoints - first:  " << first_keypoint.size() << std::endl;
+	std::cout << "Número de keypoints - compare:  " << keypoints.size() << std::endl; 
+	std::cout << "Tamanho do vetor de matches:  " << matches.size() << std::endl;	
+	//std::cout << "Destiny.rows:  " << destiny.rows << std::endl;
 	std::cout << "Actual.rows:  " << actual_descriptors.rows << std::endl;
-	std::cout << "matches_check_factor:  " << matches_check_factor << std::endl;
-	std::cout << "mult:  " << actual_descriptors.rows * matches_check_factor << std::endl;
+	std::cout << "matches_check_factor:  " << p << std::endl;
+	std::cout << "Numero de good matches:  " << good_matches << std::endl;
+	std::cout << "mult:  " << (std::min(actual_descriptors.rows,first_descriptors.rows)*p)<< std::endl;
 	
-    if (good_matches < (first_descriptors.rows * matches_check_factor))
+    if (good_matches > (std::min(actual_descriptors.rows,first_descriptors.rows)*p))
         return false;
 
     return true;
@@ -290,8 +293,8 @@ void PeopleTracker::readParameters() {
     node_handle.param("/people_tracking/queue/size", queue_size, (int)(20));
 
     node_handle.param("/people_tracking/match/minimal_hessian", min_hessian, (int)(400));
-    node_handle.param("/people_tracking/match/minimal_minimal_distance", minimal_minimal_distance, (float)(0.02));
-    node_handle.param("/people_tracking/match/check_factor", matches_check_factor, (float)(0.6));
+    node_handle.param("/people_tracking/match/minimal_minimal_distance", minimal_minimal_distance, (float)(0.2));
+    node_handle.param("/people_tracking/match/check_factor", matches_check_factor, (float)(0.5));
     node_handle.param("/people_tracking/match/k", param_k, (int)(8));
 
     node_handle.param("/people_tracking/detector/type", param_detector_type, std::string("surf"));
