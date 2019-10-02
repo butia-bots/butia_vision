@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
 
     ButiaVisionBridge butia_vision_bridge(nh);
 
-    ros::Rate rate(30);
+    ros::Rate rate(100);
 
     std::string robot_tf, kinect_tf;
     double offset_x, offset_y, offset_z;

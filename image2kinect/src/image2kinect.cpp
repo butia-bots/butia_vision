@@ -220,7 +220,6 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
             descriptions3d.push_back(description3d);
     }
 
-    publishPose(recognitions3d);
     publishTF(recognitions3d);
 }
 
@@ -261,7 +260,7 @@ void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
         q.setRPY(0, 0, 0);
         transform.setRotation(q);
         br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), recognitions3d.image_header.frame_id,
-                                              it->label_class + std::to_string(current_rec[it->label_class])));
+                                              it->label_class + std::to_string(current_rec[it->label_class]) + "_detect"));
     }
 }
 
