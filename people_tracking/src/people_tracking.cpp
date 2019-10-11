@@ -245,9 +245,9 @@ bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
 	int intermed = (matches.size()/4);
 	std::vector<cv::DMatch> new_matches(matches.begin(),matches.begin()+intermed);
 
-	for (int i = 0; i < new_matches.size(); i++) {
+	/*for (int i = 0; i < new_matches.size(); i++) {
 		std::cout << new_matches[i].distance << std::endl;
-    }
+    }*/
 
 	cv::Mat debug2;	
 	cv::Mat img_matches;
@@ -259,7 +259,10 @@ bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
 	
 	cv::waitKey(1);
 	float p = (((float)good_matches)/((float)matches.size()));
+
 	std::cout << "Minimal distance:  " << minimal_distance << std::endl;
+	std::cout << "Número de descriptors - first:  " << first_keypoint.size() << std::endl;
+	std::cout << "Número de descriptors - compare:  " << keypoints.size() << std::endl; 	
 	std::cout << "Número de keypoints - first:  " << first_keypoint.size() << std::endl;
 	std::cout << "Número de keypoints - compare:  " << keypoints.size() << std::endl; 
 	std::cout << "Tamanho do vetor de matches:  " << matches.size() << std::endl;	
@@ -269,7 +272,7 @@ bool PeopleTracker::matchFeatures(cv::Mat_<float> &destiny) {
 	std::cout << "Numero de good matches:  " << good_matches << std::endl;
 	std::cout << "mult:  " << (std::min(actual_descriptors.rows,first_descriptors.rows)*p)<< std::endl;
 	
-    if (good_matches > (std::min(actual_descriptors.rows,first_descriptors.rows)*p))
+    if (good_matches < (std::min(actual_descriptors.rows,first_descriptors.rows)*p))
         return false;
 
     return true;
