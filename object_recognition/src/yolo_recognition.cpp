@@ -95,14 +95,14 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
         pub_object_msg.header = bbs.header;
         pub_object_msg.image_header = bbs.image_header;
         pub_object_msg.descriptions = objects;
-        recognized_objects_pub.publish(pub_object_msg);
+        //recognized_objects_pub.publish(pub_object_msg);
     }
 
     if(people.size() > 0) {
         pub_people_msg.header = bbs.header;
         pub_people_msg.image_header = bbs.image_header;
         pub_people_msg.descriptions = people;
-        recognized_people_pub.publish(pub_people_msg);
+        recognized_objects_pub.publish(pub_people_msg);
     }
 }
 
