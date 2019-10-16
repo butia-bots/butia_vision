@@ -28,13 +28,13 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
 {
     ROS_INFO("Image ID: %d", bbs.image_header.seq);
 
-    for(std::map<std::string, std::vector<std::string> >::const_iterator it = possible_classes.begin(); it != possible_classes.end(); ++it)
+    /*for(std::map<std::string, std::vector<std::string> >::const_iterator it = possible_classes.begin(); it != possible_classes.end(); ++it)
     {
         std::cout << it->first << " : ";
         for(std::vector<std::string>::iterator jt = it->second.begin(); jt != it->second.end(); ++jt)
             std::cout << *jt << " ";
         std::cout<<std::endl;
-    }
+    }*/
 
     std::vector<butia_vision_msgs::Description> objects;
     std::vector<butia_vision_msgs::Description> people;
@@ -104,7 +104,7 @@ void YoloRecognition::readParameters()
 
     node_handle.param("/object_recognition/threshold", threshold, (float)0.5);
     
-    node_handle.getParam("/object_recognition/possible_classes", possible_classes);
+    //node_handle.getParam("/object_recognition/possible_classes", possible_classes);
     
 
 }

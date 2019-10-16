@@ -15,13 +15,13 @@
   <rosparam command="load" ns="darknet_ros" file="$(find darknet_ros)/config/yolov3.yaml"/>
 
   <!-- Start darknet and ros wrapper -->
-  <!-- <node pkg="darknet_ros" type="darknet_ros" name="darknet_ros" output="screen" launch-prefix="$(arg launch_prefix)"> -->
-    <!-- <param name="weights_path"          value="$(arg yolo_weights_path)" /> -->
-    <!-- <param name="config_path"           value="$(arg yolo_config_path)" /> -->
-  <!-- </node>  -->
+  <node pkg="darknet_ros" type="darknet_ros" name="darknet_ros" output="screen" launch-prefix="$(arg launch_prefix)"> -->
+    <param name="weights_path"          value="$(arg yolo_weights_path)" />
+    <param name="config_path"           value="$(arg yolo_config_path)" />
+  </node> 
 
   <rosparam command="load" ns="object_recognition" file="$(find object_recognition)/config/ros.yaml"/>
   
-  <node pkg="object_recognition" type="object_recognition_node" name="object_recognition" output="screen"/>
+  <node pkg="object_recognition" type="object_recognition_node.py" name="object_recognition" output="screen"/>
 
 </launch>
