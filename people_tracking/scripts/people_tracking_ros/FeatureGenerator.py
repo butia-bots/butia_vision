@@ -16,8 +16,7 @@ class FeatureGenerator():
         features = []
         for img in segmentedImages:
             bw_img = cv2.cvtColor(img, cv2.RGB2GRAY)
-            feature = {}
-            feature["keypoints"], feature["descriptors"] = self.extractor.detectAndCompute(bw_img, None)
+            _, feature = self.extractor.detectAndCompute(bw_img, None)
             features.append(feature)
         return features
 

@@ -68,7 +68,7 @@ def peopleDetectionCallBack(recognition):
     req = image_request_client(frame_id)
     frame = req.rgbd
     cv_frame = BRIDGE.imgmsg_to_cv2(frame.rgb, desired_encoding = 'rgb8')
-    people_tracking.setFrame(recognition.image_header, recognition.header, recognition.descriptions, frame_id, cv_frame)
+    people_tracking.setFrame(recognition.image_header, recognition.header, frame_id, cv_frame)
 
     img_size = frame.rgb.height * frame.rgb.width
     for description in descriptions:
