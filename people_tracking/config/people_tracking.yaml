@@ -11,3 +11,5 @@ people_tracking:
     type: "sift"
   queue:
     size: 5
+  segmentation:
+    type: "median_full"

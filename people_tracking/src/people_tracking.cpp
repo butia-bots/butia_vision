@@ -11,7 +11,7 @@ PeopleTracker::PeopleTracker(ros::NodeHandle _nh) : node_handle(_nh), image_size
     people_tracking_publisher = node_handle.advertise<butia_vision_msgs::Recognitions>(param_people_tracking_topic, 1000);
 
     image_request_client = node_handle.serviceClient<butia_vision_msgs::ImageRequest>(param_image_request_service);
-    image_segmentation_client = node_handle.serviceClient<butia_vision_msgs::SegmentationRequest>(param_segmentation_request_service);
+    image_segmentation_client = nod e_handle.serviceClient<butia_vision_msgs::SegmentationRequest>(param_segmentation_request_service);
 
     start_service = node_handle.advertiseService(param_start_service, &PeopleTracker::startTracking, this);
     stop_service = node_handle.advertiseService(param_stop_service, &PeopleTracker::stopTracking, this);
