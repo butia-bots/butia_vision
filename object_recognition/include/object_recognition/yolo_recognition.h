@@ -1,6 +1,7 @@
 #include "ros/ros.h"
 
 #include <vector>
+#include <map>
 #include <string>
 #include <algorithm>
 #include <iostream>
@@ -9,13 +10,6 @@
 
 #include "butia_vision_msgs/Recognitions.h"
 #include "butia_vision_msgs/ListClasses.h"
-
-std::vector<std::string> DEFAULT_CLASS_LIST = {"person", "bicycle", "bench", "backpack", "umbrella", "handbag", "suitcase", "sports ball",
-                                               "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", 
-                                               "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", 
-                                               "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", 
-                                               "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", 
-                                               "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
 
 class YoloRecognition{
     public:
@@ -57,7 +51,7 @@ class YoloRecognition{
 
         float threshold;
 
-        std::vector<std::string> possible_classes;
+        std::map<std::string, std::vector<std::string> > possible_classes;
 
         std_msgs::Header object_list_updated_header;
 

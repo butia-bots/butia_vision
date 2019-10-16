@@ -20,13 +20,21 @@ YoloRecognition::YoloRecognition(ros::NodeHandle _nh) : node_handle(_nh)
 
 bool YoloRecognition::getObjectList(butia_vision_msgs::ListClasses::Request &req, butia_vision_msgs::ListClasses::Response &res)
 {
-    res.classes = possible_classes;
+    //res.classes = possible_classes;
     return true;
 }
 
 void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bbs)
 {
     ROS_INFO("Image ID: %d", bbs.image_header.seq);
+
+    for(std::map<std::string, std::vector<std::string> >::const_iterator it = possible_classes.begin(); it != possible_classes.end(); ++it)
+    {
+        std::cout << it->first << " : ";
+        for(std::vector<std::string>::iterator jt = it->second.begin(); jt != it->second.end(); ++jt)
+            std::cout << *jt << " ";
+        std::cout<<std::endl;
+    }
 
     std::vector<butia_vision_msgs::Description> objects;
     std::vector<butia_vision_msgs::Description> people;
@@ -46,7 +54,7 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
             people.push_back(person);
         }
         else if(it->probability >= threshold) {
-            if(std::find(possible_classes.begin(), possible_classes.end(), std::string(it->Class)) != possible_classes.end()) {   
+            //if(std::find(possible_classes.begin(), possible_classes.end(), std::string(it->Class)) != possible_classes.end()) {   
                 butia_vision_msgs::Description object;
                 object.label_class = it->Class;
                 object.probability = it->probability;
@@ -55,7 +63,7 @@ void YoloRecognition::yoloRecognitionCallback(darknet_ros_msgs::BoundingBoxes bb
                 object.bounding_box.width = it->xmax - it->xmin;
                 object.bounding_box.height = it->ymax - it->ymin;
                 objects.push_back(object);
-            }
+            //}
         }
     }
 
@@ -96,8 +104,7 @@ void YoloRecognition::readParameters()
 
     node_handle.param("/object_recognition/threshold", threshold, (float)0.5);
     
-    node_handle.param("/object_recognition/possible_classes", possible_classes);
-    for (std::vector<std::string>::const_iterator i = possible_classes.begin(); i != possible_classes.end(); ++i)
-    ROS_INFO("%s\n", (*i).c_str());
+    node_handle.getParam("/object_recognition/possible_classes", possible_classes);
+    
 
 }
