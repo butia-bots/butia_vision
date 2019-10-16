@@ -27,6 +27,7 @@ add_executable(${PROJECT_NAME}_node src/object_recognition_node.cpp)
 
 install(PROGRAMS
   scripts/people_detection_node.py
+  scripts/object_recognition_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

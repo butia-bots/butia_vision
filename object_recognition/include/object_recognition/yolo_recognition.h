@@ -1,33 +1,16 @@
 #include "ros/ros.h"
 
 #include <vector>
+#include <map>
 #include <string>
 #include <algorithm>
+#include <iostream>
 
 #include "darknet_ros_msgs/BoundingBoxes.h"
 
 #include "butia_vision_msgs/Recognitions.h"
 #include "butia_vision_msgs/ListClasses.h"
 
-std::vector<std::string> DEFAULT_CLASS_LIST = {"person", "bicycle", "bench", "backpack", "umbrella", "handbag", "suitcase", "sports ball",
-                                               "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", 
-                                               "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", 
-                                               "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", 
-                                               "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", 
-                                               "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
-
-//2018 Competition Classes
-/*std::vector<std::string> DEFAULT_CLASS_LIST = {"beer", "coke", "soda", "coconut drink", "bottle", "tea",
-                                               "juice", "cereal", "cookies", "chocolate",
-                                               "apple", "orange",
-                                               "soap", "tea box", "yogurt"};
-
-std::vector<std::string> DRINKS = {"beer", "coke", "soda", "coconut drink", "bottle", "tea", "juice"};
-std::vector<std::string> SNACKS = {"cereal", "cookies", "chocolate"};
-std::vector<std::string> FRUITS = {"apple", "orange"};
-std::vector<std::string> DAILY = {"soap", "tea box", "yogurt"};*/
-
-//A class that will set the parameters in rosparam server and make a interface of object_recognition and darknet_ros packages
 class YoloRecognition{
     public:
         YoloRecognition(ros::NodeHandle _nh);
@@ -68,7 +51,7 @@ class YoloRecognition{
 
         float threshold;
 
-        std::vector<std::string> possible_classes;
+        std::map<std::string, std::vector<std::string> > possible_classes;
 
         std_msgs::Header object_list_updated_header;
 
