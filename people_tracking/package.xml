@@ -18,7 +18,6 @@
   <depend>cv_bridge</depend>
   <depend>std_msgs<depend>
   <depend>sensor_msgs<depend>
-  <depend>numpy<depend>
   <exec_depend>message_runtime</exec_depend>
 
   <export></export>

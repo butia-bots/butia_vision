@@ -5,7 +5,7 @@ add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED rospy cv_bridge butia_vision_msgs std_msgs sensor_msgs)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
 
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME}
@@ -14,15 +14,10 @@ catkin_package(
 )
 
 include_directories(
- include
- ${catkin_INCLUDE_DIRS}
+# include
+  ${OpenCV_INCLUDE_DIRS}
+# ${catkin_INCLUDE_DIRS}
 )
-
-add_library(${PROJECT_NAME}
-  src/yolo_recognition.cpp
-)
-
-add_executable(${PROJECT_NAME}_node src/people_tracking_node.cpp)
 
 install(PROGRAMS
   scripts/people_tracking_node.py
