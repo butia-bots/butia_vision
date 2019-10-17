@@ -13,10 +13,12 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <depend>roscpp</depend>
+  <depend>rospy</depend>
   <depend>butia_vision_msgs</depend>
   <depend>cv_bridge</depend>
-
+  <depend>std_msgs<depend>
+  <depend>sensor_msgs<depend>
+  <depend>numpy<depend>
   <exec_depend>message_runtime</exec_depend>
 
   <export></export>
