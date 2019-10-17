@@ -4,7 +4,7 @@
   <rosparam command="load" ns="people_tracking" file="$(find people_tracking)/config/ros.yaml"/>
   <rosparam command="load" ns="people_tracking" file="$(find people_tracking)/config/people_tracking.yaml"/>
 
-  <node name="people_tracking_node" pkg="people_tracking" type="people_tracking_node" output="screen"/>
+  <node name="people_tracking_node" pkg="people_tracking" type="people_tracking_node.py" output="screen"/>
 
 
 </launch>
