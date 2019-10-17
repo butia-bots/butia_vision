@@ -65,7 +65,7 @@ def peopleDetectionCallBack(recognition):
     descriptions = recognition.descriptions
     cv_frame = BRIDGE.imgmsg_to_cv2(frame, desired_encoding = 'rgb8')
     frame_rgb = cv2.cvtColor(cv_frame,cv2.COLOR_BGR2RGB)
-    people_tracking.setFrame(recognition.image_header, recognition.header, frame_id, frame_rgb.copy())
+    people_tracking.setFrame(recognition.image_header, recognition.recognition_header, frame_id, frame_rgb.copy())
 
     img_size = frame.height * frame.width
     
@@ -77,13 +77,21 @@ def peopleDetectionCallBack(recognition):
 
     debug(frame_rgb.copy(), tracker, detections)
 
-    '''
-    if(people_tracking.tracking) {
-        if(people_tracking.inImage()) {
-            tracker_publisher.publish(people_tracking.personFound())
-        }
-    }
-    '''
+    if people_tracking.trackingPerson is not None:
+        response = Recognition()
+        response.image_header = recognition.image_header
+        response.recognition_header = recognition.recognition_header
+        response.descriptions = [Description()]
+        response.descriptions[0].probability = people_tracking.trackingPerson.track_id
+        BBbox = BoundingBox()
+        BBbox.minX = people_tracking.trackingPerson.to_tlwh()[0]
+        BBbox.minY = people_tracking.trackingPerson.to_tlwh()[1]
+        BBbox.width = people_tracking.trackingPerson.to_tlwh()[2]
+        BBbox.height = people_tracking.trackingPerson.to_tlwh()[3]
+        response.descriptions[0].bounding_box = BBbox
+        tracker_publisher.publish(response)
+
+    
 
 
 def startTracking(start):
@@ -91,7 +99,7 @@ def startTracking(start):
     return start
 
 def stopTracking(stop):
-    #people_tracking.stopTrack()
+    people_tracking.stopTrack()
     return stop
 
 if __name__ == '__main__':

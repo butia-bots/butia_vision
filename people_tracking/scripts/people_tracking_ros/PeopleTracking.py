@@ -23,6 +23,7 @@ class PeopleTracking():
         self.metric = nn_matching.NearestNeighborDistanceMetric("cosine", .5, 100)
         self.tracker = Tracker(self.metric)
         self.detections = []
+        self.trackingPerson = None
 
     def setFrame(self, image_header, header, frame_id, frame):
         self.image_header = image_header
@@ -57,4 +58,21 @@ class PeopleTracking():
         self.tracker.update(dets)
 
         return self.tracker,dets
+
+    def startTrack():
+        Bigbb = None
+        for track in self.tracker.tracks:
+            if not track.is_confirmed() or track.time_since_update > 1:
+                if Bigbb is not None:
+                    self.trackingPerson = track
+                    Bigbb = track.to_tlwh()[2]*track.to_tlwh()[3]
+                else:
+                    if Bigbb < track.to_tlwh()[2]*track.to_tlwh()[3]:
+                        Bigbb = track.to_tlwh()[2]*track.to_tlwh()[3]
+                        self.trackingPerson = track
+    
+    def stopTrack():
+        self.trackingPerson = None
+
+
 
