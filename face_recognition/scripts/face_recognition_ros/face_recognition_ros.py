@@ -482,7 +482,7 @@ class FaceRecognitionROS():
             bounding_box = self.dlibRectangle2RosBoundingBox(face_rect)
             features = self.numpyArray2RosVector(features_array)
 
-            face_description.label_class = label_class
+            face_description.label_class = 'people/' + label_class
             face_description.probability = confidence
             face_description.bounding_box = bounding_box
             faces_description.append(face_description)

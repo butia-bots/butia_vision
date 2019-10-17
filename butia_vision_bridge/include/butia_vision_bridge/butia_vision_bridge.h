@@ -22,7 +22,9 @@ class ButiaVisionBridge {
         ButiaVisionBridge(ros::NodeHandle &nh);
 
         void kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb, const sensor_msgs::Image::ConstPtr &image_depth, 
-                            const sensor_msgs::CameraInfo::ConstPtr &camera_info, const sensor_msgs::PointCloud2::ConstPtr &points);
+                            const sensor_msgs::CameraInfo::ConstPtr &camera_info);
+
+        void pointsCallback(const sensor_msgs::PointCloud2::ConstPtr &points);
         
         void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info, sensor_msgs::CameraInfo &info);
         void readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image);
@@ -53,8 +55,8 @@ class ButiaVisionBridge {
         std::string camera_info_pub_topic;
         std::string points_pub_topic;
 
-        typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::PointCloud2> ExactSyncPolicy;
-        typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::PointCloud2> ApproximateSyncPolicy;
+        typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ExactSyncPolicy;
+        typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ApproximateSyncPolicy;
 
         image_transport::ImageTransport it;
         image_transport::SubscriberFilter *image_rgb_sub;

@@ -2,11 +2,7 @@ verbose: False
 debug: False
 
 detector:
-<<<<<<< HEAD
-  model_id: dlib_hog
-=======
-  model_id: opencv_dnn
->>>>>>> origin/face-recognition-edition
+  model_id: opencv_cascade
 
   opencv_cascade:
     model: haarcascade_frontalface_alt.xml
