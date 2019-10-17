@@ -16,8 +16,8 @@
   <depend>rospy</depend>
   <depend>butia_vision_msgs</depend>
   <depend>cv_bridge</depend>
-  <depend>std_msgs<depend>
-  <depend>sensor_msgs<depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
   <exec_depend>message_runtime</exec_depend>
 
   <export></export>

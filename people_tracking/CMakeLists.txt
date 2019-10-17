@@ -8,7 +8,6 @@ find_package(catkin REQUIRED rospy cv_bridge butia_vision_msgs std_msgs sensor_m
 find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
 
 catkin_package(
-  INCLUDE_DIRS include/${PROJECT_NAME}
   LIBRARIES people_tracking
   CATKIN_DEPENDS rospy cv_bridge butia_vision_msgs std_msgs sensor_msgs
 )
