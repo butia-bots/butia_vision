@@ -36,7 +36,6 @@ class Image2Kinect{
         void recognitions2Recognitions3d(butia_vision_msgs::Recognitions &recognitions, butia_vision_msgs::Recognitions3D &recognitions3d);
 
         void publishTF(butia_vision_msgs::Recognitions3D &recognitions3d);
-        void publishPose(butia_vision_msgs::Recognitions3D &recognitions3d); //test
 
         void objectRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
         void faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
@@ -75,6 +74,9 @@ class Image2Kinect{
 
         cv::Mat table_x;
         cv::Mat table_y;
+
+        float segmentation_threshold;
+        int max_depth;
 
         int width;
         int height;

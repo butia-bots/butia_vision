@@ -70,7 +70,7 @@ void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::
     cv_image = cv_bridge::toCvShare(msg_image, msg_image->encoding);
     cv_image->image.copyTo(image);
 }
-
+int ab = 0;
 bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, int x_offset, int y_offset)
 {
     geometry_msgs::Point &mean_position = pose.pose.position;
@@ -79,6 +79,17 @@ bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &ima
     mean_position.x = 0.0f;
     mean_position.y = 0.0f;
     mean_position.z = 0.0f;
+
+    //cv::imwrite("/home/igormaurell/seg/" + std::to_string(ab++) + ".jpg", image_depth);
+    //cv::imshow("a", image_depth);
+    //cv::waitKey(0);
+
+    /*float depth_value = image_depth.at<uint16_t>(image_depth.rows/2, image_depth.cols/2);
+    depth_value /= 1000.0;
+
+    mean_position.x = depth_value * table_x.at<float>(0, image_depth.cols/2 + x_offset);
+    mean_position.y = depth_value * table_y.at<float>(0, image_depth.rows/2 + y_offset);
+    mean_position.z = depth_value;*/
 
     mean_color.r = 0.0f;
     mean_color.g = 0.0f;
@@ -91,7 +102,7 @@ bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &ima
         cv::Vec3b *it_color = image_color.ptr<cv::Vec3b>(r);
 
         for(int c = 0 ; c < image_depth.cols ; c++, it_depth++, it_color++) {
-            if(it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0){
+            if((it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0) && *it_depth <= max_depth){
                 geometry_msgs::Point point;
                 
                 if(*it_depth == 0) continue;
@@ -116,8 +127,10 @@ bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &ima
         }
     }
 
-    if(points.size() <= 0) {
-        std::cout<< "ERROR"<< std::endl;
+    float segmented_percent = points.size()/(float)(image_depth.rows * image_depth.cols);
+
+    if(segmented_percent <= segmentation_threshold) {
+        std::cout<< "BAD SEGMENTATION." << std::endl;
         return false;
     } 
 
@@ -128,8 +141,6 @@ bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &ima
     mean_color.r /= points.size();
     mean_color.g /= points.size();
     mean_color.b /= points.size();
-
-    return true;
 
     std::vector<geometry_msgs::Point>::iterator it;
 
@@ -151,6 +162,8 @@ bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &ima
             pose.covariance[6*i + j] /= points.size();
         }
     }
+
+    return true;
 }
 
 
@@ -223,20 +236,6 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
     publishTF(recognitions3d);
 }
 
-//test
-void Image2Kinect::publishPose(butia_vision_msgs::Recognitions3D &recognitions3d)
-{
-    std::vector<butia_vision_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
-    std::vector<butia_vision_msgs::Description3D>::iterator it;
-
-    for(it = descriptions3d.begin() ; it != descriptions3d.end() ; it++) {
-        geometry_msgs::PoseWithCovarianceStamped pose;
-        pose.header = recognitions3d.image_header;
-        pose.pose = it->pose;
-        pose_publisher.publish(pose);
-    }
-}
-
 void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
 {
     std::vector<butia_vision_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
@@ -302,4 +301,8 @@ void Image2Kinect::readParameters()
     
     node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/butia_vision/is/image_request"));
     node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/butia_vision/seg/image_segmentation"));
+
+    node_handle.param("/image2kinect/segmentation_threshold", segmentation_threshold, (float)0.2);
+    node_handle.param("/image2kinect/max_depth", max_depth, 4500);
+
 }
