@@ -5,7 +5,7 @@ import rospy
 
 from cv_bridge import CvBridge
 
-from people_tracking_ros import PeopleTracking, FeatureGenerator
+from people_tracking_ros import PeopleTracking
 
 from butia_vision_msgs.msg import Recognition, Description, BoundingBox, RGBDImage
 from std_msgs.msg import Header
@@ -25,7 +25,6 @@ matches_check_factor=None
 param_k=None
 
 people_tracking=None
-feature_generator=None
 
 tracker_publisher=None
 tracker_subscriber=None
@@ -74,15 +73,8 @@ def peopleDetectionCallBack(recognition):
     for description in descriptions:
         if(description.bounding_box.width*description.bounding_box.height < img_size*bounding_box_size_threshold or description.probability < probability_threshold):
             descriptions.remove(description)
-
-    image_request = ImageRequest()
-    image_request.model_id = segmentation_type
-    image_request.descriptions = descriptions
-    image_request.initial_rgbd_image = frame
-    segmentedImages = segmentation_request_client(frame.rgbd, descriptions)
     
-    features = feature_generator.extractFeatures(segmentedImages)
-    people_tracking.generateDetections(descriptions, features)
+    people_tracking.generateDetections(descriptions)
 
     tracker, detections = people_tracking.track()
 
@@ -147,8 +139,7 @@ if __name__ == '__main__':
     except rospy.ServiceException, f:
         print "Service call failed %s"%e 
     
-    feature_generator = FeatureGenerator(param_detector_type, min_hessian)
-    people_tracking = PeopleTracking(feature_generator)
+    people_tracking = PeopleTracking()
 
     rospy.spin()
     

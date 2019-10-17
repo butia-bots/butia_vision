@@ -10,14 +10,14 @@ from butia_vision_msgs.msg import Recognition, Description, BoundingBox
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 
-import FeatureGenerator
+import cv2
 
 import numpy as np
 
 class PeopleTracking():
     
     def __init__(self, feature_generator):
-        self.feature_generator = feature_generator
+        self.encoder = generate_detections.create_box_encoder("deep_sort/resources/mars-small128.ckpt-68577")	
         self.metric = nn_matching.NearestNeighborDistanceMetric("cosine", .5, 100)
         self.tracker = Tracker(self.metric)
         self.detections = []
@@ -28,10 +28,12 @@ class PeopleTracking():
         self.frame_id = frame_id
         self.frame = frame
 
-    def generateDetections(descriptions, features):
+    def generateDetections(descriptions):
+        frame_bgr = cv2.cvtColor(frame, cv2.RGB2BGR)
         for i in range(len(descriptions)):
-            bbox = (description[i].minX, description[i].minY, description[i].width, description[i].height)   
-            self.detections.append(Detection(bbox, description[i].probability, features[i]))
+            bbox = (description[i].minX, description[i].minY, description[i].width, description[i].height)
+            features = self.encoder(frame_bgr, [bbox])   
+            self.detections.append(Detection(bbox, description[i].probability, features[0]))
         
     def track():
         
