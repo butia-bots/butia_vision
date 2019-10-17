@@ -1,11 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>people_tracking</name>
-  <version>1.0.0</version>
+  <version>2.0.0</version>
   <description>The people_tracking package is used for the "Follow Me" task.</description>
 
   <maintainer email="igormaurell@furg.br">Igor Maurell</maintainer>
   <maintainer email="migueldossantos@furg.br">Miguel dos Santos</maintainer>
+  <maintainer email="lucas.soares.avila@gmail.com.br">Lucas Soares Avila</maintainer>
+  <maintainer email="gus_nascimento98@hotmail.com">Gustavo Henrique do Nascimento</maintainer>
 
   <license>MIT</license>
 
