@@ -20,8 +20,8 @@ class PeopleTracking():
     
     def __init__(self, model_path):
         self.encoder = generate_detections.create_box_encoder(os.path.abspath(model_path))
-        self.metric = nn_matching.NearestNeighborDistanceMetric("cosine", .5, 100)
-        self.tracker = Tracker(self.metric)
+        self.metric = nn_matching.NearestNeighborDistanceMetric("cosine", .5)
+        self.tracker = Tracker(self.metric,0.5,60,10)
         self.detections = []
         self.trackingPerson = None
 
@@ -59,11 +59,11 @@ class PeopleTracking():
 
         return self.tracker,dets
 
-    def startTrack():
+    def startTrack(self):
         Bigbb = None
         for track in self.tracker.tracks:
-            if not track.is_confirmed() or track.time_since_update > 1:
-                if Bigbb is not None:
+            if track.is_confirmed() and track.time_since_update <= 1:
+                if Bigbb is None:
                     self.trackingPerson = track
                     Bigbb = track.to_tlwh()[2]*track.to_tlwh()[3]
                 else:
@@ -71,8 +71,18 @@ class PeopleTracking():
                         Bigbb = track.to_tlwh()[2]*track.to_tlwh()[3]
                         self.trackingPerson = track
     
-    def stopTrack():
+    def stopTrack(self):
         self.trackingPerson = None
+
+    def findPerson(self):
+        if not self.trackingPerson.is_confirmed():
+            for track in self.tracker.tracks:
+                if track.is_confirmed() and track.time_since_update <= 1:
+                    distance = self.metric._metric(self.trackingPerson.features, track.features)
+                    if distance < 0.7:
+                        self.trackingPerson = track
+                        break
+                    
 
 
 

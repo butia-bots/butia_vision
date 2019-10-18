@@ -13,7 +13,7 @@ from butia_vision_msgs.msg import Recognitions, Description, BoundingBox, RGBDIm
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 
-from butia_vision_msgs.srv import ImageRequest, SegmentationRequest, StartTracking, StopTracking
+from butia_vision_msgs.srv import ImageRequest, SegmentationRequest, StartTracking, StartTrackingResponse, StopTracking, StopTrackingResponse
 
 BRIDGE = CvBridge()
 
@@ -37,7 +37,7 @@ descriptions=None
 
 PACK_DIR = rospkg.RosPack().get_path('people_tracking')
 
-def debug(cv_frame, tracker, dets):
+def debug(cv_frame, tracker, dets, person=None):
     for track in tracker.tracks:
         if not track.is_confirmed() or track.time_since_update > 1:
             continue
@@ -45,9 +45,18 @@ def debug(cv_frame, tracker, dets):
         bbox = track.to_tlbr()
         id_num= str(track.track_id)
         features = track.features
-
-        cv2.rectangle(cv_frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 2)
-        cv2.putText(cv_frame, str(id_num),(int(bbox[0]), int(bbox[1])),0, 5e-3 * 200, (0,255,0),2)
+        if person is not None:
+            print(str(person.track_id) + "---" + str(track.track_id))
+            print(people_tracking.metric._metric(person.features, track.features))
+            if person == track:
+                cv2.rectangle(cv_frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,0,255), 2)
+                cv2.putText(cv_frame, str(id_num),(int(bbox[0]), int(bbox[1])),0, 5e-3 * 200, (0,255,0),2)
+            else:
+                cv2.rectangle(cv_frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 2)
+                cv2.putText(cv_frame, str(id_num),(int(bbox[0]), int(bbox[1])),0, 5e-3 * 200, (0,255,0),2)
+        else:
+            cv2.rectangle(cv_frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 2)
+            cv2.putText(cv_frame, str(id_num),(int(bbox[0]), int(bbox[1])),0, 5e-3 * 200, (0,255,0),2)
 
         for det in dets:
             bbox = det.to_tlbr()
@@ -65,7 +74,7 @@ def peopleDetectionCallBack(recognition):
     descriptions = recognition.descriptions
     cv_frame = BRIDGE.imgmsg_to_cv2(frame, desired_encoding = 'rgb8')
     frame_rgb = cv2.cvtColor(cv_frame,cv2.COLOR_BGR2RGB)
-    people_tracking.setFrame(recognition.image_header, recognition.recognition_header, frame_id, frame_rgb.copy())
+    people_tracking.setFrame(recognition.image_header, recognition.header, frame_id, frame_rgb.copy())
 
     img_size = frame.height * frame.width
     
@@ -75,31 +84,41 @@ def peopleDetectionCallBack(recognition):
 
     tracker, detections = people_tracking.track(descriptions)
 
-    debug(frame_rgb.copy(), tracker, detections)
-
     if people_tracking.trackingPerson is not None:
-        response = Recognition()
-        response.image_header = recognition.image_header
-        response.recognition_header = recognition.recognition_header
-        response.descriptions = [Description()]
-        response.descriptions[0].probability = people_tracking.trackingPerson.track_id
-        BBbox = BoundingBox()
-        BBbox.minX = people_tracking.trackingPerson.to_tlwh()[0]
-        BBbox.minY = people_tracking.trackingPerson.to_tlwh()[1]
-        BBbox.width = people_tracking.trackingPerson.to_tlwh()[2]
-        BBbox.height = people_tracking.trackingPerson.to_tlwh()[3]
-        response.descriptions[0].bounding_box = BBbox
-        tracker_publisher.publish(response)
-
-    
+        if people_tracking.trackingPerson.is_confirmed() and people_tracking.trackingPerson.time_since_update <= 1:
+            response = Recognitions()
+            response.image_header = recognition.image_header
+            response.header = recognition.header
+            response.descriptions = [Description()]
+            response.descriptions[0].label_class = str(people_tracking.trackingPerson.track_id)
+            BBbox = BoundingBox()
+            BBbox.minX = people_tracking.trackingPerson.to_tlwh()[0]
+            BBbox.minY = people_tracking.trackingPerson.to_tlwh()[1]
+            BBbox.width = people_tracking.trackingPerson.to_tlwh()[2]
+            BBbox.height = people_tracking.trackingPerson.to_tlwh()[3]
+            response.descriptions[0].bounding_box = BBbox
+            tracker_publisher.publish(response)
+        else:
+            people_tracking.findPerson()
+    #print(people_tracking.trackingPerson)
+    debug(frame_rgb.copy(), tracker, detections, people_tracking.trackingPerson)
+   
 
 
 def startTracking(start):
-    people_tracking.startTrack()
+    if start.start is True:
+        print("Start tracking")
+        people_tracking.startTrack()
+
+    start = StartTrackingResponse()
+    start.started = True
     return start
 
-def stopTracking(stop):
-    people_tracking.stopTrack()
+def stopTracking(stop_service):
+    if stop is True:
+        print("Stop tracking")
+        people_tracking.stopTrack()
+
     return stop
 
 if __name__ == '__main__':
