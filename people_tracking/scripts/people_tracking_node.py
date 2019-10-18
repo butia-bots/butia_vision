@@ -25,6 +25,7 @@ people_tracking=None
 
 tracker_publisher=None
 tracker_subscriber=None
+view_publisher=None
 
 start_service=None
 stop_service=None
@@ -62,8 +63,7 @@ def debug(cv_frame, tracker, dets, person=None):
             bbox = det.to_tlbr()
             cv2.rectangle(cv_frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,0), 2)
 
-    cv2.imshow('cv_frame',cv_frame)
-    cv2.waitKey(1)
+    view_publisher.publish(BRIDGE.cv2_to_imgmsg(cv_frame, encoding = 'bgr8'))
     
 
 #Tracking people in real time
@@ -90,7 +90,7 @@ def peopleDetectionCallBack(recognition):
             response.image_header = recognition.image_header
             response.header = recognition.header
             response.descriptions = [Description()]
-            response.descriptions[0].label_class = str(people_tracking.trackingPerson.track_id)
+            response.descriptions[0].label_class = 'tracked_person'
             BBbox = BoundingBox()
             BBbox.minX = people_tracking.trackingPerson.to_tlwh()[0]
             BBbox.minY = people_tracking.trackingPerson.to_tlwh()[1]
@@ -136,6 +136,7 @@ if __name__ == '__main__':
     param_people_tracking_topic = rospy.get_param("/topics/people_tracking/people_tracking", "/butia_vision/pt/people_tracking")
 
     tracker_publisher = rospy.Publisher(param_people_tracking_topic, Recognitions, queue_size = 10)
+    view_publisher = rospy.Publisher('/butia_vision/pt/people_tracking_view', Image, queue_size = 1)
     tracker_subscriber = rospy.Subscriber(param_people_detection_topic, Recognitions, peopleDetectionCallBack, queue_size = 10)
 
     start_service = rospy.Service(param_start_service, StartTracking, startTracking)
