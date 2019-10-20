@@ -14,6 +14,9 @@ def y(line):
 def x(line):
     return line[0]
 
+def level(line):
+    return line[2]
+
 def imageProcessing(shelf):
     gray = cv.cvtColor(shelf, cv.COLOR_RGB2GRAY)
     bw = cv.adaptiveThreshold(~gray,255,cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 5, -2) 
@@ -109,7 +112,7 @@ def clusteringH(lines):
     cont = 0
     for i in range((len(lines) - 1)):
         #print("xo" + str(lines[i][0]) + "..." + "yo" + str(lines[i][1]) + "..." + "xi" + str(lines[i][2]) + "..." + "yf" + str(lines[i][3]))
-        if ((lines[i+1][1] - lines[i][1])>-30) and ((lines[i+1][1] - lines[i][1]) < 30):
+        if ((lines[i+1][1] - lines[i][1])>-17) and ((lines[i+1][1] - lines[i][1]) < 17):
             aux[0] += lines[i][0]
             aux[1] += lines[i][1]
             aux[2] += lines[i][2]
@@ -163,11 +166,9 @@ def intersection(linesV,linesH):
             if j == 0:
                 linesV[i][1] = linesH[j][1]
 
-            if i < (len(linesV)-1):
-                linesH[j][2] = linesV[i+1][2]
+            if i == 0:
                 linesH[j][0] = linesV[i][0]
             elif i == (len(linesV)-1):
-                linesH[j][0] = linesV[i-1][0]
                 linesH[j][2] = linesV[i][2]
             
             if j == (len(linesH) - 1):
@@ -226,10 +227,12 @@ def findingLevels(shelf):
     for line in interH:
         aux = [line[0],line[2],line[3]]
         lines.append(aux)
+    
+    lines = sorted(lines,key=level,reverse=1)
 
     return nLevels, lines, final  
-
-#nivel, linha, imagem = findingLevels(cv.imread("estante1.jpg",cv.IMREAD_COLOR))
+    
+nivel, linha, imagem = findingLevels(cv.imread("estante6.jpg",cv.IMREAD_COLOR))
 
 #print(nivel)
 #print(linha)
