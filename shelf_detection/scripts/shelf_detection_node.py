@@ -34,7 +34,7 @@ def shelfDetectionCallBack(recognition):
 
     debug(resul)
 
-    object_type, objects_labels = sd.findingObjects(recognition.descriptions)
+    object_type, objects_labels = sd.findingObjects(lines,recognition.descriptions)
 
     response = Shelf()
     response.image_header = recognition.image_header

@@ -1,6 +1,7 @@
 #import rospy
 import cv2 as cv
 import numpy as np
+from collections import Counter
 
 def length(line):
     return(line[2] - line[0])
@@ -227,7 +228,35 @@ def findingLevels(shelf):
         aux = [line[0],line[2],line[3]]
         lines.append(aux)
 
-    return nLevels, lines, final  
+    return nLevels, lines, final
+
+def getCenterBB(BoundingBox):
+    center = (BoundingBox.minX + int(BoundingBox.width/2), BoundingBox.minY + int(BoundingBox.height/2))
+    return center
+
+def findingObjects(nLevels, lines, descriptions):
+    object_type = []
+    object_labels = []
+    for i in range(len(lines) - 1):
+        object_level = []
+        for description in descriptions:
+            center_bbx = getCenterBB(description.BoundingBox)
+            if center_bbx[1] > lines[i][2] and center_bbx[1] < lines[i+1][2]:
+                object_level.append(description.label_class)
+        if len(object_level) == 0:
+            object_type.append("empty")
+            object_level.append("empty")
+            object_labels.append(object_level)
+        else:
+            types = [e.split("/")[0] for e in object_type]
+            types = Counter(types)
+            object_type.append(types.most_common(1))
+            object_labels.append(object_level)
+    
+    return object_type, object_labels
+            
+    
+
 
 #nivel, linha, imagem = findingLevels(cv.imread("estante1.jpg",cv.IMREAD_COLOR))
 
