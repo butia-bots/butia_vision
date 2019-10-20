@@ -3,7 +3,7 @@ import rospy
 import os
 import rospkg
 
-import shelf_detection as sd
+from ShelfDetection import ShelfDetection as sd
 
 from cv_bridge import CvBridge
 
@@ -19,8 +19,8 @@ shelf_publisher=None
 
 image_request_client=None
 
-def debug():
-
+def debug(image):
+    shelf_view_publisher(BRIDGE.cv2_to_imgmsg(image,encoding="bgr8"))
 
 def shelfDetectionCallBack(recognition):
     frame_id = recognition.image_header.seq
@@ -30,7 +30,11 @@ def shelfDetectionCallBack(recognition):
     cv_frame = BRIDGE.imgmsg_to_cv2(frame, desired_encoding = 'rgb8')
     frame_rgb = cv2.cvtColor(cv_frame,cv2.COLOR_BGR2RGB)
 
-    # Shelf detection part
+    number_levels, lines, resul = sd.findingLevels(frame_rgb)
+
+    debug(resul)
+
+    object_type, objects_labels = sd.findingObjects(recognition.descriptions)
 
     response = Shelf()
     response.image_header = recognition.image_header
@@ -39,6 +43,7 @@ def shelfDetectionCallBack(recognition):
     for i in range(number_levels):
         level = Level()
         level.object_type = object_type[i]
+        level.objects_labels = objects_labels[i]
         line = Line()
         line.minX = lines[i][0]
         line.maxX = lines[i][1]
@@ -56,6 +61,7 @@ if __name__ == '__main__':
     param_shelf_detection_topic = rospy.get_param("/topics/shelf_detection/shelf_detection", "/butia_vision/sd/shelf_detection")
 
     shelf_publisher = rospy.Publisher(param_shelf_detection_topic, Shelf, queue_size = 10)
+    shelf_view_publisher = rospy.Publisher("/butia_vision/sd/shelf_detection_view", Image, queue_size=1)
     shelf_subscriber = rospy.Subscriber(param_object_recognition_topic, Recognitions, shelfDetectionCallBack, queue_size = 10)
     
     rospy.wait_for_service(param_image_request_service)
