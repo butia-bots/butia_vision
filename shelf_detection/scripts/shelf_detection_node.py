@@ -3,6 +3,8 @@ import rospy
 import os
 import rospkg
 
+import shelf_detection as sd
+
 from cv_bridge import CvBridge
 
 from butia_vision_msgs.msg import Recognitions, Description, BoundingBox, RGBDImage, Shelf, Level, Line
@@ -17,6 +19,9 @@ shelf_publisher=None
 
 image_request_client=None
 
+def debug():
+
+
 def shelfDetectionCallBack(recognition):
     frame_id = recognition.image_header.seq
     req = image_request_client(frame_id)
@@ -26,6 +31,21 @@ def shelfDetectionCallBack(recognition):
     frame_rgb = cv2.cvtColor(cv_frame,cv2.COLOR_BGR2RGB)
 
     # Shelf detection part
+
+    response = Shelf()
+    response.image_header = recognition.image_header
+    response.number_levels = number_levels
+    response.levels = []
+    for i in range(number_levels):
+        level = Level()
+        level.object_type = object_type[i]
+        line = Line()
+        line.minX = lines[i][0]
+        line.maxX = lines[i][1]
+        line.Y  = lines[i][2]
+        response.levels.append(level)
+    shelf_publisher.publish(response)
+
 
 if __name__ == '__main__':
     rospy.init_node('shelf_detection_node', anonymous = True)
