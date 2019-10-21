@@ -18,10 +18,14 @@ import numpy as np
 
 class PeopleTracking():
     
-    def __init__(self, model_path):
+    def __init__(self, model_path, matching_threshold = .5, max_iou_distance = 0.7, max_age=60, n_init=5):
+        print(matching_threshold)
+        print(max_iou_distance)
+        print(max_age)
+        print(n_init)
         self.encoder = generate_detections.create_box_encoder(os.path.abspath(model_path))
-        self.metric = nn_matching.NearestNeighborDistanceMetric("cosine", .5)
-        self.tracker = Tracker(self.metric,0.5,60,10)
+        self.metric = nn_matching.NearestNeighborDistanceMetric("cosine", matching_threshold)
+        self.tracker = Tracker(self.metric,max_iou_distance,max_age,n_init)
         self.detections = []
         self.trackingPerson = None
 

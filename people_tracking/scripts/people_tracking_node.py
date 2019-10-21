@@ -18,7 +18,10 @@ from butia_vision_msgs.srv import ImageRequest, SegmentationRequest, StartTracki
 BRIDGE = CvBridge()
 
 probability_threshold=None
-segmentation_type=None
+matching_threshold=None
+max_iou_distance=None
+max_age=None
+n_init=None
 queue_size=None
 
 people_tracking=None
@@ -47,8 +50,6 @@ def debug(cv_frame, tracker, dets, person=None):
         id_num= str(track.track_id)
         features = track.features
         if person is not None:
-            print(str(person.track_id) + "---" + str(track.track_id))
-            print(people_tracking.metric._metric(person.features, track.features))
             if person == track:
                 cv2.rectangle(cv_frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,0,255), 2)
                 cv2.putText(cv_frame, str(id_num),(int(bbox[0]), int(bbox[1])),0, 5e-3 * 200, (0,255,0),2)
@@ -100,7 +101,6 @@ def peopleDetectionCallBack(recognition):
             tracker_publisher.publish(response)
         else:
             people_tracking.findPerson()
-    #print(people_tracking.trackingPerson)
     debug(frame_rgb.copy(), tracker, detections, people_tracking.trackingPerson)
    
 
@@ -125,6 +125,10 @@ if __name__ == '__main__':
     rospy.init_node('people_tacking_node', anonymous = True)
     
     probability_threshold = rospy.get_param("/people_tracking/thresholds/probability", 0.5)
+    matching_threshold = rospy.get_param("/people_tracking/thresholds/matching", 0.5)
+    max_iou_distance = rospy.get_param("people_tracking/thresholds/max_iou_distance", 0.5)
+    max_age = rospy.get_param("people_tracking/thresholds/max_age", 60)
+    n_init = rospy.get_param("people_tracking/thresholds/n_init", 5)
     
     queue_size = rospy.get_param("/people_tracking/queue/size", 20)
 
@@ -151,7 +155,7 @@ if __name__ == '__main__':
     models_dir = os.path.join(PACK_DIR, 'models')
     model_file = os.path.join(models_dir, 'mars-small128.pb')
 
-    people_tracking = PeopleTracking(model_file)
+    people_tracking = PeopleTracking(model_file, matching_threshold, max_iou_distance, max_age, n_init)
 
     rospy.spin()
     
