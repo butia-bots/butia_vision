@@ -1,6 +1,6 @@
 people_tracking:
   thresholds:
     probability: 0.7
-    boundingBox: 0.1
+    boundingBox: 0.05
   queue:
     size: 5

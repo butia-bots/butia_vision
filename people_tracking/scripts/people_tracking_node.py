@@ -80,7 +80,7 @@ def peopleDetectionCallBack(recognition):
     img_size = frame.height * frame.width
     
     for description in descriptions:
-        area = description.BoundingBox.width*description.BoundingBox.height
+        area = description.bounding_box.width*description.bounding_box.height
         if((description.probability < probability_threshold) or (area < img_size*boundingBox_threshold)):
             descriptions.remove(description)
 
