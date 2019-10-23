@@ -74,6 +74,7 @@ int ab = 0;
 bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, int x_offset, int y_offset)
 {
     geometry_msgs::Point &mean_position = pose.pose.position;
+    geometry_msgs::Quaternion &orientation = pose.pose.orientation;
     std_msgs::ColorRGBA &mean_color = color;
 
     mean_position.x = 0.0f;
@@ -137,6 +138,11 @@ bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &ima
     mean_position.x /= points.size();
     mean_position.y /= points.size();
     mean_position.z /= points.size();
+
+    orientation.x = 0;
+    orientation.y = 0;
+    orientation.z = 0;
+    orientation.w = 1;
 
     mean_color.r /= points.size();
     mean_color.g /= points.size();
@@ -233,7 +239,8 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
             descriptions3d.push_back(description3d);
     }
 
-    publishTF(recognitions3d);
+    if(publish_tf)
+        publishTF(recognitions3d);
 }
 
 void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
@@ -304,5 +311,6 @@ void Image2Kinect::readParameters()
 
     node_handle.param("/image2kinect/segmentation_threshold", segmentation_threshold, (float)0.2);
     node_handle.param("/image2kinect/max_depth", max_depth, 4500);
+    node_handle.param("/image2kinect/publish_tf", publish_tf, true);
 
 }

@@ -78,6 +78,8 @@ class Image2Kinect{
         float segmentation_threshold;
         int max_depth;
 
+        bool publish_tf;
+
         int width;
         int height;
 
