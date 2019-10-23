@@ -18,6 +18,7 @@ from butia_vision_msgs.srv import ImageRequest, SegmentationRequest, StartTracki
 BRIDGE = CvBridge()
 
 probability_threshold=None
+boundingBox_threshold=None
 segmentation_type=None
 queue_size=None
 
@@ -79,7 +80,8 @@ def peopleDetectionCallBack(recognition):
     img_size = frame.height * frame.width
     
     for description in descriptions:
-        if(description.probability < probability_threshold):
+        area = description.BoundingBox.width*description.BoundingBox.height
+        if((description.probability < probability_threshold) or (area < img_size*boundingBox_threshold)):
             descriptions.remove(description)
 
     tracker, detections = people_tracking.track(descriptions)
@@ -125,6 +127,7 @@ if __name__ == '__main__':
     rospy.init_node('people_tacking_node', anonymous = True)
     
     probability_threshold = rospy.get_param("/people_tracking/thresholds/probability", 0.5)
+    boundingBox_threshold = rospy.get_param("/people_tracking/thresholds/boundingBox", 0.1)
     
     queue_size = rospy.get_param("/people_tracking/queue/size", 20)
 
