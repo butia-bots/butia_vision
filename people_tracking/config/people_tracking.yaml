@@ -4,6 +4,6 @@ thresholds:
   max_iou_distance: 0.7
   max_age: 20
   n_init: 5
-  boundingBox: 0.1
+  boundingBox: 0.05
 queue:
   size: 5

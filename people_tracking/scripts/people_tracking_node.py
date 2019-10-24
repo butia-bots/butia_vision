@@ -82,7 +82,7 @@ def peopleDetectionCallBack(recognition):
     img_size = frame.height * frame.width
     
     for description in descriptions:
-        area = description.BoundingBox.width*description.BoundingBox.height
+        area = description.bounding_box.width*description.bounding_box.height
         if((description.probability < probability_threshold) or (area < img_size*boundingBox_threshold)):
             descriptions.remove(description)
 
@@ -128,14 +128,11 @@ if __name__ == '__main__':
     rospy.init_node('people_tacking_node', anonymous = True)
     
     probability_threshold = rospy.get_param("/people_tracking/thresholds/probability", 0.5)
-<<<<<<< HEAD
     matching_threshold = rospy.get_param("/people_tracking/thresholds/matching", 0.5)
     max_iou_distance = rospy.get_param("people_tracking/thresholds/max_iou_distance", 0.5)
     max_age = rospy.get_param("people_tracking/thresholds/max_age", 60)
     n_init = rospy.get_param("people_tracking/thresholds/n_init", 5)
-=======
-    boundingBox_threshold = rospy.get_param("/people_tracking/thresholds/boundingBox", 0.1)
->>>>>>> 7280a27bdd2e3288d9c679b7a78630e2e2ab3766
+    boundingBox_threshold = rospy.get_param("/people_tracking/thresholds/boundingBox", 0.05)
     
     queue_size = rospy.get_param("/people_tracking/queue/size", 20)
 
