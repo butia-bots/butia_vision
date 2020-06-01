@@ -13,6 +13,7 @@ This software is built on the Robotic Operating System ([ROS]), which needs to b
 - [Openface](https://cmusatyalab.github.io/openface/) (face recognition library)
 - [scikit-learn](http://scikit-learn.org/stable/) (machine learning library)
 - [darknet_ros](https://github.com/leggedrobotics/darknet_ros) (darknet ros package)
+- [mask_rcnn_ros](https://github.com/crislmfroes/mask_rcnn_ros)
 
 ## Packages
 The vision system has three main packages and other four helpers.
