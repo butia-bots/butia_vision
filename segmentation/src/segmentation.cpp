@@ -47,7 +47,8 @@ bool ImageSegmenter::segment(butia_vision_msgs::SegmentationRequest::Request &re
         mat_segmented_image = cv::Mat_<cv::Vec3b>(cv::Size(cropped_initial_depth_image.cols, cropped_initial_depth_image.rows), CV_8UC3);
         mask = cv::Mat_<uint8_t>(cv::Size(cropped_initial_depth_image.cols, cropped_initial_depth_image.rows), CV_8UC1);
 
-        createMask(req.model_id);
+
+        createMask(req.model_id, it->bounding_box);
 
         for (int r = 0; r < mask.rows; r++) {
             for (int c = 0; c < mask.cols; c++) {
@@ -104,7 +105,7 @@ void ImageSegmenter::getMaxHistogramValue() {
     }
 }
 
-void ImageSegmenter::createMask(std::string _model_id = "") {
+void ImageSegmenter::createMask(std::string _model_id = "", butia_vision_msgs::BoundingBox bounding_box = butia_vision_msgs::BoundingBox()) {
     if(_model_id == "") _model_id = model_id;
     if(_model_id == "histogram") {
         createMaskHistogram();
@@ -114,6 +115,9 @@ void ImageSegmenter::createMask(std::string _model_id = "") {
     }
     else if(_model_id == "median_center") {
         createMaskMedianCenter();
+    }
+    else if(_model_id == "grabcut") {
+        createMaskGrabCut(bounding_box);
     }
     else {
         ROS_ERROR("Invalid model ID.");
@@ -420,6 +424,26 @@ bool ImageSegmenter::verifyStateMedianCenter(int r, int c) {
     return false;
 }
 
+void ImageSegmenter::createMaskGrabCut(butia_vision_msgs::BoundingBox bounding_box)
+{
+    cv::Mat bgdModel = cv::Mat::zeros(1, 65, CV_64F);
+    cv::Mat fgdModel = cv::Mat::zeros(1, 65, CV_64F);
+    cv::Mat gcMask = cv::Mat::zeros(mat_initial_rgb_image.rows, mat_initial_rgb_image.cols, CV_8UC1);
+    cv::Rect2d bounding_rect(bounding_box.minX, bounding_box.minY, bounding_box.width, bounding_box.height);
+    cv::grabCut(mat_initial_rgb_image, gcMask, bounding_rect, bgdModel, fgdModel, 1, cv::GC_INIT_WITH_RECT);
+    mask = gcMask(bounding_rect);
+
+    for (int r = 0; r < mask.rows; r++)
+    {
+        for (int c = 0; c < mask.cols; c++)
+        {
+            if (mask(r, c) == 2)
+                mask(r, c) = 0;
+        }
+    }
+
+    filterImage(mask);
+}
 
 void ImageSegmenter::readParameters() {
     node_handle.param("/segmentation/servers/image_segmentation/service", param_segmentation_service, std::string("/butia_vision/seg/image_segmentation"));

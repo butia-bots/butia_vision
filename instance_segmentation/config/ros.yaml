@@ -1,0 +1,28 @@
+subscribers:
+
+  instance_results:
+    topic: /mask_rcnn_ros/results
+    queue_size: 1
+
+publishers:
+
+  object_recognition:
+    topic: /butia_vision/or/object_recognition
+    queue_size: 1
+
+  object_recognition3d:
+    topic: /butia_vision/or/object_recognition3d
+    queue_size: 1
+
+  people_detection:
+    topic: /butia_vision/or/people_detection
+    queue_size: 1
+
+  object_list_updated:
+    topic: /butia_vision/or/object_list_updated
+    queue_size: 1
+
+servers:
+
+  list_objects:
+    service: /butia_vision/or/list_objects

@@ -8,3 +8,4 @@
 *.caffemodel
 *.pbtxt
 *.prototxt
+__pycache__

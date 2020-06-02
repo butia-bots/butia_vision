@@ -70,14 +70,16 @@ class ImageSegmenter {
         void calculateHistogram();
         void getMaxHistogramValue();
         
-        void createMask(std::string _model_id);
+        void createMask(std::string _model_id, butia_vision_msgs::BoundingBox bounding_box = butia_vision_msgs::BoundingBox());
         void createMaskHistogram();
         void createMaskMedianFull();
         void createMaskMedianCenter();
+        void createMaskGrabCut(butia_vision_msgs::BoundingBox bounding_box);
 
         bool verifyStateHistogram(int r, int c);
         bool verifyStateMedianFull(int r, int c);
         bool verifyStateMedianCenter(int r, int c);
+        bool verifyStateGrabCut(int r, int c);
 
         void readParameters();
 };
