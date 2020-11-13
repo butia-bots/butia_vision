@@ -45,10 +45,22 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
     mean_color.g = 0.0f;
     mean_color.b = 0.0f;
 
+    int min_x, min_y, max_x, max_y;
+    min_x = (bb.minX + bb.width/2 - kernel_size/2) < bb.minX ? bb.minX : (bb.minX + bb.width/2 - kernel_size/2);
+    min_y = (bb.minY + bb.height/2 - kernel_size/2) < bb.minY ? bb.minY : (bb.minY + bb.height/2 - kernel_size/2);
+    max_x = (bb.minX + bb.width/2 + kernel_size/2) > (bb.minX + bb.width) ? (bb.minX + bb.width) : (bb.minX + bb.width/2 + kernel_size/2);
+    max_y = (bb.minY + bb.height/2 + kernel_size/2) > (bb.minY + bb.height) ? (bb.minY + bb.height) : (bb.minY + bb.height/2 + kernel_size/2);
+
+    min_x = min_x < 0 ? 0 : min_x;
+    min_y = min_y < 0 ? 0 : min_y;
+
+    max_x = max_x >= points.width ? points.width - 1 : max_x;
+    max_y = max_y >= points.height ? points.height - 1 : max_y;
+
     std::vector<pcl::PointXYZRGB> valid_points;
-    for(int r = 0 ; r < bb.height ; r++) {
-        for(int c = 0 ; c < bb.width ; c++) {
-            pcl::PointXYZRGB point = points.at(c + bb.minX, r + bb.minY);
+    for(int r = min_y ; r <= max_y ; r++) {
+        for(int c = min_x ; c <= max_x ; c++) {
+            pcl::PointXYZRGB point = points.at(c, r);
             float depth = sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
             if(depth <= max_depth){     
                 if(depth != 0) {
@@ -266,5 +278,6 @@ void Image2Kinect::readParameters()
     //node_handle.param("/image2kinect/segmentation_threshold", segmentation_threshold, (float)0.2);
     node_handle.param("/image2kinect/max_depth", max_depth, 2000);
     node_handle.param("/image2kinect/publish_tf", publish_tf, true);
+    node_handle.param("/image2kinect/kernel_size", kernel_size, 5);
 
 }

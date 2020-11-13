@@ -86,6 +86,8 @@ class Image2Kinect{
         int width;
         int height;
 
+        int kernel_size;
+
         //std::string segmentation_model_id;
 
         void readParameters();
