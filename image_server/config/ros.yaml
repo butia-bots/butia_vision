@@ -1,15 +1,18 @@
 subscribers:
   
-  queue_size: 5
+  queue_size: 50
 
   image_rgb:
-    topic: /butia_vision/bvb/image_rgb_raw
+    topic: /kinect2/rgb/image_raw
 
   image_depth:
-    topic: /butia_vision/bvb/image_depth_raw
+    topic: /kinect2/depth/image_raw
+  
+  points:
+    topic: /kinect2/depth/points
 
   camera_info:
-    topic: /butia_vision/bvb/camera_info
+    topic: /kinect2/rgb/camera_info
 
 server:
 

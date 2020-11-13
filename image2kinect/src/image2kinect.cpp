@@ -70,8 +70,16 @@ void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::
     cv_image = cv_bridge::toCvShare(msg_image, msg_image->encoding);
     cv_image->image.copyTo(image);
 }
+
+void Image2Kinect::readPoints(const sensor_msgs::PointCloud2::ConstPtr& msg_points, PointCloud &points)
+{
+    pcl::PCLPointCloud2 cloud; 
+    pcl_conversions::toPCL(*msg_points, cloud);
+    pcl::fromPCLPointCloud2(cloud, points);
+}
+
 int ab = 0;
-bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, int x_offset, int y_offset)
+bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &image_depth, PointCloud &points, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, int x_offset, int y_offset)
 {
     geometry_msgs::Point &mean_position = pose.pose.position;
     geometry_msgs::Quaternion &orientation = pose.pose.orientation;
@@ -80,6 +88,10 @@ bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &ima
     mean_position.x = 0.0f;
     mean_position.y = 0.0f;
     mean_position.z = 0.0f;
+
+    // mean_position.x = points.at(image_depth.cols/2 + x_offset, image_depth.rows/2 + y_offset).x;
+    // mean_position.y = points.at(image_depth.cols/2 + x_offset, image_depth.rows/2 + y_offset).y;
+    // mean_position.z = points.at(image_depth.cols/2 + x_offset, image_depth.rows/2 + y_offset).z;
 
     //cv::imwrite("/home/igormaurell/seg/" + std::to_string(ab++) + ".jpg", image_depth);
     //cv::imshow("a", image_depth);
@@ -96,78 +108,67 @@ bool Image2Kinect::rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &ima
     mean_color.g = 0.0f;
     mean_color.b = 0.0f;
 
-    std::vector<geometry_msgs::Point> points;
+    std::vector<pcl::PointXYZRGB> valid_points;
     for(int r = 0 ; r < image_depth.rows ; r++) {
+        for(int c = 0 ; c < image_depth.cols ; c++) {
+            pcl::PointXYZRGB point = points.at(c + x_offset, r + y_offset);
+            float depth = sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
+            if(depth <= max_depth){     
+                if(depth != 0) {
+                    mean_position.x += point.x;
+                    mean_position.y += point.y;
+                    mean_position.z += point.z;
 
-        uint16_t *it_depth = image_depth.ptr<uint16_t>(r);
-        cv::Vec3b *it_color = image_color.ptr<cv::Vec3b>(r);
-
-        for(int c = 0 ; c < image_depth.cols ; c++, it_depth++, it_color++) {
-            if((it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0) && *it_depth <= max_depth){
-                geometry_msgs::Point point;
-                
-                if(*it_depth == 0) continue;
-
-                float depth_value = *it_depth/1000.0;
-
-                point.x = depth_value * table_x.at<float>(0, c + x_offset);
-                point.y = depth_value * table_y.at<float>(0, r + y_offset);
-                point.z = depth_value;
-
-                mean_position.x += point.x;
-                mean_position.y += point.y;
-                mean_position.z += point.z;
-
-                mean_color.r += it_color->val[0];
-                mean_color.g += it_color->val[1];
-                mean_color.b += it_color->val[2];
-
-                points.push_back(point);
-
+                    mean_color.r += point.r;
+                    mean_color.g += point.g;
+                    mean_color.b += point.b;
+                    valid_points.push_back(point);
+                }
             }
+
         }
     }
 
-    float segmented_percent = points.size()/(float)(image_depth.rows * image_depth.cols);
+    // float segmented_percent = points.size()/(float)(image_depth.rows * image_depth.cols);
 
-    if(segmented_percent <= segmentation_threshold) {
-        std::cout<< "BAD SEGMENTATION." << std::endl;
-        return false;
-    } 
+    // if(segmented_percent <= segmentation_threshold) {
+    //     std::cout<< "BAD SEGMENTATION." << std::endl;
+    //     //return false;
+    // } 
 
-    mean_position.x /= points.size();
-    mean_position.y /= points.size();
-    mean_position.z /= points.size();
+    mean_position.x /= valid_points.size();
+    mean_position.y /= valid_points.size();
+    mean_position.z /= valid_points.size();
 
     orientation.x = 0;
     orientation.y = 0;
     orientation.z = 0;
     orientation.w = 1;
 
-    mean_color.r /= points.size();
-    mean_color.g /= points.size();
-    mean_color.b /= points.size();
+    mean_color.r /= valid_points.size();
+    mean_color.g /= valid_points.size();
+    mean_color.b /= valid_points.size();
 
-    std::vector<geometry_msgs::Point>::iterator it;
+    // std::vector<geometry_msgs::Point>::iterator it;
 
-    for(it = points.begin() ; it != points.end() ; it++) {
-        pose.covariance[6*0 + 0] += (it->x - mean_position.x)*(it->x - mean_position.x); //xx
-        pose.covariance[6*0 + 1] += (it->x - mean_position.x)*(it->y - mean_position.y); //xy
-        pose.covariance[6*0 + 2] += (it->x - mean_position.x)*(it->z - mean_position.z); //xz
-        pose.covariance[6*1 + 1] += (it->y - mean_position.y)*(it->y - mean_position.y); //yy
-        pose.covariance[6*1 + 2] += (it->y - mean_position.y)*(it->z - mean_position.z); //yz
-        pose.covariance[6*2 + 2] += (it->z - mean_position.z)*(it->z - mean_position.z); //zz
-    }
+    // for(it = points.begin() ; it != points.end() ; it++) {
+    //     pose.covariance[6*0 + 0] += (it->x - mean_position.x)*(it->x - mean_position.x); //xx
+    //     pose.covariance[6*0 + 1] += (it->x - mean_position.x)*(it->y - mean_position.y); //xy
+    //     pose.covariance[6*0 + 2] += (it->x - mean_position.x)*(it->z - mean_position.z); //xz
+    //     pose.covariance[6*1 + 1] += (it->y - mean_position.y)*(it->y - mean_position.y); //yy
+    //     pose.covariance[6*1 + 2] += (it->y - mean_position.y)*(it->z - mean_position.z); //yz
+    //     pose.covariance[6*2 + 2] += (it->z - mean_position.z)*(it->z - mean_position.z); //zz
+    // }
 
-    pose.covariance[6*1 + 0] = pose.covariance[6*0 + 1]; //yx
-    pose.covariance[6*2 + 0] = pose.covariance[6*0 + 2]; //zx
-    pose.covariance[6*2 + 1] = pose.covariance[6*1 + 2]; //zy
+    // pose.covariance[6*1 + 0] = pose.covariance[6*0 + 1]; //yx
+    // pose.covariance[6*2 + 0] = pose.covariance[6*0 + 2]; //zx
+    // pose.covariance[6*2 + 1] = pose.covariance[6*1 + 2]; //zy
 
-    for(int i = 0 ; i < 3 ; i++) {
-        for(int j = 0 ; j < 3 ; j++) {
-            pose.covariance[6*i + j] /= points.size();
-        }
-    }
+    // for(int i = 0 ; i < 3 ; i++) {
+    //     for(int j = 0 ; j < 3 ; j++) {
+    //         pose.covariance[6*i + j] /= points.size();
+    //     }
+    // }
 
     return true;
 }
@@ -190,13 +191,15 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
     }
 
     cv::Mat segmented_rgb_image, depth, segmented_depth_image;
+    PointCloud points;
 
     butia_vision_msgs::RGBDImage &rgbd_image = image_srv.response.rgbd_image;
-
     sensor_msgs::Image::ConstPtr depth_const_ptr( new sensor_msgs::Image(rgbd_image.depth));
+    sensor_msgs::PointCloud2::ConstPtr points_const_ptr( new sensor_msgs::PointCloud2(image_srv.response.points));
     sensor_msgs::CameraInfo::ConstPtr camera_info_const_ptr( new sensor_msgs::CameraInfo(image_srv.response.camera_info));
 
     readImage(depth_const_ptr, depth);
+    readPoints(points_const_ptr, points);
     readCameraInfo(camera_info_const_ptr);
 
     std::vector<butia_vision_msgs::Description> &descriptions = recognitions.descriptions;
@@ -235,7 +238,7 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
         readImage(rgb_const_ptr, segmented_rgb_image);
 
-        if(rgbd2RGBPoseWithCovariance(segmented_rgb_image, segmented_depth_image, pose, color, (*it).bounding_box.minX, (*it).bounding_box.minY))
+        if(rgbd2RGBPoseWithCovariance(segmented_rgb_image, segmented_depth_image, points, pose, color, (*it).bounding_box.minX, (*it).bounding_box.minY))
             descriptions3d.push_back(description3d);
     }
 
@@ -310,7 +313,7 @@ void Image2Kinect::readParameters()
     node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/butia_vision/seg/image_segmentation"));
 
     node_handle.param("/image2kinect/segmentation_threshold", segmentation_threshold, (float)0.2);
-    node_handle.param("/image2kinect/max_depth", max_depth, 4500);
+    node_handle.param("/image2kinect/max_depth", max_depth, 2000);
     node_handle.param("/image2kinect/publish_tf", publish_tf, true);
 
 }

@@ -5,6 +5,12 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <math.h> 
+
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/conversions.h>
 
 #include "butia_vision_msgs/Recognitions.h"
 #include "butia_vision_msgs/Recognitions3D.h"
@@ -24,15 +30,18 @@
 
 #include <cv_bridge/cv_bridge.h>
 
+typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
+
 class Image2Kinect{
     public:
         Image2Kinect(ros::NodeHandle _nh);
 
-        bool rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, int x_offset, int y_offset);
+        bool rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &image_depth, PointCloud &points, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, int x_offset, int y_offset);
 
         void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info);
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
-        
+        void readPoints(const sensor_msgs::PointCloud2::ConstPtr& msg_points, PointCloud &points);
+
         void recognitions2Recognitions3d(butia_vision_msgs::Recognitions &recognitions, butia_vision_msgs::Recognitions3D &recognitions3d);
 
         void publishTF(butia_vision_msgs::Recognitions3D &recognitions3d);
@@ -42,6 +51,7 @@ class Image2Kinect{
         void peopleTrackingCallback(butia_vision_msgs::Recognitions recognitions);
 
     private:
+
         ros::NodeHandle node_handle;
 
         ros::Subscriber object_recognition_sub;
