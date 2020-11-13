@@ -36,9 +36,8 @@ class Image2Kinect{
     public:
         Image2Kinect(ros::NodeHandle _nh);
 
-        bool rgbd2RGBPoseWithCovariance(cv::Mat &image_color, cv::Mat &image_depth, PointCloud &points, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, int x_offset, int y_offset);
+        bool points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color);
 
-        void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info);
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
         void readPoints(const sensor_msgs::PointCloud2::ConstPtr& msg_points, PointCloud &points);
 
@@ -61,10 +60,9 @@ class Image2Kinect{
         ros::Publisher object_recognition_pub;
         ros::Publisher face_recognition_pub;
         ros::Publisher people_tracking_pub;
-        ros::Publisher pose_publisher; //test
 
         ros::ServiceClient image_request_client;
-        ros::ServiceClient segmentation_request_client;
+        //ros::ServiceClient segmentation_request_client;
 
         int sub_queue_size;
         int pub_queue_size;
@@ -78,14 +76,9 @@ class Image2Kinect{
         std::string people_tracking_pub_topic;
 
         std::string image_request_client_service;
-        std::string segmentation_request_client_service;
+        //std::string segmentation_request_client_service;
 
-        cv::Mat camera_matrix_color;
-
-        cv::Mat table_x;
-        cv::Mat table_y;
-
-        float segmentation_threshold;
+        //float segmentation_threshold;
         int max_depth;
 
         bool publish_tf;
@@ -93,8 +86,7 @@ class Image2Kinect{
         int width;
         int height;
 
-        std::string segmentation_model_id;
+        //std::string segmentation_model_id;
 
-        void createTabels();
         void readParameters();
 };
