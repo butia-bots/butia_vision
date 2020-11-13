@@ -78,12 +78,10 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
         }
     }
 
-    // float segmented_percent = points.size()/(float)(image_depth.rows * image_depth.cols);
-
-    // if(segmented_percent <= segmentation_threshold) {
-    //     std::cout<< "BAD SEGMENTATION." << std::endl;
-    //     //return false;
-    // } 
+    if(valid_points.size() > 0) {
+        std::cout<< "No valid point." << std::endl;
+        return false;
+    } 
 
     mean_position.x /= valid_points.size();
     mean_position.y /= valid_points.size();
