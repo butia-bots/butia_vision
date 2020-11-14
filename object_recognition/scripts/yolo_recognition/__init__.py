@@ -1,1 +1,1 @@
-from yolo_recognition import YoloRecognition
+from .yolo_recognition import YoloRecognition

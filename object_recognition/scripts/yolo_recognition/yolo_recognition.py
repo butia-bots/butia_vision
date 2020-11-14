@@ -58,7 +58,7 @@ class YoloRecognition():
                     if bb.Class in value:
                         index = i
                     i += 1
-                object_d.label_class = self.possible_classes.keys()[index] + '/' + bb.Class
+                object_d.label_class = list(self.possible_classes.keys())[index] + '/' + bb.Class
                 object_d.probability = bb.probability
                 object_d.bounding_box.minX = bb.xmin
                 object_d.bounding_box.minY = bb.ymin

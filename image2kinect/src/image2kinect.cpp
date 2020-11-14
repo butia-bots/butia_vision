@@ -78,7 +78,7 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
         }
     }
 
-    if(valid_points.size() > 0) {
+    if(valid_points.size() == 0) {
         std::cout<< "No valid point." << std::endl;
         return false;
     } 
@@ -148,7 +148,7 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
     butia_vision_msgs::ImageRequest image_srv;
     image_srv.request.seq = frame_id;
     if (!image_request_client.call(image_srv)) {
-        ROS_ERROR("Failed to call image_request service");
+        ROS_ERROR("FAILED TO CALL IMAGE REQUEST SERVICE");
         return;
     }
 
