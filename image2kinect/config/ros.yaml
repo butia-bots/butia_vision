@@ -28,6 +28,3 @@ clients:
 
   image_request:
     service: /butia_vision/is/image_request
-
-  segmentation_request:
-    service: /butia_vision/seg/image_segmentation

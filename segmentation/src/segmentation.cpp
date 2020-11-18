@@ -105,8 +105,8 @@ void ImageSegmenter::getMaxHistogramValue() {
     }
 }
 
-void ImageSegmenter::createMask(std::string _model_id = "", butia_vision_msgs::BoundingBox bounding_box = butia_vision_msgs::BoundingBox()) {
-    if(_model_id == "") _model_id = model_id;
+void ImageSegmenter::createMask(std::string _model_id, butia_vision_msgs::BoundingBox bounding_box) {
+    _model_id = model_id;
     if(_model_id == "histogram") {
         createMaskHistogram();
     }

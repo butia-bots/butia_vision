@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(image2kinect)
 
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 
-find_package(catkin REQUIRED roscpp butia_vision_msgs geometry_msgs cv_bridge tf)
+find_package(PCL 1.2 REQUIRED)
+find_package(catkin REQUIRED roscpp butia_vision_msgs geometry_msgs cv_bridge tf pcl_ros)
 find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
 
 catkin_package(
@@ -17,7 +18,10 @@ include_directories(
  include
  ${catkin_INCLUDE_DIRS}
  ${OpenCV_INCLUDE_DIRS}
+ ${PCL_INCLUDE_DIRS}
 )
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 add_library(${PROJECT_NAME}
   src/image2kinect.cpp
@@ -35,5 +39,6 @@ target_link_libraries(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
+  ${PCL_LIBRARIES}
   ${PROJECT_NAME}
 )

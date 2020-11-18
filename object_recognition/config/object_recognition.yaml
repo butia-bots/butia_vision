@@ -1,4 +1,4 @@
-threshold: 0.5
+threshold: 0.3
 possible_classes:
   people: [person]
   simple1: [bicycle, bench, backpack, umbrella, handbag, suitcase, sports ball, tennis racket, bottle, wine glass, cup, fork, knife, spoon, bowl, banana, apple, sandwich, orange]

@@ -1,12 +1,15 @@
 subscribers:
   
-  queue_size: 5
+  queue_size: 50
 
   image_rgb:
     topic: /butia_vision/bvb/image_rgb_raw
 
   image_depth:
     topic: /butia_vision/bvb/image_depth_raw
+  
+  points:
+    topic: /butia_vision/bvb/points
 
   camera_info:
     topic: /butia_vision/bvb/camera_info

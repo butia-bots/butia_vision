@@ -21,19 +21,17 @@ class ButiaVisionBridge {
     public:
         ButiaVisionBridge(ros::NodeHandle &nh);
 
-        void kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb, const sensor_msgs::Image::ConstPtr &image_depth, 
-                            const sensor_msgs::CameraInfo::ConstPtr &camera_info);
-
-        void pointsCallback(const sensor_msgs::PointCloud2::ConstPtr &points);
+        void kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb_ptr, const sensor_msgs::Image::ConstPtr &image_depth_ptr, 
+                            const sensor_msgs::PointCloud2::ConstPtr &points_ptr, const sensor_msgs::CameraInfo::ConstPtr &camera_info_ptr);
         
         void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr &camera_info, sensor_msgs::CameraInfo &info);
         void readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image);
         void readPointCloud(const sensor_msgs::PointCloud2::ConstPtr& msg_points, sensor_msgs::PointCloud2 &points);
 
         void imageResize(cv::Mat &image);
-        
-        void publish(sensor_msgs::Image &image_rgb_ptr, sensor_msgs::Image &image_depth_ptr,
-                     sensor_msgs::CameraInfo &camera_info_ptr, sensor_msgs::PointCloud2 &points_ptr);
+
+        void publish(sensor_msgs::Image &rgb_image_message, sensor_msgs::Image &depth_image_message,
+                     sensor_msgs::PointCloud2 &points_message, sensor_msgs::CameraInfo &camera_info_message);
 
     private:
         ros::NodeHandle node_handle;
@@ -55,8 +53,8 @@ class ButiaVisionBridge {
         std::string camera_info_pub_topic;
         std::string points_pub_topic;
 
-        typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ExactSyncPolicy;
-        typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ApproximateSyncPolicy;
+        typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::PointCloud2, sensor_msgs::CameraInfo> ExactSyncPolicy;
+        typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::PointCloud2, sensor_msgs::CameraInfo> ApproximateSyncPolicy;
 
         image_transport::ImageTransport it;
         image_transport::SubscriberFilter *image_rgb_sub;
