@@ -1,3 +1,4 @@
 [submodule "butia_vision_msgs"]
 	path = butia_vision_msgs
 	url = https://github.com/butia-bots/butia_vision_msgs
+	branch = points

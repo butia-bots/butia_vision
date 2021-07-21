@@ -12,7 +12,6 @@ catkin_package(
 )
 
 install(PROGRAMS
-  scripts/people_detection_node.py
   scripts/instance_segmentation_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
