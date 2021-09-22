@@ -16,7 +16,7 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
     //segmentation_request_client = node_handle.serviceClient<butia_vision_msgs::SegmentationRequest>(segmentation_request_client_service);
 }
 
-bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color)
+bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask)
 {
     geometry_msgs::Point &mean_position = pose.pose.position;
     geometry_msgs::Quaternion &orientation = pose.pose.orientation;
@@ -26,44 +26,43 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
     mean_position.y = 0.0f;
     mean_position.z = 0.0f;
 
-    // mean_position.x = points.at(image_depth.cols/2 + x_offset, image_depth.rows/2 + y_offset).x;
-    // mean_position.y = points.at(image_depth.cols/2 + x_offset, image_depth.rows/2 + y_offset).y;
-    // mean_position.z = points.at(image_depth.cols/2 + x_offset, image_depth.rows/2 + y_offset).z;
-
-    //cv::imwrite("/home/igormaurell/seg/" + std::to_string(ab++) + ".jpg", image_depth);
-    //cv::imshow("a", image_depth);
-    //cv::waitKey(0);
-
-    /*float depth_value = image_depth.at<uint16_t>(image_depth.rows/2, image_depth.cols/2);
-    depth_value /= 1000.0;
-
-    mean_position.x = depth_value * table_x.at<float>(0, image_depth.cols/2 + x_offset);
-    mean_position.y = depth_value * table_y.at<float>(0, image_depth.rows/2 + y_offset);
-    mean_position.z = depth_value;*/
-
     mean_color.r = 0.0f;
     mean_color.g = 0.0f;
     mean_color.b = 0.0f;
 
+    bool use_mask = false;
+    if(mask.rows*mask.cols != 0) use_mask = true;
+
     int min_x, min_y, max_x, max_y;
-    min_x = (bb.minX + bb.width/2 - kernel_size/2) < bb.minX ? bb.minX : (bb.minX + bb.width/2 - kernel_size/2);
-    min_y = (bb.minY + bb.height/2 - kernel_size/2) < bb.minY ? bb.minY : (bb.minY + bb.height/2 - kernel_size/2);
-    max_x = (bb.minX + bb.width/2 + kernel_size/2) > (bb.minX + bb.width) ? (bb.minX + bb.width) : (bb.minX + bb.width/2 + kernel_size/2);
-    max_y = (bb.minY + bb.height/2 + kernel_size/2) > (bb.minY + bb.height) ? (bb.minY + bb.height) : (bb.minY + bb.height/2 + kernel_size/2);
 
-    min_x = min_x < 0 ? 0 : min_x;
-    min_y = min_y < 0 ? 0 : min_y;
+    if(!use_mask) {
+        min_x = (bb.minX + bb.width/2 - kernel_size/2) < bb.minX ? bb.minX : (bb.minX + bb.width/2 - kernel_size/2);
+        min_y = (bb.minY + bb.height/2 - kernel_size/2) < bb.minY ? bb.minY : (bb.minY + bb.height/2 - kernel_size/2);
+        max_x = (bb.minX + bb.width/2 + kernel_size/2) > (bb.minX + bb.width) ? (bb.minX + bb.width) : (bb.minX + bb.width/2 + kernel_size/2);
+        max_y = (bb.minY + bb.height/2 + kernel_size/2) > (bb.minY + bb.height) ? (bb.minY + bb.height) : (bb.minY + bb.height/2 + kernel_size/2);
 
-    max_x = max_x >= points.width ? points.width - 1 : max_x;
-    max_y = max_y >= points.height ? points.height - 1 : max_y;
+        min_x = min_x < 0 ? 0 : min_x;
+        min_y = min_y < 0 ? 0 : min_y;
+
+        max_x = max_x >= points.width ? points.width - 1 : max_x;
+        max_y = max_y >= points.height ? points.height - 1 : max_y;
+    }
+    else {
+        min_x = min_x;
+        min_y = min_y;
+
+        max_x = min_x + points.width - 1;
+        max_y = min_y + points.height - 1; 
+    }
+    
 
     std::vector<pcl::PointXYZRGB> valid_points;
-    for(int r = min_y ; r <= max_y ; r++) {
-        for(int c = min_x ; c <= max_x ; c++) {
+    for(int r = min_y; r <= max_y ; r++) {
+        for(int c = min_x; c <= max_x ; c++) {
             pcl::PointXYZRGB point = points.at(c, r);
             float depth = sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
-            if(depth <= max_depth){     
-                if(depth != 0) {
+            if((use_mask && mask.at<int>(r - min_y,c - min_x) != 0) || !use_mask) {
+                if(depth <= max_depth && depth != 0){     
                     mean_position.x += point.x;
                     mean_position.y += point.y;
                     mean_position.z += point.z;
@@ -74,7 +73,6 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
                     valid_points.push_back(point);
                 }
             }
-
         }
     }
 
@@ -188,6 +186,9 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         description3d.probability = it->probability;
         std_msgs::ColorRGBA &color =  description3d.color;
         geometry_msgs::PoseWithCovariance &pose = description3d.pose;
+        cv::Mat mask;
+        sensor_msgs::Image::ConstPtr mask_const_ptr( new sensor_msgs::Image(it->mask));
+        readImage(mask_const_ptr, mask);
 
         // cv::Rect roi;
         // roi.x = (*it).bounding_box.minX;
@@ -199,7 +200,7 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         // sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
         // readImage(rgb_const_ptr, segmented_rgb_image);
 
-        if(points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color))
+        if(points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask))
             descriptions3d.push_back(description3d);
     }
 

@@ -36,7 +36,7 @@ class Image2Kinect{
     public:
         Image2Kinect(ros::NodeHandle _nh);
 
-        bool points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color);
+        bool points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask);
 
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
         void readPoints(const sensor_msgs::PointCloud2::ConstPtr& msg_points, PointCloud &points);
