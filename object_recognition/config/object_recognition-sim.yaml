@@ -1,0 +1,7 @@
+threshold: 0.3
+possible_classes:
+  simple1: [master_chef_can, cracker_box, sugar_box, tomato_soup_can, mustard_bottle, tuna_fish_can, pudding_box, gelatin_box, potted_meat_can, banana, strawberry, apple, lemon, peach, pear, orange, plum, pitcher_base, bleach_cleanser]
+  simple2: [windex_bottle, bowl, mug, sponge, skillet, skillet_lid, plate, fork, spoon, knife, spatula, power_drill, wood_block, scissors, padlock, large_marker, adjustable_wrench, phillips_screwdriver, flat_screwdriver, hammer]
+  simple3: [medium_clamp, large_clamp, extra_large_clamp, mini_soccer_ball, softball, baseball, tennis_ball, racquetball, golf_ball, chain, foam_brick, dice, a_marbles, b_marbles, a_cups, b_cups, c_cups, d_cups, e_cups, f_cups]
+  simple4: [g_cups, h_cups, i_cups, j_cups, a_colored_wood_blocks, b_colored_wood_blocks, nine_hole_peg_test, a_toy_airplane, b_toy_airplane, c_toy_airplane, d_toy_airplane, e_toy_airplane, a_lego_duplo, b_lego_duplo, c_lego_duplo, d_lego_duplo]
+  simple5: [e_lego_duplo, f_lego_duplo, g_lego_duplo, rubiks_cube]

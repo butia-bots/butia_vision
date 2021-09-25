@@ -187,8 +187,10 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         std_msgs::ColorRGBA &color =  description3d.color;
         geometry_msgs::PoseWithCovariance &pose = description3d.pose;
         cv::Mat mask;
-        sensor_msgs::Image::ConstPtr mask_const_ptr( new sensor_msgs::Image(it->mask));
-        readImage(mask_const_ptr, mask);
+        if(it->mask.height * it->mask.width != 0) {
+            sensor_msgs::Image::ConstPtr mask_const_ptr( new sensor_msgs::Image(it->mask));
+            readImage(mask_const_ptr, mask);
+        }
 
         // cv::Rect roi;
         // roi.x = (*it).bounding_box.minX;
