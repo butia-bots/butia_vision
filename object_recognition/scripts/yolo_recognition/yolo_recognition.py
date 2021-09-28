@@ -40,7 +40,7 @@ class YoloRecognition():
         people = []
 
         for bb in bbs_l:
-            if bb.Class in self.possible_classes['people'] and bb.probability >= self.threshold:
+            if 'people' in self.possible_classes and bb.Class in self.possible_classes['people'] and bb.probability >= self.threshold:
                 person = Description()
                 person.label_class = 'people' + '/' + bb.Class
                 person.probability = bb.probability

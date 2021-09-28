@@ -1,4 +1,4 @@
-threshold: 0.3
+threshold: 0.05
 possible_classes:
   simple1: [master_chef_can, cracker_box, sugar_box, tomato_soup_can, mustard_bottle, tuna_fish_can, pudding_box, gelatin_box, potted_meat_can, banana, strawberry, apple, lemon, peach, pear, orange, plum, pitcher_base, bleach_cleanser]
   simple2: [windex_bottle, bowl, mug, sponge, skillet, skillet_lid, plate, fork, spoon, knife, spatula, power_drill, wood_block, scissors, padlock, large_marker, adjustable_wrench, phillips_screwdriver, flat_screwdriver, hammer]
