@@ -4,6 +4,8 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 {
     readParameters();
 
+    loadObjectClouds();
+
     object_recognition_sub = node_handle.subscribe(object_recognition_sub_topic, sub_queue_size, &Image2Kinect::objectRecognitionCallback, this);
     face_recognition_sub = node_handle.subscribe(face_recognition_sub_topic, sub_queue_size, &Image2Kinect::faceRecognitionCallback, this);
     people_tracking_sub = node_handle.subscribe(people_tracking_sub_topic, sub_queue_size, &Image2Kinect::peopleTrackingCallback, this);
@@ -203,6 +205,7 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         // readImage(rgb_const_ptr, segmented_rgb_image);
 
         if(points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask))
+            refinePose(points.makeShared(), description3d.pose.pose, description3d.label_class);
             descriptions3d.push_back(description3d);
     }
 
@@ -259,6 +262,52 @@ void Image2Kinect::peopleTrackingCallback(butia_vision_msgs::Recognitions recogn
     //segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     people_tracking_pub.publish(recognitions3d);
+}
+
+void Image2Kinect::loadObjectClouds()
+{
+    std::string objects_dir = ros::package::getPath("image2kinect") + "/data";
+    for (boost::filesystem::directory_iterator iter(objects_dir); iter != boost::filesystem::directory_iterator(); ++iter)
+    {
+        if (iter->path().filename().extension() == "pcd")
+        {
+            pcl::io::loadPCDFile(iter->path().string(), object_clouds[iter->path().filename().stem().string()]);
+        }
+    }
+}
+
+void Image2Kinect::refinePose(const PointCloud::Ptr &points, geometry_msgs::Pose &pose, std::string label)
+{
+    if (object_clouds.count(label) > 0)
+    {
+        PointCloudNormal::Ptr normal_cloud;
+        pcl::NormalEstimation<pcl::PointXYZRGB, pcl::PointXYZRGBNormal> normal_estimation;
+        normal_estimation.setInputCloud(points);
+        normal_estimation.setSearchMethod(pcl::search::KdTree<pcl::PointXYZRGB>::Ptr (new pcl::search::KdTree<pcl::PointXYZRGB>));
+        normal_estimation.setKSearch(100);
+        normal_estimation.setRadiusSearch(0.0);
+        normal_estimation.compute(*normal_cloud);
+        Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity();
+        transformation_matrix(0, 3) = pose.position.x;
+        transformation_matrix(1, 3) = pose.position.y;
+        transformation_matrix(2, 3) = pose.position.z;
+        PointCloudNormal::Ptr object_cloud;
+        pcl::transformPointCloudWithNormals(object_clouds[label], *object_cloud, transformation_matrix);
+        pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal> icp;
+        icp.setInputSource(object_cloud);
+        icp.setInputTarget(normal_cloud);
+        icp.align(*object_cloud);
+        transformation_matrix = icp.getFinalTransformation().cast<double>();
+        pose.position.x = transformation_matrix(0, 3);
+        pose.position.y = transformation_matrix(1, 3);
+        pose.position.z = transformation_matrix(2, 3);
+        Eigen::Matrix3d rotation_matrix(transformation_matrix.block<3, 3>(0, 0));
+        Eigen::Quaterniond quaternion_rotation(rotation_matrix);
+        pose.orientation.x = quaternion_rotation.x();
+        pose.orientation.y = quaternion_rotation.y();
+        pose.orientation.z = quaternion_rotation.z();
+        pose.orientation.w = quaternion_rotation.w();
+    }
 }
 
 void Image2Kinect::readParameters()
