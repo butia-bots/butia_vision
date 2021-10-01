@@ -1,16 +1,22 @@
 #include "ros/ros.h"
+#include "ros/package.h"
 
 #include <opencv2/opencv.hpp>
 
 #include <string>
 #include <vector>
 #include <map>
-#include <math.h> 
+#include <math.h>
+#include <filesystem> 
+
+#include "boost/filesystem.hpp"
 
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/conversions.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/registration/icp.h>
 
 #include "butia_vision_msgs/Recognitions.h"
 #include "butia_vision_msgs/Recognitions3D.h"
@@ -31,6 +37,7 @@
 #include <cv_bridge/cv_bridge.h>
 
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
+typedef pcl::PointCloud<pcl::PointXYZRGBNormal> PointCloudNormal;
 
 class Image2Kinect{
     public:
@@ -49,6 +56,9 @@ class Image2Kinect{
         void faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
         void peopleTrackingCallback(butia_vision_msgs::Recognitions recognitions);
 
+        void loadObjectClouds();
+        void refinePose(const PointCloud::Ptr &points, geometry_msgs::Pose &pose, std::string label);
+
     private:
 
         ros::NodeHandle node_handle;
@@ -66,6 +76,8 @@ class Image2Kinect{
 
         int sub_queue_size;
         int pub_queue_size;
+
+        std::map<std::string, PointCloudNormal> object_clouds;
 
         std::string object_recognition_sub_topic;
         std::string face_recognition_sub_topic;
