@@ -56,8 +56,8 @@ class Image2Kinect{
         void faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
         void peopleTrackingCallback(butia_vision_msgs::Recognitions recognitions);
 
-        void loadObjectClouds();
-        void refinePose(const PointCloud::Ptr &points, geometry_msgs::Pose &pose, std::string label);
+        //void loadObjectClouds();
+        //void refinePose(const PointCloud::Ptr &points, geometry_msgs::Pose &pose, std::string label);
 
     private:
 
@@ -77,7 +77,7 @@ class Image2Kinect{
         int sub_queue_size;
         int pub_queue_size;
 
-        std::map<std::string, PointCloudNormal> object_clouds;
+        //std::map<std::string, PointCloudNormal> object_clouds;
 
         std::string object_recognition_sub_topic;
         std::string face_recognition_sub_topic;

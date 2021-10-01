@@ -4,7 +4,7 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 {
     readParameters();
 
-    loadObjectClouds();
+    //loadObjectClouds();
 
     object_recognition_sub = node_handle.subscribe(object_recognition_sub_topic, sub_queue_size, &Image2Kinect::objectRecognitionCallback, this);
     face_recognition_sub = node_handle.subscribe(face_recognition_sub_topic, sub_queue_size, &Image2Kinect::faceRecognitionCallback, this);
@@ -205,7 +205,7 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         // readImage(rgb_const_ptr, segmented_rgb_image);
 
         if(points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask))
-            refinePose(points.makeShared(), description3d.pose.pose, description3d.label_class);
+            //refinePose(points.makeShared(), description3d.pose.pose, description3d.label_class);
             descriptions3d.push_back(description3d);
     }
 
@@ -263,7 +263,7 @@ void Image2Kinect::peopleTrackingCallback(butia_vision_msgs::Recognitions recogn
     recognitions2Recognitions3d(recognitions, recognitions3d);
     people_tracking_pub.publish(recognitions3d);
 }
-
+/*
 void Image2Kinect::loadObjectClouds()
 {
     std::string objects_dir = ros::package::getPath("image2kinect") + "/data";
@@ -309,7 +309,7 @@ void Image2Kinect::refinePose(const PointCloud::Ptr &points, geometry_msgs::Pose
         pose.orientation.w = quaternion_rotation.w();
     }
 }
-
+*/
 void Image2Kinect::readParameters()
 {
     node_handle.param("/image2kinect/subscribers/queue_size", sub_queue_size, 5);
