@@ -27,4 +27,4 @@ publishers:
 clients:
 
   image_request:
-    service: /butia_vision/is/image_request
+    service: /butia_vision/bvb/image_request
