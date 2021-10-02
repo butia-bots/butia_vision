@@ -3,6 +3,8 @@
 ButiaVisionBridge::ButiaVisionBridge(ros::NodeHandle &nh) : node_handle(nh), it(nh), seq(0)
 {
     readParameters();
+
+    resizeBuffers();
     
     image_rgb_sub = new image_transport::SubscriberFilter(it, image_rgb_sub_topic, sub_queue_size);
     image_depth_sub = new image_transport::SubscriberFilter(it, image_depth_sub_topic, sub_queue_size);
@@ -22,6 +24,16 @@ ButiaVisionBridge::ButiaVisionBridge(ros::NodeHandle &nh) : node_handle(nh), it(
     image_depth_pub = it.advertise(image_depth_pub_topic, pub_queue_size);
     camera_info_pub = node_handle.advertise<sensor_msgs::CameraInfo>(camera_info_pub_topic, pub_queue_size);
     points_pub = node_handle.advertise<sensor_msgs::PointCloud2>(points_pub_topic, pub_queue_size);
+
+    image_request_server = node_handle.advertiseService(image_request_server_service, &ButiaVisionBridge::imageRequestServer, this);
+}
+
+void ButiaVisionBridge::resizeBuffers()
+{
+    image_rgb_buffer.resize(buffer_size);
+    image_depth_buffer.resize(buffer_size);
+    points_buffer.resize(buffer_size);
+    camera_info_buffer.resize(buffer_size);
 }
 
 void ButiaVisionBridge::readParameters()
@@ -38,7 +50,10 @@ void ButiaVisionBridge::readParameters()
     node_handle.param("/butia_vision_bridge/publishers/camera_info/topic", camera_info_pub_topic, std::string("/butia_vision/bvb/camera_info"));
     node_handle.param("/butia_vision_bridge/publishers/points/topic", points_pub_topic, std::string("/butia_vision/bvb/points"));
 
+    node_handle.param("/butia_vision_bridge/servers/image_request/service", image_request_server_service, std::string("/butia_vision/bvb/image_request"));
+
     node_handle.param("/butia_vision_bridge/use_exact_time", use_exact_time, false);
+    node_handle.param("/butia_vision_bridge/buffer_size", buffer_size, 500);
     node_handle.param("/butia_vision_bridge/image_width", image_width, 640);
     node_handle.param("/butia_vision_bridge/image_height", image_height, 480);
 }
@@ -116,6 +131,14 @@ void ButiaVisionBridge::kinectCallback(const sensor_msgs::Image::ConstPtr &image
 
     camera_info.header.seq = seq;
 
+    image_rgb_buffer[seq%buffer_size] = image_rgb_ptr;
+    image_depth_buffer[seq%buffer_size] = image_depth_ptr;
+    points_buffer[seq%buffer_size] = points_ptr;
+    camera_info_buffer[seq%buffer_size] = camera_info_ptr;
+
+    if(seq - buffer_size >= min_seq || seq < min_seq) min_seq = seq;
+    max_seq = seq;
+
     publish(rgb_image_message, depth_image_message, points_message, camera_info);
 
     seq++;
@@ -129,4 +152,24 @@ void ButiaVisionBridge::publish(sensor_msgs::Image &rgb_image_message, sensor_ms
     image_depth_pub.publish(depth_image_message);
     camera_info_pub.publish(camera_info_message);
     points_pub.publish(points_message);
+}
+
+bool ButiaVisionBridge::imageRequestServer(butia_vision_msgs::ImageRequest::Request &req, butia_vision_msgs::ImageRequest::Response &res)
+{
+    int req_seq = req.seq;
+    ROS_INFO("REQUEST ID: %d", req_seq);
+    
+    if(req_seq > max_seq || req_seq < min_seq) {
+        return false;
+    }
+
+    res.rgbd_image.rgb = *(image_rgb_buffer[req_seq%buffer_size]);
+    
+    res.rgbd_image.depth = *(image_depth_buffer[req_seq%buffer_size]);
+
+    res.points = *(points_buffer[req_seq%buffer_size]);
+
+    res.camera_info = *(camera_info_buffer[req_seq%buffer_size]);
+    
+    return true;
 }

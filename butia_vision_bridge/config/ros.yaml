@@ -29,3 +29,8 @@ publishers:
 
   points:
     topic: /butia_vision/bvb/points
+
+servers:
+
+  image_request:
+    service: /butia_vision/bvb/image_request

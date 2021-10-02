@@ -1,9 +1,4 @@
 use_exact_time: false
+buffer_size: 500
 image_width: 640
 image_height: 480
-publish_tf: false
-robot_tf: base_link
-kinect_tf: kinect2_link
-offset_x: 0.2000
-offset_y: 0.0020
-offset_z: 1.1500

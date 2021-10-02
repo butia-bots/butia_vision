@@ -8,6 +8,8 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
+#include "butia_vision_msgs/ImageRequest.h"
+
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
@@ -33,15 +35,23 @@ class ButiaVisionBridge {
         void publish(sensor_msgs::Image &rgb_image_message, sensor_msgs::Image &depth_image_message,
                      sensor_msgs::PointCloud2 &points_message, sensor_msgs::CameraInfo &camera_info_message);
 
+        bool imageRequestServer(butia_vision_msgs::ImageRequest::Request &req, butia_vision_msgs::ImageRequest::Response &res);
+
     private:
         ros::NodeHandle node_handle;
 
         bool use_exact_time;
+        int buffer_size;
         int sub_queue_size;
         int pub_queue_size;
 
         int image_width;
         int image_height;
+
+        std::vector<sensor_msgs::Image::ConstPtr> image_rgb_buffer;
+        std::vector<sensor_msgs::Image::ConstPtr> image_depth_buffer;
+        std::vector<sensor_msgs::PointCloud2::ConstPtr> points_buffer;
+        std::vector<sensor_msgs::CameraInfo::ConstPtr> camera_info_buffer;
 
         std::string image_rgb_sub_topic;
         std::string image_depth_sub_topic;
@@ -52,6 +62,8 @@ class ButiaVisionBridge {
         std::string image_depth_pub_topic;
         std::string camera_info_pub_topic;
         std::string points_pub_topic;
+
+        std::string image_request_server_service;
 
         typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::PointCloud2, sensor_msgs::CameraInfo> ExactSyncPolicy;
         typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::PointCloud2, sensor_msgs::CameraInfo> ApproximateSyncPolicy;
@@ -70,7 +82,12 @@ class ButiaVisionBridge {
         ros::Publisher camera_info_pub;
         ros::Publisher points_pub;
 
+        ros::ServiceServer image_request_server;
+
+        int min_seq, max_seq;
+
         long seq;
 
+        void resizeBuffers();
         void readParameters();
 };
