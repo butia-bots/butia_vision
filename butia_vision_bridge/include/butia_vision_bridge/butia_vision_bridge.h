@@ -48,10 +48,10 @@ class ButiaVisionBridge {
         int image_width;
         int image_height;
 
-        std::vector<sensor_msgs::Image::ConstPtr> image_rgb_buffer;
-        std::vector<sensor_msgs::Image::ConstPtr> image_depth_buffer;
-        std::vector<sensor_msgs::PointCloud2::ConstPtr> points_buffer;
-        std::vector<sensor_msgs::CameraInfo::ConstPtr> camera_info_buffer;
+        std::vector<sensor_msgs::Image> image_rgb_buffer;
+        std::vector<sensor_msgs::Image> image_depth_buffer;
+        std::vector<sensor_msgs::PointCloud2> points_buffer;
+        std::vector<sensor_msgs::CameraInfo> camera_info_buffer;
 
         std::string image_rgb_sub_topic;
         std::string image_depth_sub_topic;

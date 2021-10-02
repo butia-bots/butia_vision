@@ -131,10 +131,10 @@ void ButiaVisionBridge::kinectCallback(const sensor_msgs::Image::ConstPtr &image
 
     camera_info.header.seq = seq;
 
-    image_rgb_buffer[seq%buffer_size] = image_rgb_ptr;
-    image_depth_buffer[seq%buffer_size] = image_depth_ptr;
-    points_buffer[seq%buffer_size] = points_ptr;
-    camera_info_buffer[seq%buffer_size] = camera_info_ptr;
+    image_rgb_buffer[seq%buffer_size] = rgb_image_message;
+    image_depth_buffer[seq%buffer_size] = depth_image_message;
+    points_buffer[seq%buffer_size] = points_message;
+    camera_info_buffer[seq%buffer_size] = camera_info;
 
     if(seq - buffer_size >= min_seq || seq < min_seq) min_seq = seq;
     max_seq = seq;
@@ -163,13 +163,13 @@ bool ButiaVisionBridge::imageRequestServer(butia_vision_msgs::ImageRequest::Requ
         return false;
     }
 
-    res.rgbd_image.rgb = *(image_rgb_buffer[req_seq%buffer_size]);
+    res.rgbd_image.rgb = image_rgb_buffer[req_seq%buffer_size];
     
-    res.rgbd_image.depth = *(image_depth_buffer[req_seq%buffer_size]);
+    res.rgbd_image.depth = image_depth_buffer[req_seq%buffer_size];
 
-    res.points = *(points_buffer[req_seq%buffer_size]);
+    res.points = points_buffer[req_seq%buffer_size];
 
-    res.camera_info = *(camera_info_buffer[req_seq%buffer_size]);
+    res.camera_info = camera_info_buffer[req_seq%buffer_size];
     
     return true;
 }
