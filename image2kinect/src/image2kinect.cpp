@@ -322,7 +322,7 @@ void Image2Kinect::readParameters()
     node_handle.param("/image2kinect/publishers/face_recognition/topic", face_recognition_pub_topic, std::string("/butia_vision/fr/face_recognition3d"));
     node_handle.param("/image2kinect/publishers/people_tracking/topic", people_tracking_pub_topic, std::string("/butia_vision/pt/people_tracking3d"));
     
-    node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/butia_vision/is/image_request"));
+    node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/butia_vision/bvb/image_request"));
     //node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/butia_vision/seg/image_segmentation"));
 
     //node_handle.param("/image2kinect/segmentation_threshold", segmentation_threshold, (float)0.2);
