@@ -1,5 +1,6 @@
-threshold: 0.05
+threshold: 0.3
 possible_classes:
+  people: [person_standing]
   simple1: [master_chef_can, cracker_box, sugar_box, tomato_soup_can, mustard_bottle, tuna_fish_can, pudding_box, gelatin_box, potted_meat_can, banana, strawberry, apple, lemon, peach, pear, orange, plum, pitcher_base, bleach_cleanser]
   simple2: [windex_bottle, bowl, mug, sponge, skillet, skillet_lid, plate, fork, spoon, knife, spatula, power_drill, wood_block, scissors, padlock, large_marker, adjustable_wrench, phillips_screwdriver, flat_screwdriver, hammer]
   simple3: [medium_clamp, large_clamp, extra_large_clamp, mini_soccer_ball, softball, baseball, tennis_ball, racquetball, golf_ball, chain, foam_brick, dice, a_marbles, b_marbles, a_cups, b_cups, c_cups, d_cups, e_cups, f_cups]

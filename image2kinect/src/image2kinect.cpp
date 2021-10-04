@@ -8,10 +8,12 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 
     object_recognition_sub = node_handle.subscribe(object_recognition_sub_topic, sub_queue_size, &Image2Kinect::objectRecognitionCallback, this);
     face_recognition_sub = node_handle.subscribe(face_recognition_sub_topic, sub_queue_size, &Image2Kinect::faceRecognitionCallback, this);
+    people_detection_sub = node_handle.subscribe(people_detection_sub_topic, sub_queue_size, &Image2Kinect::peopleDetectionCallback, this);
     people_tracking_sub = node_handle.subscribe(people_tracking_sub_topic, sub_queue_size, &Image2Kinect::peopleTrackingCallback, this);
 
     object_recognition_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(object_recognition_pub_topic, pub_queue_size);
     face_recognition_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(face_recognition_pub_topic, pub_queue_size);
+    people_detection_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(people_detection_pub_topic, pub_queue_size);
     people_tracking_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(people_tracking_pub_topic, pub_queue_size);
 
     image_request_client = node_handle.serviceClient<butia_vision_msgs::ImageRequest>(image_request_client_service);
@@ -256,6 +258,14 @@ void Image2Kinect::faceRecognitionCallback(butia_vision_msgs::Recognitions recog
     face_recognition_pub.publish(recognitions3d);
 }
 
+void Image2Kinect::peopleDetectionCallback(butia_vision_msgs::Recognitions recognitions)
+{
+    butia_vision_msgs::Recognitions3D recognitions3d;
+    //segmentation_model_id = "median_full";
+    recognitions2Recognitions3d(recognitions, recognitions3d);
+    people_detection_pub.publish(recognitions3d);
+}
+
 void Image2Kinect::peopleTrackingCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
@@ -315,11 +325,13 @@ void Image2Kinect::readParameters()
     node_handle.param("/image2kinect/subscribers/queue_size", sub_queue_size, 5);
     node_handle.param("/image2kinect/subscribers/object_recognition/topic", object_recognition_sub_topic, std::string("/butia_vision/or/object_recognition"));
     node_handle.param("/image2kinect/subscribers/face_recognition/topic", face_recognition_sub_topic, std::string("/butia_vision/fr/face_recognition"));
+    node_handle.param("/image2kinect/subscribers/people_detection/topic", people_detection_sub_topic, std::string("/butia_vision/or/people_detection"));
     node_handle.param("/image2kinect/subscribers/people_tracking/topic", people_tracking_sub_topic, std::string("/butia_vision/pt/people_tracking"));
 
     node_handle.param("/image2kinect/publishers/queue_size", pub_queue_size, 5);
     node_handle.param("/image2kinect/publishers/object_recognition/topic", object_recognition_pub_topic, std::string("/butia_vision/or/object_recognition3d"));
     node_handle.param("/image2kinect/publishers/face_recognition/topic", face_recognition_pub_topic, std::string("/butia_vision/fr/face_recognition3d"));
+    node_handle.param("/image2kinect/publishers/people_detection/topic", people_detection_pub_topic, std::string("/butia_vision/or/people_detection3d"));
     node_handle.param("/image2kinect/publishers/people_tracking/topic", people_tracking_pub_topic, std::string("/butia_vision/pt/people_tracking3d"));
     
     node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/butia_vision/bvb/image_request"));

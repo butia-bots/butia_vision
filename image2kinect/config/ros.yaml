@@ -8,6 +8,9 @@ subscribers:
   face_recognition:
     topic: /butia_vision/fr/face_recognition
 
+  people_detection:
+    topic: /butia_vision/or/people_detection
+
   people_tracking:
     topic: /butia_vision/pt/people_tracking
 
@@ -20,6 +23,9 @@ publishers:
 
   face_recognition:
     topic: /butia_vision/fr/face_recognition3d
+  
+  people_detection:
+    topic: /butia_vision/or/people_detection3d
 
   people_tracking:
     topic: /butia_vision/pt/people_tracking3d

@@ -54,6 +54,7 @@ class Image2Kinect{
 
         void objectRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
         void faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions);
+        void peopleDetectionCallback(butia_vision_msgs::Recognitions recognitions);
         void peopleTrackingCallback(butia_vision_msgs::Recognitions recognitions);
 
         //void loadObjectClouds();
@@ -65,10 +66,12 @@ class Image2Kinect{
 
         ros::Subscriber object_recognition_sub;
         ros::Subscriber face_recognition_sub;
+        ros::Subscriber people_detection_sub;
         ros::Subscriber people_tracking_sub;
 
         ros::Publisher object_recognition_pub;
         ros::Publisher face_recognition_pub;
+        ros::Publisher people_detection_pub;
         ros::Publisher people_tracking_pub;
 
         ros::ServiceClient image_request_client;
@@ -81,10 +84,12 @@ class Image2Kinect{
 
         std::string object_recognition_sub_topic;
         std::string face_recognition_sub_topic;
+        std::string people_detection_sub_topic;
         std::string people_tracking_sub_topic;
 
         std::string object_recognition_pub_topic;
         std::string face_recognition_pub_topic;
+        std::string people_detection_pub_topic;
         std::string people_tracking_pub_topic;
 
         std::string image_request_client_service;
