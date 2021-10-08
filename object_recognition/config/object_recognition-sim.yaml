@@ -3,6 +3,6 @@ possible_classes:
     people: [Person]
     food: [Master chef coffee can, Cheez-it cracker box, Domino sugar box, Tomato soup can, French’s mustard bottle, Starkist tuna fish can, Jell-o chocolate pudding box, Jell-o strawberry gelatin box, Spam potted meat can, Plastic banana, Plastic strawberry, Plastic apple, Plastic lemon, Plastic pear, Plastic orange, Plastic plum]
     kitchen: [Pitcher base, Srub cleanser bottle, Windex Spray bottle, Bowl, Mug, Scotch brite dobie sponge, Plate, Fork, Spoon, Spatula]
-    tool: [Large marker, Clamps]
+    tools: [Large marker, Clamps]
     shape: [Mini soccer ball, Soft ball, Baseball, Tennis ball, Racquetball, Golf ball, Chain, Foam brick, Dice, Marbles, Cups]
     task: [Colored wood blocks, 9-peg-hole test, Toy airplane, Lego duplo, Rubik’s cube]
