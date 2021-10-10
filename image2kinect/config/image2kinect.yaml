@@ -1,3 +1,3 @@
 max_depth: 3000
-publish_tf: false
-kernel_size: 5
+publish_tf: true
+kernel_size: 125

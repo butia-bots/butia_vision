@@ -4,7 +4,7 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 {
     readParameters();
 
-    //loadObjectClouds();
+    loadObjectClouds();
 
     object_recognition_sub = node_handle.subscribe(object_recognition_sub_topic, sub_queue_size, &Image2Kinect::objectRecognitionCallback, this);
     face_recognition_sub = node_handle.subscribe(face_recognition_sub_topic, sub_queue_size, &Image2Kinect::faceRecognitionCallback, this);
@@ -20,7 +20,7 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
     //segmentation_request_client = node_handle.serviceClient<butia_vision_msgs::SegmentationRequest>(segmentation_request_client_service);
 }
 
-bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask)
+bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask, std::string label)
 {
     geometry_msgs::Point &mean_position = pose.pose.position;
     geometry_msgs::Quaternion &orientation = pose.pose.orientation;
@@ -119,6 +119,49 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
         }
     }
 
+    std::vector<std::string> split_label;
+    boost::algorithm::split(split_label, label, boost::is_any_of("/"));
+    if (category2dataset.count(split_label.back()) > 0) {
+        std::string translated_label = category2dataset[split_label.back()];
+        PointCloud::Ptr shared_points(new PointCloud());
+        for (auto &point : valid_points) {
+            shared_points->points.push_back(point);
+        }
+        if (object_clouds.count(translated_label) > 0)
+        {
+            PointCloud::Ptr voxelized_cloud(new PointCloud);
+            pcl::VoxelGrid<pcl::PointXYZRGB> voxel_grid;
+            voxel_grid.setLeafSize(0.01, 0.01, 0.01);
+            voxel_grid.setInputCloud(shared_points);
+            voxel_grid.filter(*voxelized_cloud);
+            Eigen::Vector4f centroid;
+            pcl::compute3DCentroid(*voxelized_cloud, centroid);
+            Eigen::Matrix4f center_cloud_transform = Eigen::Matrix4f::Identity();
+            center_cloud_transform(0, 3) = -centroid(0);
+            center_cloud_transform(1, 3) = -centroid(1);
+            center_cloud_transform(2, 3) = -centroid(2);
+            PointCloud::Ptr centered_cloud(new PointCloud());
+            pcl::transformPointCloud(*voxelized_cloud, *centered_cloud, center_cloud_transform);
+            std::cout << center_cloud_transform << std::endl;
+            pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+            icp.setInputSource(centered_cloud);
+            icp.setInputTarget(object_clouds[translated_label]);
+            icp.setMaximumIterations(100);
+            PointCloud::Ptr aligned_object_cloud(new PointCloud());
+            icp.align(*aligned_object_cloud);
+            Eigen::Matrix4f icp_transform = icp.getFinalTransformation();
+            Eigen::Matrix4f final_transform = -center_cloud_transform * icp_transform;
+            std::cout << final_transform << std::endl;
+            Eigen::Quaternionf rotation(final_transform.block<3,3>(0, 0));
+            mean_position.x = (double)final_transform(0, 3);
+            mean_position.y = (double)final_transform(1, 3);
+            mean_position.z = (double)final_transform(2, 3);
+            orientation.w = (double)rotation.w();
+            orientation.x = (double)rotation.x();
+            orientation.y = (double)rotation.y();
+            orientation.z = (double)rotation.z();
+        }
+    }
     return true;
 }
 
@@ -206,8 +249,7 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         // sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
         // readImage(rgb_const_ptr, segmented_rgb_image);
 
-        if(points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask))
-            //refinePose(points.makeShared(), description3d.pose.pose, description3d.label_class);
+        if(points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask, description3d.label_class))
             descriptions3d.push_back(description3d);
     }
 
@@ -235,7 +277,11 @@ void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
         }
 
         transform.setOrigin( tf::Vector3(it->pose.pose.position.x, it->pose.pose.position.y, it->pose.pose.position.z) );
-        q.setRPY(0, 0, 0);
+        //q.setRPY(0, 0, 0);
+        q.setW(it->pose.pose.orientation.w);
+        q.setX(it->pose.pose.orientation.x);
+        q.setY(it->pose.pose.orientation.y);
+        q.setZ(it->pose.pose.orientation.z);
         transform.setRotation(q);
         br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), recognitions3d.image_header.frame_id,
                                               it->label_class + std::to_string(current_rec[it->label_class]) + "_detect"));
@@ -273,50 +319,67 @@ void Image2Kinect::peopleTrackingCallback(butia_vision_msgs::Recognitions recogn
     recognitions2Recognitions3d(recognitions, recognitions3d);
     people_tracking_pub.publish(recognitions3d);
 }
-/*
+
 void Image2Kinect::loadObjectClouds()
 {
     std::string objects_dir = ros::package::getPath("image2kinect") + "/data";
     for (boost::filesystem::directory_iterator iter(objects_dir); iter != boost::filesystem::directory_iterator(); ++iter)
     {
-        if (iter->path().filename().extension() == "pcd")
+        if (iter->path().filename().extension() == ".pcd")
         {
-            pcl::io::loadPCDFile(iter->path().string(), object_clouds[iter->path().filename().stem().string()]);
+            std::string label = iter->path().filename().stem().string();
+            ROS_INFO(label.c_str());
+            PointCloud::Ptr object_cloud(new PointCloud());
+            pcl::io::loadPCDFile(iter->path().string(), *object_cloud);
+            Eigen::Vector4f centroid;
+            pcl::compute3DCentroid(*object_cloud, centroid);
+            Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+            transform(0, 3) = -centroid(0);
+            transform(1, 3) = -centroid(1);
+            transform(2, 3) = -centroid(2);
+            pcl::transformPointCloud(*object_cloud, *object_cloud, transform);
+            object_clouds.insert(std::make_pair(label, object_cloud));
+            object_transforms.insert(std::make_pair(label, transform));
         }
     }
 }
-
-void Image2Kinect::refinePose(const PointCloud::Ptr &points, geometry_msgs::Pose &pose, std::string label)
+/*
+void Image2Kinect::refinePose(const PointCloud::Ptr &points, geometry_msgs::PoseWithCovariance &pcov, std::string label)
 {
     if (object_clouds.count(label) > 0)
     {
-        PointCloudNormal::Ptr normal_cloud;
-        pcl::NormalEstimation<pcl::PointXYZRGB, pcl::PointXYZRGBNormal> normal_estimation;
-        normal_estimation.setInputCloud(points);
-        normal_estimation.setSearchMethod(pcl::search::KdTree<pcl::PointXYZRGB>::Ptr (new pcl::search::KdTree<pcl::PointXYZRGB>));
-        normal_estimation.setKSearch(100);
-        normal_estimation.setRadiusSearch(0.0);
-        normal_estimation.compute(*normal_cloud);
-        Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity();
-        transformation_matrix(0, 3) = pose.position.x;
-        transformation_matrix(1, 3) = pose.position.y;
-        transformation_matrix(2, 3) = pose.position.z;
-        PointCloudNormal::Ptr object_cloud;
-        pcl::transformPointCloudWithNormals(object_clouds[label], *object_cloud, transformation_matrix);
-        pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal> icp;
-        icp.setInputSource(object_cloud);
-        icp.setInputTarget(normal_cloud);
-        icp.align(*object_cloud);
-        transformation_matrix = icp.getFinalTransformation().cast<double>();
-        pose.position.x = transformation_matrix(0, 3);
-        pose.position.y = transformation_matrix(1, 3);
-        pose.position.z = transformation_matrix(2, 3);
-        Eigen::Matrix3d rotation_matrix(transformation_matrix.block<3, 3>(0, 0));
-        Eigen::Quaterniond quaternion_rotation(rotation_matrix);
-        pose.orientation.x = quaternion_rotation.x();
-        pose.orientation.y = quaternion_rotation.y();
-        pose.orientation.z = quaternion_rotation.z();
-        pose.orientation.w = quaternion_rotation.w();
+        PointCloud::Ptr voxelized_cloud(new PointCloud);
+        pcl::VoxelGrid<pcl::PointXYZRGB> voxel_grid;
+        voxel_grid.setLeafSize(0.01, 0.01, 0.01);
+        voxel_grid.setInputCloud(points);
+        voxel_grid.filter(*voxelized_cloud);
+        geometry_msgs::Pose &pose = pcov.pose;
+        Eigen::Vector4f centroid;
+        pcl::compute3DCentroid(*voxelized_cloud, centroid);
+        Eigen::Matrix4f center_cloud_transform = Eigen::Matrix4f::Identity();
+        center_cloud_transform(0, 3) = -centroid(0);
+        center_cloud_transform(1, 3) = -centroid(1);
+        center_cloud_transform(2, 3) = -centroid(2);
+        PointCloud::Ptr centered_cloud(new PointCloud());
+        pcl::transformPointCloud(*voxelized_cloud, *centered_cloud, center_cloud_transform);
+        std::cout << center_cloud_transform << std::endl;
+        pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+        icp.setInputSource(centered_cloud);
+        icp.setInputTarget(object_clouds[label]);
+        icp.setMaximumIterations(1);
+        PointCloud::Ptr aligned_object_cloud(new PointCloud());
+        icp.align(*aligned_object_cloud);
+        Eigen::Matrix4f icp_transform = icp.getFinalTransformation();
+        Eigen::Matrix4f final_transform = center_cloud_transform * icp_transform;
+        std::cout << final_transform << std::endl;
+        Eigen::Quaternionf rotation(final_transform.block<3,3>(0, 0));
+        pose.position.x = (double)final_transform(0, 3);
+        pose.position.y = (double)final_transform(1, 3);
+        pose.position.z = (double)final_transform(2, 3);
+        pose.orientation.w = (double)rotation.w();
+        pose.orientation.x = (double)rotation.x();
+        pose.orientation.y = (double)rotation.y();
+        pose.orientation.z = (double)rotation.z();
     }
 }
 */
