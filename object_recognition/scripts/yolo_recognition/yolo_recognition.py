@@ -111,11 +111,13 @@ class YoloRecognition():
 
         for bb in bbs_l:
             if bb.Class in dictionary.keys():
+                reference_model = bb.Class
                 bb.Class = dictionary[bb.Class]
                 
             if 'people' in self.possible_classes and bb.Class in self.possible_classes['people'] and bb.probability >= self.threshold:
                 person = Description()
                 person.label_class = 'people' + '/' + bb.Class
+                person.reference_model = reference_model
                 person.probability = bb.probability
                 person.bounding_box.minX = bb.xmin
                 person.bounding_box.minY = bb.ymin
@@ -131,6 +133,7 @@ class YoloRecognition():
                     if bb.Class in value:
                         index = i
                     i += 1
+                object_d.reference_model = reference_model
                 object_d.label_class = list(self.possible_classes.keys())[index] + '/' + bb.Class
                 object_d.probability = bb.probability
                 object_d.bounding_box.minX = bb.xmin
