@@ -3,7 +3,7 @@ project(image2kinect)
 
 add_compile_options(-std=c++14)
 
-find_package(PCL 1.2 REQUIRED)
+find_package(PCL 1.10 REQUIRED COMPONENTS io registration segmentation visualization)
 find_package(catkin REQUIRED roscpp butia_vision_msgs geometry_msgs cv_bridge tf pcl_ros)
 find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
 

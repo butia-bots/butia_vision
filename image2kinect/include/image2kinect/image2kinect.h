@@ -18,6 +18,18 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/registration/icp.h>
 #include <pcl/filters/voxel_grid.h>
+#include <Eigen/Core>
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+#include <pcl/common/time.h>
+#include <pcl/console/print.h>
+#include <pcl/features/normal_3d_omp.h>
+#include <pcl/features/fpfh_omp.h>
+#include <pcl/filters/filter.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/registration/sample_consensus_prerejective.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/visualization/pcl_visualizer.h>
 
 #include "butia_vision_msgs/Recognitions.h"
 #include "butia_vision_msgs/Recognitions3D.h"
@@ -38,12 +50,20 @@
 #include <cv_bridge/cv_bridge.h>
 
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
+typedef pcl::PointNormal PointNT;
+typedef pcl::PointCloud<PointNT> PointCloudT;
+typedef pcl::FPFHSignature33 FeatureT;
+typedef pcl::FPFHEstimationOMP<PointNT,PointNT,FeatureT> FeatureEstimationT;
+typedef pcl::PointCloud<FeatureT> FeatureCloudT;
+typedef pcl::visualization::PointCloudColorHandlerCustom<PointNT> ColorHandlerT;
+
 
 class Image2Kinect{
     public:
         Image2Kinect(ros::NodeHandle _nh);
 
-        bool points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask, std::string label);
+        bool points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask);
+        bool robustPoseEstimation(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, cv::Mat &mask, std::string label);
 
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
         void readPoints(const sensor_msgs::PointCloud2::ConstPtr& msg_points, PointCloud &points);
@@ -80,7 +100,7 @@ class Image2Kinect{
         int sub_queue_size;
         int pub_queue_size;
 
-        std::map<std::string, PointCloud::Ptr> object_clouds;
+        std::map<std::string, PointCloudT::Ptr> object_clouds;
         std::map<std::string, Eigen::Matrix4f> object_transforms;
 
         std::string object_recognition_sub_topic;
@@ -95,6 +115,8 @@ class Image2Kinect{
 
         std::string image_request_client_service;
         //std::string segmentation_request_client_service;
+
+        bool use_align;
 
         //float segmentation_threshold;
         int max_depth;
