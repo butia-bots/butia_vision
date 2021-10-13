@@ -3,7 +3,7 @@
 <launch>
     <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch"/>
     
-    <!-- <include file="$(find image2kinect)/launch/image2kinect.launch"/> -->
+    <include file="$(find image2kinect)/launch/image2kinect.launch"/>
 
     <include file="$(find object_recognition)/launch/yolov4-simulator.launch"/>
 </launch>
