@@ -236,7 +236,7 @@ bool Image2Kinect::robustPoseEstimation(PointCloud &points, butia_vision_msgs::B
     center_cloud_transform(2, 3) = -centroid(2);
     pcl::transformPointCloudWithNormals(*scene, *scene, center_cloud_transform);
 
-    if (object_clouds.count(label) > 0)
+    if (object_clouds.count(label) > 0 && scene->size() > 10)
     {
         pcl::NormalEstimationOMP<PointNT,PointNT> nest;
         nest.setRadiusSearch(0.02);
@@ -270,7 +270,7 @@ bool Image2Kinect::robustPoseEstimation(PointCloud &points, butia_vision_msgs::B
         align.setSourceFeatures (object_features);
         align.setInputTarget (scene);
         align.setTargetFeatures (scene_features);
-        align.setMaximumIterations (5000); // Number of RANSAC iterations
+        align.setMaximumIterations (20000); // Number of RANSAC iterations
         align.setNumberOfSamples (3); // Number of points to sample for generating/prerejecting a pose
         align.setCorrespondenceRandomness (5); // Number of nearest features to use
         align.setSimilarityThreshold (0.9f); // Polygonal edge length similarity threshold
@@ -310,9 +310,9 @@ bool Image2Kinect::robustPoseEstimation(PointCloud &points, butia_vision_msgs::B
         ROS_ERROR(error.c_str());
     }
 
-    position.x = center_cloud_transform(0, 3);
-    position.y = center_cloud_transform(1, 3);
-    position.z = center_cloud_transform(2, 3);
+    position.x = -center_cloud_transform(0, 3);
+    position.y = -center_cloud_transform(1, 3);
+    position.z = -center_cloud_transform(2, 3);
     orientation.w = 0;
     orientation.x = 0;
     orientation.y = 0;

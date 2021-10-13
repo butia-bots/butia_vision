@@ -26,3 +26,9 @@ servers:
 
   list_objects:
     service: /butia_vision/or/list_objects
+
+  start:
+    service: /butia_vision/or/start
+
+  stop:
+    service: /butia_vision/or/stop

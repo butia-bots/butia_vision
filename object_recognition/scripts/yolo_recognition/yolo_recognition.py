@@ -2,6 +2,7 @@
 import rospy
 
 from std_msgs.msg import Header
+from std_srvs.srv import Empty, EmptyResponse
 from darknet_ros_msgs.msg import BoundingBoxes
 from butia_vision_msgs.msg import Description, Recognitions
 from butia_vision_msgs.srv import ListClasses, ListClassesResponse
@@ -88,11 +89,25 @@ class YoloRecognition():
 
         self.list_objects_server = rospy.Service(self.list_objects_service, ListClasses, self.getObjectList)
 
+        self.start_server = rospy.Service(self.start_service, Empty, self.start)
+
+        self.stop_server = rospy.Service(self.stop_service, Empty, self.stop)
+
         self.object_list_updated_header = Header()
         self.object_list_updated_header.stamp = rospy.get_rostime().now
         self.object_list_updated_header.frame_id = "objects_list"
 
         self.object_list_updated_pub.publish(self.object_list_updated_header)
+
+        self.state = False
+
+    def start(self, req):
+        self.state = True
+        return EmptyResponse()
+
+    def stop(self, req):
+        self.state = False
+        return EmptyResponse()
     
     def getObjectList(self, req):
         objects_list = []
@@ -102,62 +117,61 @@ class YoloRecognition():
         return ListClassesResponse(objects_list)
 
     def yoloRecognitionCallback(self, bbs):
-        rospy.loginfo('Image ID: ' + str(bbs.image_header.seq))
+        if self.state:
+            rospy.loginfo('Image ID: ' + str(bbs.image_header.seq))
 
-        bbs_l = bbs.bounding_boxes
+            bbs_l = bbs.bounding_boxes
 
-        objects = []
-        people = []
+            objects = []
+            people = []
 
-        for bb in bbs_l:
-            if bb.Class in dictionary.keys():
-                reference_model = bb.Class
-                bb.Class = dictionary[bb.Class]
-                
-            if 'people' in self.possible_classes and bb.Class in self.possible_classes['people'] and bb.probability >= self.threshold:
-                person = Description()
-                person.label_class = 'people' + '/' + bb.Class
-                person.reference_model = reference_model
-                person.probability = bb.probability
-                person.bounding_box.minX = bb.xmin
-                person.bounding_box.minY = bb.ymin
-                person.bounding_box.width = bb.xmax - bb.xmin
-                person.bounding_box.height = bb.ymax - bb.ymin
-                people.append(person)
+            for bb in bbs_l:
+                if bb.Class in dictionary.keys():
+                    reference_model = bb.Class
+                    bb.Class = dictionary[bb.Class]
+                    
+                if 'people' in self.possible_classes and bb.Class in self.possible_classes['people'] and bb.probability >= self.threshold:
+                    person = Description()
+                    person.label_class = 'people' + '/' + bb.Class
+                    person.reference_model = reference_model
+                    person.probability = bb.probability
+                    person.bounding_box.minX = bb.xmin
+                    person.bounding_box.minY = bb.ymin
+                    person.bounding_box.width = bb.xmax - bb.xmin
+                    person.bounding_box.height = bb.ymax - bb.ymin
+                    people.append(person)
 
-            elif bb.Class in [val for sublist in self.possible_classes.values() for val in sublist] and bb.probability >= self.threshold:
-                object_d = Description()
-                index = 0
-                i = 0
-                for value in self.possible_classes.values():
-                    if bb.Class in value:
-                        index = i
-                    i += 1
-                object_d.reference_model = reference_model
-                object_d.label_class = list(self.possible_classes.keys())[index] + '/' + bb.Class
-                object_d.probability = bb.probability
-                object_d.bounding_box.minX = bb.xmin
-                object_d.bounding_box.minY = bb.ymin
-                object_d.bounding_box.width = bb.xmax - bb.xmin
-                object_d.bounding_box.height = bb.ymax - bb.ymin
-                objects.append(object_d)
+                elif bb.Class in [val for sublist in self.possible_classes.values() for val in sublist] and bb.probability >= self.threshold:
+                    object_d = Description()
+                    index = 0
+                    i = 0
+                    for value in self.possible_classes.values():
+                        if bb.Class in value:
+                            index = i
+                        i += 1
+                    object_d.reference_model = reference_model
+                    object_d.label_class = list(self.possible_classes.keys())[index] + '/' + bb.Class
+                    object_d.probability = bb.probability
+                    object_d.bounding_box.minX = bb.xmin
+                    object_d.bounding_box.minY = bb.ymin
+                    object_d.bounding_box.width = bb.xmax - bb.xmin
+                    object_d.bounding_box.height = bb.ymax - bb.ymin
+                    objects.append(object_d)
 
-        objects_msg = Recognitions()
-        people_msg = Recognitions()
+            objects_msg = Recognitions()
+            people_msg = Recognitions()
 
-        if len(objects) > 0:
-            objects_msg.header = bbs.header
-            objects_msg.image_header = bbs.image_header
-            objects_msg.descriptions = objects
-            self.recognized_objects_pub.publish(objects_msg)
+            if len(objects) > 0:
+                objects_msg.header = bbs.header
+                objects_msg.image_header = bbs.image_header
+                objects_msg.descriptions = objects
+                self.recognized_objects_pub.publish(objects_msg)
 
-        if len(people) > 0:
-            people_msg.header = bbs.header
-            people_msg.image_header = bbs.image_header
-            people_msg.descriptions = people
-            self.recognized_people_pub.publish(people_msg)
-            
-
+            if len(people) > 0:
+                people_msg.header = bbs.header
+                people_msg.image_header = bbs.image_header
+                people_msg.descriptions = people
+                self.recognized_people_pub.publish(people_msg)
 
     def readParameters(self):
         self.bounding_boxes_topic = rospy.get_param("/object_recognition/subscribers/bounding_boxes/topic", "/darknet_ros/bounding_boxes")
@@ -173,6 +187,8 @@ class YoloRecognition():
         self.object_list_updated_qs = rospy.get_param("/object_recognition/publishers/object_list_updated/queue_size", 1)
 
         self.list_objects_service = rospy.get_param("/object_recognition/servers/list_objects/service", "/butia_vision/or/list_objects")
+        self.start_service = rospy.get_param("/object_recognition/servers/start/service", "/butia_vision/or/start")
+        self.stop_service = rospy.get_param("/object_recognition/servers/stop/service", "/butia_vision/or/stop")
 
         self.threshold = rospy.get_param("/object_recognition/threshold", 0.5)
         
