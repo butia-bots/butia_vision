@@ -4,7 +4,7 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 {
     readParameters();
 
-    //loadObjectClouds();
+    loadObjectClouds();
 
     object_recognition_sub = node_handle.subscribe(object_recognition_sub_topic, sub_queue_size, &Image2Kinect::objectRecognitionCallback, this);
     face_recognition_sub = node_handle.subscribe(face_recognition_sub_topic, sub_queue_size, &Image2Kinect::faceRecognitionCallback, this);
@@ -39,7 +39,7 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
 
     int min_x, min_y, max_x, max_y;
 
-    if(!use_mask) {
+    if(!use_mask && kernel_size > 0) {
         min_x = (bb.minX + bb.width/2 - kernel_size/2) < bb.minX ? bb.minX : (bb.minX + bb.width/2 - kernel_size/2);
         min_y = (bb.minY + bb.height/2 - kernel_size/2) < bb.minY ? bb.minY : (bb.minY + bb.height/2 - kernel_size/2);
         max_x = (bb.minX + bb.width/2 + kernel_size/2) > (bb.minX + bb.width) ? (bb.minX + bb.width) : (bb.minX + bb.width/2 + kernel_size/2);
@@ -52,11 +52,11 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
         max_y = max_y >= points.height ? points.height - 1 : max_y;
     }
     else {
-        min_x = min_x;
-        min_y = min_y;
+        min_x = bb.minX <= 0 ? 0 : bb.minX;
+        min_y = bb.minY <= 0 ? 0 : bb.minY;
 
-        max_x = min_x + points.width - 1;
-        max_y = min_y + points.height - 1; 
+        max_x = min_x + bb.width > points.width - 1 ? points.width - 1 : min_x + bb.width;
+        max_y = min_y + bb.height > points.height - 1 ? points.height - 1 : min_y + bb.height; 
     }
     
 
@@ -119,6 +119,204 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
         }
     }
 
+    // if(use_align){
+    //     std::vector<std::string> split_label;
+    //     boost::algorithm::split(split_label, label, boost::is_any_of("/"));
+    //     if (category2dataset.count(split_label.back()) > 0) {
+    //         std::string translated_label = category2dataset[split_label.back()];
+    //         PointCloud::Ptr shared_points(new PointCloud());
+    //         for (auto &point : valid_points) {
+    //             shared_points->points.push_back(point);
+    //         }
+    //         if (object_clouds.count(translated_label) > 0)
+    //         {
+    //             PointCloud::Ptr voxelized_cloud(new PointCloud);
+    //             pcl::VoxelGrid<pcl::PointXYZRGB> voxel_grid;
+    //             voxel_grid.setLeafSize(0.01, 0.01, 0.01);
+    //             voxel_grid.setInputCloud(shared_points);
+    //             voxel_grid.filter(*voxelized_cloud);
+    //             Eigen::Vector4f centroid;
+    //             pcl::compute3DCentroid(*voxelized_cloud, centroid);
+    //             Eigen::Matrix4f center_cloud_transform = Eigen::Matrix4f::Identity();
+    //             center_cloud_transform(0, 3) = -centroid(0);
+    //             center_cloud_transform(1, 3) = -centroid(1);
+    //             center_cloud_transform(2, 3) = -centroid(2);
+    //             PointCloud::Ptr centered_cloud(new PointCloud());
+    //             pcl::transformPointCloud(*voxelized_cloud, *centered_cloud, center_cloud_transform);
+    //             std::cout << center_cloud_transform << std::endl;
+    //             pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+    //             icp.setInputSource(centered_cloud);
+    //             icp.setInputTarget(object_clouds[translated_label]);
+    //             icp.setMaximumIterations(100);
+    //             PointCloud::Ptr aligned_object_cloud(new PointCloud());
+    //             icp.align(*aligned_object_cloud);
+    //             Eigen::Matrix4f icp_transform = icp.getFinalTransformation();
+    //             Eigen::Matrix4f final_transform = -center_cloud_transform * icp_transform;
+    //             std::cout << final_transform << std::endl;
+    //             Eigen::Quaternionf rotation(final_transform.block<3,3>(0, 0));
+    //             mean_position.x = (double)final_transform(0, 3);
+    //             mean_position.y = (double)final_transform(1, 3);
+    //             mean_position.z = (double)final_transform(2, 3);
+    //             orientation.w = (double)rotation.w();
+    //             orientation.x = (double)rotation.x();
+    //             orientation.y = (double)rotation.y();
+    //             orientation.z = (double)rotation.z();
+    //         }
+    //     }
+    // }
+    return true;
+}
+
+
+bool Image2Kinect::robustPoseEstimation(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, cv::Mat &mask, std::string label)
+{
+    geometry_msgs::Point &position = pose.pose.position;
+    geometry_msgs::Quaternion &orientation = pose.pose.orientation;
+
+    bool use_mask = false;
+    if(mask.rows*mask.cols != 0) use_mask = true;
+
+    int min_x, min_y, max_x, max_y;
+
+    if(!use_mask && kernel_size > 0) {
+        min_x = (bb.minX + bb.width/2 - kernel_size/2) < bb.minX ? bb.minX : (bb.minX + bb.width/2 - kernel_size/2);
+        min_y = (bb.minY + bb.height/2 - kernel_size/2) < bb.minY ? bb.minY : (bb.minY + bb.height/2 - kernel_size/2);
+        max_x = (bb.minX + bb.width/2 + kernel_size/2) > (bb.minX + bb.width) ? (bb.minX + bb.width) : (bb.minX + bb.width/2 + kernel_size/2);
+        max_y = (bb.minY + bb.height/2 + kernel_size/2) > (bb.minY + bb.height) ? (bb.minY + bb.height) : (bb.minY + bb.height/2 + kernel_size/2);
+
+        min_x = min_x < 0 ? 0 : min_x;
+        min_y = min_y < 0 ? 0 : min_y;
+
+        max_x = max_x >= points.width ? points.width - 1 : max_x;
+        max_y = max_y >= points.height ? points.height - 1 : max_y;
+    }
+    else {
+        min_x = bb.minX <= 0 ? 0 : bb.minX;
+        min_y = bb.minY <= 0 ? 0 : bb.minY;
+
+        max_x = min_x + bb.width > points.width - 1 ? points.width - 1 : min_x + bb.width;
+        max_y = min_y + bb.height > points.height - 1 ? points.height - 1 : min_y + bb.height; 
+    }
+
+    PointCloudT::Ptr scene(new PointCloudT);
+    FeatureCloudT::Ptr object_features (new FeatureCloudT);
+    FeatureCloudT::Ptr scene_features (new FeatureCloudT);
+    PointCloudT::Ptr object_aligned (new PointCloudT);
+
+    for(int r = min_y; r <= max_y ; r++) {
+        for(int c = min_x; c <= max_x ; c++) {
+            pcl::PointXYZRGB point = points.at(c, r);
+            float depth = sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
+            if((use_mask && mask.at<int>(r - min_y,c - min_x) != 0) || !use_mask) {
+                if(depth <= max_depth && depth != 0){  
+                    PointNT pn;
+                    pn.x = point.x;
+                    pn.y = point.y;
+                    pn.z = point.z;
+                    scene->push_back(pn);
+                }
+            }
+        }
+    }
+
+    if(scene->width*scene->height == 0) {
+        ROS_ERROR("Alignment Error!");
+        return false;
+    }
+
+    pcl::VoxelGrid<PointNT> voxel_grid;
+    voxel_grid.setLeafSize(0.01, 0.01, 0.01);
+    voxel_grid.setInputCloud(scene);
+    voxel_grid.filter(*scene);
+    Eigen::Vector4f centroid;
+    pcl::compute3DCentroid(*scene, centroid);
+    Eigen::Matrix4f center_cloud_transform = Eigen::Matrix4f::Identity();
+    center_cloud_transform(0, 3) = -centroid(0);
+    center_cloud_transform(1, 3) = -centroid(1);
+    center_cloud_transform(2, 3) = -centroid(2);
+    pcl::transformPointCloudWithNormals(*scene, *scene, center_cloud_transform);
+
+    if (object_clouds.count(label) > 0 && scene->size() > 10)
+    {
+        pcl::NormalEstimationOMP<PointNT,PointNT> nest;
+        nest.setRadiusSearch(0.02);
+        nest.setInputCloud(scene);
+        nest.compute(*scene);
+
+        std::cout<<"Reference model: "<<object_clouds[label]->size()<<" points."<<std::endl;
+        std::cout<<"Scene Cloud: "<<scene->size()<<" points."<<std::endl;
+
+        // if(label == "002_master_chef_can"){
+        //     pcl::io::savePCDFileASCII ("/home/igormaurell/object_pre.pcd", *object_clouds[label]);
+        // }
+
+        // pcl::IterativeClosestPoint<PointNT, PointNT> align;
+        // align.setInputSource(scene);
+        // align.setInputTarget(object_clouds[label]);
+        // align.setMaximumIterations(100);
+        // align.align(*object_aligned);
+
+        FeatureEstimationT fest;
+        fest.setRadiusSearch (0.025);
+        fest.setInputCloud (object_clouds[label]);
+        fest.setInputNormals (object_clouds[label]);
+        fest.compute (*object_features);
+        fest.setInputCloud (scene);
+        fest.setInputNormals (scene);
+        fest.compute (*scene_features);
+
+        pcl::SampleConsensusPrerejective<PointNT, PointNT, FeatureT> align;
+        align.setInputSource (object_clouds[label]);
+        align.setSourceFeatures (object_features);
+        align.setInputTarget (scene);
+        align.setTargetFeatures (scene_features);
+        align.setMaximumIterations (20000); // Number of RANSAC iterations
+        align.setNumberOfSamples (3); // Number of points to sample for generating/prerejecting a pose
+        align.setCorrespondenceRandomness (5); // Number of nearest features to use
+        align.setSimilarityThreshold (0.9f); // Polygonal edge length similarity threshold
+        align.setMaxCorrespondenceDistance (2.5f * 0.01); // Inlier threshold
+        align.setInlierFraction (0.25f);
+
+        align.align (*object_aligned);
+        
+        if (align.hasConverged ())
+        {
+            ROS_INFO("Alignment Done!");
+            Eigen::Matrix4f transformation = align.getFinalTransformation ();
+
+            // if(label == "002_master_chef_can"){
+            //     pcl::io::savePCDFileASCII ("/home/igormaurell/object.pcd", *object_aligned);
+            //     pcl::io::savePCDFileASCII ("/home/igormaurell/scene.pcd", *scene);
+            // }'
+
+            Eigen::Matrix4f final_transform = center_cloud_transform.inverse() * transformation;
+
+            Eigen::Quaternionf rotation(final_transform.block<3,3>(0, 0));
+            position.x = (double)final_transform(0, 3);
+            position.y = (double)final_transform(1, 3);
+            position.z = (double)final_transform(2, 3);
+            orientation.w = (double)rotation.w();
+            orientation.x = (double)rotation.x();
+            orientation.y = (double)rotation.y();
+            orientation.z = (double)rotation.z();
+            
+            return true;
+        }
+        ROS_ERROR("Alignment Error!");
+    }
+    else {
+        std::string error = "There is no Reference Model with name: ";
+        error += label + "!";
+        ROS_ERROR(error.c_str());
+    }
+
+    position.x = -center_cloud_transform(0, 3);
+    position.y = -center_cloud_transform(1, 3);
+    position.z = -center_cloud_transform(2, 3);
+    orientation.w = 0;
+    orientation.x = 0;
+    orientation.y = 0;
+    orientation.z = 1;
     return true;
 }
 
@@ -206,9 +404,18 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         // sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
         // readImage(rgb_const_ptr, segmented_rgb_image);
 
-        if(points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask))
-            //refinePose(points.makeShared(), description3d.pose.pose, description3d.label_class);
+        bool success = false;
+        if(use_align) {
+            success = robustPoseEstimation(points, (*it).bounding_box, pose, mask, it->reference_model);
+        }
+        else {
+            success = points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask);
+        }
+
+        if(success) {
             descriptions3d.push_back(description3d);
+        }
+        
     }
 
     if(publish_tf)
@@ -235,7 +442,11 @@ void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
         }
 
         transform.setOrigin( tf::Vector3(it->pose.pose.position.x, it->pose.pose.position.y, it->pose.pose.position.z) );
-        q.setRPY(0, 0, 0);
+        //q.setRPY(0, 0, 0);
+        q.setW(it->pose.pose.orientation.w);
+        q.setX(it->pose.pose.orientation.x);
+        q.setY(it->pose.pose.orientation.y);
+        q.setZ(it->pose.pose.orientation.z);
         transform.setRotation(q);
         br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), recognitions3d.image_header.frame_id,
                                               it->label_class + std::to_string(current_rec[it->label_class]) + "_detect"));
@@ -273,50 +484,71 @@ void Image2Kinect::peopleTrackingCallback(butia_vision_msgs::Recognitions recogn
     recognitions2Recognitions3d(recognitions, recognitions3d);
     people_tracking_pub.publish(recognitions3d);
 }
-/*
+
 void Image2Kinect::loadObjectClouds()
 {
     std::string objects_dir = ros::package::getPath("image2kinect") + "/data";
     for (boost::filesystem::directory_iterator iter(objects_dir); iter != boost::filesystem::directory_iterator(); ++iter)
     {
-        if (iter->path().filename().extension() == "pcd")
+        if (iter->path().filename().extension() == ".pcd")
         {
-            pcl::io::loadPCDFile(iter->path().string(), object_clouds[iter->path().filename().stem().string()]);
+            std::string label = iter->path().filename().stem().string();
+            //ROS_INFO(label.c_str());
+            PointCloudT::Ptr object_cloud(new PointCloudT());
+            pcl::io::loadPCDFile<PointNT>(iter->path().string(), *object_cloud);
+            pcl::VoxelGrid<PointNT> voxel_grid;
+            voxel_grid.setLeafSize(0.01, 0.01, 0.01);
+            voxel_grid.setInputCloud(object_cloud);
+            voxel_grid.filter(*object_cloud);
+            Eigen::Vector4f centroid;
+            pcl::compute3DCentroid(*object_cloud, centroid);
+            Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+            transform(0, 3) = -centroid(0);
+            transform(1, 3) = -centroid(1);
+            transform(2, 3) = -centroid(2);
+            pcl::transformPointCloudWithNormals(*object_cloud, *object_cloud, transform);
+            object_clouds.insert(std::make_pair(label, object_cloud));
+            object_transforms.insert(std::make_pair(label, transform));
         }
     }
 }
-
-void Image2Kinect::refinePose(const PointCloud::Ptr &points, geometry_msgs::Pose &pose, std::string label)
+/*
+void Image2Kinect::refinePose(const PointCloud::Ptr &points, geometry_msgs::PoseWithCovariance &pcov, std::string label)
 {
     if (object_clouds.count(label) > 0)
     {
-        PointCloudNormal::Ptr normal_cloud;
-        pcl::NormalEstimation<pcl::PointXYZRGB, pcl::PointXYZRGBNormal> normal_estimation;
-        normal_estimation.setInputCloud(points);
-        normal_estimation.setSearchMethod(pcl::search::KdTree<pcl::PointXYZRGB>::Ptr (new pcl::search::KdTree<pcl::PointXYZRGB>));
-        normal_estimation.setKSearch(100);
-        normal_estimation.setRadiusSearch(0.0);
-        normal_estimation.compute(*normal_cloud);
-        Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity();
-        transformation_matrix(0, 3) = pose.position.x;
-        transformation_matrix(1, 3) = pose.position.y;
-        transformation_matrix(2, 3) = pose.position.z;
-        PointCloudNormal::Ptr object_cloud;
-        pcl::transformPointCloudWithNormals(object_clouds[label], *object_cloud, transformation_matrix);
-        pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal> icp;
-        icp.setInputSource(object_cloud);
-        icp.setInputTarget(normal_cloud);
-        icp.align(*object_cloud);
-        transformation_matrix = icp.getFinalTransformation().cast<double>();
-        pose.position.x = transformation_matrix(0, 3);
-        pose.position.y = transformation_matrix(1, 3);
-        pose.position.z = transformation_matrix(2, 3);
-        Eigen::Matrix3d rotation_matrix(transformation_matrix.block<3, 3>(0, 0));
-        Eigen::Quaterniond quaternion_rotation(rotation_matrix);
-        pose.orientation.x = quaternion_rotation.x();
-        pose.orientation.y = quaternion_rotation.y();
-        pose.orientation.z = quaternion_rotation.z();
-        pose.orientation.w = quaternion_rotation.w();
+        PointCloud::Ptr voxelized_cloud(new PointCloud);
+        pcl::VoxelGrid<pcl::PointXYZRGB> voxel_grid;
+        voxel_grid.setLeafSize(0.01, 0.01, 0.01);
+        voxel_grid.setInputCloud(points);
+        voxel_grid.filter(*voxelized_cloud);
+        geometry_msgs::Pose &pose = pcov.pose;
+        Eigen::Vector4f centroid;
+        pcl::compute3DCentroid(*voxelized_cloud, centroid);
+        Eigen::Matrix4f center_cloud_transform = Eigen::Matrix4f::Identity();
+        center_cloud_transform(0, 3) = -centroid(0);
+        center_cloud_transform(1, 3) = -centroid(1);
+        center_cloud_transform(2, 3) = -centroid(2);
+        PointCloud::Ptr centered_cloud(new PointCloud());
+        pcl::transformPointCloud(*voxelized_cloud, *centered_cloud, center_cloud_transform);
+        std::cout << center_cloud_transform << std::endl;
+        pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+        icp.setInputSource(centered_cloud);
+        icp.setInputTarget(object_clouds[label]);
+        icp.setMaximumIterations(1);
+        PointCloud::Ptr aligned_object_cloud(new PointCloud());
+        icp.align(*aligned_object_cloud);
+        Eigen::Matrix4f icp_transform = icp.getFinalTransformation();
+        Eigen::Matrix4f final_transform = center_cloud_transform * icp_transform;
+        std::cout << final_transform << std::endl;
+        Eigen::Quaternionf rotation(final_transform.block<3,3>(0, 0));
+        pose.position.x = (double)final_transform(0, 3);
+        pose.position.y = (double)final_transform(1, 3);
+        pose.position.z = (double)final_transform(2, 3);
+        pose.orientation.w = (double)rotation.w();
+        pose.orientation.x = (double)rotation.x();
+        pose.orientation.y = (double)rotation.y();
+        pose.orientation.z = (double)rotation.z();
     }
 }
 */
@@ -341,5 +573,5 @@ void Image2Kinect::readParameters()
     node_handle.param("/image2kinect/max_depth", max_depth, 2000);
     node_handle.param("/image2kinect/publish_tf", publish_tf, true);
     node_handle.param("/image2kinect/kernel_size", kernel_size, 5);
-
+    node_handle.param("/image2kinect/use_align", use_align, true);
 }

@@ -1,6 +1,6 @@
 #include "butia_vision_bridge/butia_vision_bridge.h"
 
-ButiaVisionBridge::ButiaVisionBridge(ros::NodeHandle &nh) : node_handle(nh), it(nh), seq(0)
+ButiaVisionBridge::ButiaVisionBridge(ros::NodeHandle &nh) : node_handle(nh), it(nh), seq(0), max_seq(0), min_seq(0)
 {
     readParameters();
 
@@ -100,7 +100,7 @@ void ButiaVisionBridge::imageResize(cv::Mat &image)
 void ButiaVisionBridge::kinectCallback(const sensor_msgs::Image::ConstPtr &image_rgb_ptr, const sensor_msgs::Image::ConstPtr &image_depth_ptr,
                                        const sensor_msgs::PointCloud2::ConstPtr &points_ptr, const sensor_msgs::CameraInfo::ConstPtr &camera_info_ptr)
 {
-    ROS_INFO("INPUT ID: rgb = %d, depth = %d, points = %d, info = %d", image_rgb_ptr->header.seq, image_depth_ptr->header.seq,
+    ROS_INFO("INPUT %d: rgb = %d, depth = %d, points = %d, info = %d", seq, image_rgb_ptr->header.seq, image_depth_ptr->header.seq,
     points_ptr->header.seq, camera_info_ptr->header.seq);
 
     cv::Mat rgb_image, depth_image;
@@ -136,8 +136,8 @@ void ButiaVisionBridge::kinectCallback(const sensor_msgs::Image::ConstPtr &image
     points_buffer[seq%buffer_size] = points_message;
     camera_info_buffer[seq%buffer_size] = camera_info;
 
-    if(seq - buffer_size >= min_seq || seq < min_seq) min_seq = seq;
-    max_seq = seq;
+    if(max_seq - min_seq >= buffer_size) min_seq++;
+    max_seq++;
 
     publish(rgb_image_message, depth_image_message, points_message, camera_info);
 
@@ -160,6 +160,7 @@ bool ButiaVisionBridge::imageRequestServer(butia_vision_msgs::ImageRequest::Requ
     ROS_INFO("REQUEST ID: %d", req_seq);
     
     if(req_seq > max_seq || req_seq < min_seq) {
+        ROS_ERROR("%d is not available. Min: %d and Max: %d.", req_seq, min_seq, max_seq);
         return false;
     }
 
