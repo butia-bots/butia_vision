@@ -153,8 +153,8 @@ if __name__ == '__main__':
     rospy.wait_for_service(param_image_request_service)
     try:
         image_request_client = rospy.ServiceProxy(param_image_request_service, ImageRequest)
-    except rospy.ServiceException, e:
-        print "Service call failed %s"%e
+    except rospy.ServiceException:
+        print("Service call failed")
     
     models_dir = os.path.join(PACK_DIR, 'models')
     model_file = os.path.join(models_dir, 'mars-small128.pb')
