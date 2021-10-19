@@ -1,5 +1,6 @@
 *.vscode*
 *.pyc
+*.obj
 *.t7
 *.lua
 *.csv

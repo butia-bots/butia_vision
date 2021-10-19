@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python3
 import rospy
 
 from std_msgs.msg import Header
@@ -7,23 +7,23 @@ from butia_vision_msgs.msg import Description, Recognitions
 from butia_vision_msgs.srv import ListClasses, ListClassesResponse
 
 dictionary={"person_standing": "Person",
-            "002_master_chef_can": "Master chef coffee can", 
-            "003_cracker_box": "Cheez-it cracker box", 
-            "004_sugar_box": "Domino sugar box", 
-            "005_tomato_soup_can": "Tomato soup can", 
-            "006_mustard_bottle": "French’s mustard bottle", 
-            "007_tuna_fish_can": "Starkist tuna fish can", 
-            "008_pudding_box": "Jell-o chocolate pudding box", 
-            "009_gelatin_box": "Jell-o strawberry gelatin box", 
-            "010_potted_meat_can": "Spam potted meat can", 
-            "011_banana": "Plastic banana", 
-            "012_strawberry": "Plastic strawberry", 
-            "013_apple": "Plastic apple", 
-            "014_lemon": "Plastic lemon", 
-            "015_peach": "Plastic peach", 
-            "016_pear": "Plastic pear", 
-            "017_orange": "Plastic orange", 
-            "018_plum": "Plastic plum", 
+            "002_master_chef_can": "master_chef_can", 
+            "003_cracker_box": "cracker_box", 
+            "004_sugar_box": "sugar_box", 
+            "005_tomato_soup_can": "tomato_soup_can", 
+            "006_mustard_bottle": "mustard_bottle", 
+            "007_tuna_fish_can": "tuna_fish_can", 
+            "008_pudding_box": "pudding_box", 
+            "009_gelatin_box": "gelatin_box", 
+            "010_potted_meat_can": "potted_meat_can", 
+            "011_banana": "banana", 
+            "012_strawberry": "strawberry", 
+            "013_apple": "apple", 
+            "014_lemon": "lemon", 
+            "015_peach": "peach", 
+            "016_pear": "pear", 
+            "017_orange": "orange", 
+            "018_plum": "plum", 
             "019_pitcher_base": "Pitcher base", 
             "021_bleach_cleanser": "Srub cleanser bottle", 
             "022_windex_bottle": "Windex Spray bottle", 
@@ -111,11 +111,13 @@ class YoloRecognition():
 
         for bb in bbs_l:
             if bb.Class in dictionary.keys():
+                reference_model = bb.Class
                 bb.Class = dictionary[bb.Class]
                 
             if 'people' in self.possible_classes and bb.Class in self.possible_classes['people'] and bb.probability >= self.threshold:
                 person = Description()
                 person.label_class = 'people' + '/' + bb.Class
+                person.reference_model = reference_model
                 person.probability = bb.probability
                 person.bounding_box.minX = bb.xmin
                 person.bounding_box.minY = bb.ymin
@@ -131,6 +133,7 @@ class YoloRecognition():
                     if bb.Class in value:
                         index = i
                     i += 1
+                object_d.reference_model = reference_model
                 object_d.label_class = list(self.possible_classes.keys())[index] + '/' + bb.Class
                 object_d.probability = bb.probability
                 object_d.bounding_box.minX = bb.xmin

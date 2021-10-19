@@ -16,7 +16,7 @@ subscribers:
 
 publishers:
   
-  queue_size: 5
+  queue_size: 1
 
   image_rgb:
     topic: /butia_vision/bvb/image_rgb_raw

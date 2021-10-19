@@ -1,7 +1,7 @@
 threshold: 0.3
 possible_classes:
     people: [Person]
-    food: [Master chef coffee can, Cheez-it cracker box, Domino sugar box, Tomato soup can, French’s mustard bottle, Starkist tuna fish can, Jell-o chocolate pudding box, Jell-o strawberry gelatin box, Spam potted meat can, Plastic banana, Plastic strawberry, Plastic apple, Plastic lemon, Plastic peach, Plastic pear, Plastic orange, Plastic plum]
+    food: [master_chef_can, cracker_box, sugar_box, tomato_soup_can, mustard_bottle, tuna_fish_can, pudding_box, gelatin_box, potted_meat_can, banana, strawberry, apple, lemon, peach, pear, orange, plum]
     kitchen: [Pitcher base, Srub cleanser bottle, Windex Spray bottle, Bowl, Mug, Scotch brite dobie sponge, Plate, Fork, Spoon, Spatula]
     tools: [Large marker, Clamps]
     shape: [Mini soccer ball, Soft ball, Baseball, Tennis ball, Racquetball, Golf ball, Chain, Foam brick, Dice, Marbles, Cups]
