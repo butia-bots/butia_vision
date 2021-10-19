@@ -14,6 +14,7 @@ class TwoFac_Classifier(BaseEstimator):
     
     def fit(self, samples, labels):
         self.multi_class.fit(samples,labels)
+        print self.multi_class.best_params_
         samples_dict = {}
         for i, num in enumerate(labels):
             if num not in samples_dict:
@@ -37,4 +38,3 @@ class TwoFac_Classifier(BaseEstimator):
         else:
             response = [0]*len(response[0])
             return np.array(response)
-        

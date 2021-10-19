@@ -1,6 +1,6 @@
 # people_tracking
 ## Overview
-The people_tracking package uses OpenCV and object_recognition package to get the bounding boxes of the people in the frame and extract, match and register the SIFT features of the people.
+The people_tracking package uses [OpenCV](https://github.com/opencv/opencv), object_recognition package and [deep SORT algorithm](https://github.com/nwojke/deep_sort) to get the bounding boxes of the people in the frame, apply tracking algorithm and extract features of the people in image.
 
 ## Topics
 ### Subscribed Topics

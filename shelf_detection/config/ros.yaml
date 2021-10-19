@@ -1,0 +1,15 @@
+subscribers:
+
+  object_recognition:
+    topic: /butia_vision/or/object_recognition
+    queue_size: 1
+
+publishers:
+
+  shelf_detection:
+    topic: /butia_vision/sd/shelf_detection
+    queue_size: 1
+
+  shelf_detection_view:
+    topic: /butia_vision/sd/shelf_detection_view
+    queue_size: 1

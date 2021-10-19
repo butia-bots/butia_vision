@@ -4,9 +4,7 @@ services:
     stop_tracking: "/butia_vision/pt/stop"
   image_server:
     image_request: "/butia_vision/is/image_request"
-  segmentation:
-    segmentation_request: "/butia_vision/seg/image_segmentation"
-
+    
 topics:
   object_recognition:
     people_detection: "/butia_vision/or/people_detection"

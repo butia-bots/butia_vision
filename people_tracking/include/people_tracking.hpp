@@ -66,11 +66,11 @@ class PeopleTracker {
         std::vector<cv::DMatch> matches;
         int good_matches;
 	
-	//Debug
-	cv::Mat debug;
-	cv::Mat keypoints_images;
-	std::vector<cv::KeyPoint> first_keypoint;
-	cv::Mat_<float> first_descriptors;	
+        //Debug
+        cv::Mat debug;
+        cv::Mat keypoints_images;
+        std::vector<cv::KeyPoint> first_keypoint;
+        cv::Mat_<float> first_descriptors;	
 
         //Parameters
         std::string param_detector_type;

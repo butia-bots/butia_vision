@@ -4,7 +4,12 @@
   <rosparam command="load" ns="people_tracking" file="$(find people_tracking)/config/ros.yaml"/>
   <rosparam command="load" ns="people_tracking" file="$(find people_tracking)/config/people_tracking.yaml"/>
 
-  <node name="people_tracking_node" pkg="people_tracking" type="people_tracking_node" output="screen"/>
+  <node name="people_tracking_node" pkg="people_tracking" type="people_tracking_node.py" output="screen"/>
+
+  <node name="image_view" pkg="image_view" type="image_view" respawn="false" output="screen">
+    <remap from="image" to="/butia_vision/pt/people_tracking_view"/>
+    <param name="autosize" value="true" />
+  </node>
 
 
 </launch>

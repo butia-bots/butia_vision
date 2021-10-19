@@ -1,13 +1,9 @@
-people_tracking:
-  thresholds:
-    bounding_box_size: 0.1
-    probability: 0.7
-  match:
-    minimal_hessian: 400
-    minimal_minimal_distance: 0.2
-    check_factor: 0.7
-    k: 8
-  detector:
-    type: "sift"
-  queue:
-    size: 5
+thresholds:
+  probability: 0.7
+  matching: 0.7
+  max_iou_distance: 0.7
+  max_age: 20
+  n_init: 5
+  boundingBox: 0.05
+queue:
+  size: 5

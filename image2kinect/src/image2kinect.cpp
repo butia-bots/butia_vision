@@ -4,75 +4,26 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 {
     readParameters();
 
+    //loadObjectClouds();
+
     object_recognition_sub = node_handle.subscribe(object_recognition_sub_topic, sub_queue_size, &Image2Kinect::objectRecognitionCallback, this);
     face_recognition_sub = node_handle.subscribe(face_recognition_sub_topic, sub_queue_size, &Image2Kinect::faceRecognitionCallback, this);
+    people_detection_sub = node_handle.subscribe(people_detection_sub_topic, sub_queue_size, &Image2Kinect::peopleDetectionCallback, this);
     people_tracking_sub = node_handle.subscribe(people_tracking_sub_topic, sub_queue_size, &Image2Kinect::peopleTrackingCallback, this);
 
     object_recognition_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(object_recognition_pub_topic, pub_queue_size);
     face_recognition_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(face_recognition_pub_topic, pub_queue_size);
+    people_detection_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(people_detection_pub_topic, pub_queue_size);
     people_tracking_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(people_tracking_pub_topic, pub_queue_size);
 
     image_request_client = node_handle.serviceClient<butia_vision_msgs::ImageRequest>(image_request_client_service);
-    segmentation_request_client = node_handle.serviceClient<butia_vision_msgs::SegmentationRequest>(segmentation_request_client_service);
-
-    camera_matrix_color = cv::Mat::zeros(3, 3, CV_64F);
+    //segmentation_request_client = node_handle.serviceClient<butia_vision_msgs::SegmentationRequest>(segmentation_request_client_service);
 }
 
-
-
-void Image2Kinect::readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr& camera_info)
+bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask)
 {
-    bool recalculate_tables = false;
-
-    if(width != camera_info->width || height != camera_info->height){
-        recalculate_tables = true;
-        width = camera_info->width;
-        height = camera_info->height;
-    } 
-
-    double *it = camera_matrix_color.ptr<double>(0, 0);
-    for(int i = 0 ; i < 9 ; i++, it++) {
-        if(*it != camera_info->K[i]){
-            recalculate_tables = true;
-            *it = camera_info->K[i];
-        } 
-    }
-
-    if(recalculate_tables) createTabels();
-}
-
-void Image2Kinect::createTabels()
-{
-    float fx = 1.0f / camera_matrix_color.at<double>(0, 0);
-    float fy = 1.0f / camera_matrix_color.at<double>(1, 1);
-    float cx = camera_matrix_color.at<double>(0, 2);
-    float cy = camera_matrix_color.at<double>(1, 2);
-
-    float* it;
-    table_x = cv::Mat(1, width, CV_32F);
-    it = table_x.ptr<float>();
-    for(int c = 0 ; c < width ; c++, it++) {
-        *it = (c - cx) * fx;
-    }
-
-    table_y = cv::Mat(1, height, CV_32F);
-    it = table_y.ptr<float>();
-    for(int r = 0 ; r < height ; r++, it++) {
-        *it = (r - cy) * fy;
-    }
-}
-
-
-void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image)
-{
-    cv_bridge::CvImageConstPtr cv_image;
-    cv_image = cv_bridge::toCvShare(msg_image, msg_image->encoding);
-    cv_image->image.copyTo(image);
-}
-
-bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geometry_msgs::Point &point, std_msgs::ColorRGBA &color)
-{
-    geometry_msgs::Point &mean_position = point;
+    geometry_msgs::Point &mean_position = pose.pose.position;
+    geometry_msgs::Quaternion &orientation = pose.pose.orientation;
     std_msgs::ColorRGBA &mean_color = color;
 
     mean_position.x = 0.0f;
@@ -83,56 +34,73 @@ bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geo
     mean_color.g = 0.0f;
     mean_color.b = 0.0f;
 
-    std::vector<geometry_msgs::Point> points;
-    for(int r = 0 ; r < image_depth.rows ; r++) {
+    bool use_mask = false;
+    if(mask.rows*mask.cols != 0) use_mask = true;
 
-        uint16_t *it_depth = image_depth.ptr<uint16_t>(r);
-        cv::Vec3b *it_color = image_color.ptr<cv::Vec3b>(r);
+    int min_x, min_y, max_x, max_y;
 
-        for(int c = 0 ; c < image_depth.cols ; c++, it_depth++, it_color++) {
-            if(it_color->val[0] != 0 || it_color->val[1] != 0 || it_color->val[2] != 0){
-                geometry_msgs::Point point;
-                
-                if(*it_depth == 0) continue;
+    if(!use_mask) {
+        min_x = (bb.minX + bb.width/2 - kernel_size/2) < bb.minX ? bb.minX : (bb.minX + bb.width/2 - kernel_size/2);
+        min_y = (bb.minY + bb.height/2 - kernel_size/2) < bb.minY ? bb.minY : (bb.minY + bb.height/2 - kernel_size/2);
+        max_x = (bb.minX + bb.width/2 + kernel_size/2) > (bb.minX + bb.width) ? (bb.minX + bb.width) : (bb.minX + bb.width/2 + kernel_size/2);
+        max_y = (bb.minY + bb.height/2 + kernel_size/2) > (bb.minY + bb.height) ? (bb.minY + bb.height) : (bb.minY + bb.height/2 + kernel_size/2);
 
-                float depth_value = *it_depth/1000.0;
+        min_x = min_x < 0 ? 0 : min_x;
+        min_y = min_y < 0 ? 0 : min_y;
 
-                point.x = depth_value * table_x.at<float>(0, c);
-                point.y = depth_value * table_y.at<float>(0, r);
-                point.z = depth_value;
+        max_x = max_x >= points.width ? points.width - 1 : max_x;
+        max_y = max_y >= points.height ? points.height - 1 : max_y;
+    }
+    else {
+        min_x = min_x;
+        min_y = min_y;
 
-                mean_position.x += point.x;
-                mean_position.y += point.y;
-                mean_position.z += point.z;
+        max_x = min_x + points.width - 1;
+        max_y = min_y + points.height - 1; 
+    }
+    
 
-                mean_color.r += it_color->val[0];
-                mean_color.g += it_color->val[1];
-                mean_color.b += it_color->val[2];
+    std::vector<pcl::PointXYZRGB> valid_points;
+    for(int r = min_y; r <= max_y ; r++) {
+        for(int c = min_x; c <= max_x ; c++) {
+            pcl::PointXYZRGB point = points.at(c, r);
+            float depth = sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
+            if((use_mask && mask.at<int>(r - min_y,c - min_x) != 0) || !use_mask) {
+                if(depth <= max_depth && depth != 0){     
+                    mean_position.x += point.x;
+                    mean_position.y += point.y;
+                    mean_position.z += point.z;
 
-                points.push_back(point);
-
+                    mean_color.r += point.r;
+                    mean_color.g += point.g;
+                    mean_color.b += point.b;
+                    valid_points.push_back(point);
+                }
             }
         }
     }
 
-    if(points.size() <= 0) {
-        std::cout<< "ERROR"<< std::endl;
+    if(valid_points.size() == 0) {
+        std::cout<< "No valid point." << std::endl;
         return false;
     } 
 
-    mean_position.x /= points.size();
-    mean_position.y /= points.size();
-    mean_position.z /= points.size();
+    mean_position.x /= valid_points.size();
+    mean_position.y /= valid_points.size();
+    mean_position.z /= valid_points.size();
 
-    mean_color.r /= points.size();
-    mean_color.g /= points.size();
-    mean_color.b /= points.size();
+    orientation.x = 0;
+    orientation.y = 0;
+    orientation.z = 0;
+    orientation.w = 1;
 
-    return true;
+    mean_color.r /= valid_points.size();
+    mean_color.g /= valid_points.size();
+    mean_color.b /= valid_points.size();
 
-    /*std::vector<geometry_msgs::Point>::iterator it;
-
-    for(it = points.begin() ; it != points.end() ; it++) {
+    //review this, may be wrong
+    std::vector<pcl::PointXYZRGB>::iterator it;
+    for(it = valid_points.begin() ; it != valid_points.end() ; it++) {
         pose.covariance[6*0 + 0] += (it->x - mean_position.x)*(it->x - mean_position.x); //xx
         pose.covariance[6*0 + 1] += (it->x - mean_position.x)*(it->y - mean_position.y); //xy
         pose.covariance[6*0 + 2] += (it->x - mean_position.x)*(it->z - mean_position.z); //xz
@@ -147,10 +115,26 @@ bool Image2Kinect::rgbd2RGBPoint(cv::Mat &image_color, cv::Mat &image_depth, geo
 
     for(int i = 0 ; i < 3 ; i++) {
         for(int j = 0 ; j < 3 ; j++) {
-            pose.covariance[6*i + j] /= points.size();
+            pose.covariance[6*i + j] /= valid_points.size();
         }
-    }*/
+    }
 
+    return true;
+}
+
+
+void Image2Kinect::readImage(const sensor_msgs::Image::ConstPtr& msg_image, cv::Mat &image)
+{
+    cv_bridge::CvImageConstPtr cv_image;
+    cv_image = cv_bridge::toCvShare(msg_image, msg_image->encoding);
+    cv_image->image.copyTo(image);
+}
+
+void Image2Kinect::readPoints(const sensor_msgs::PointCloud2::ConstPtr& msg_points, PointCloud &points)
+{
+    pcl::PCLPointCloud2 cloud; 
+    pcl_conversions::toPCL(*msg_points, cloud);
+    pcl::fromPCLPointCloud2(cloud, points);
 }
 
 
@@ -166,59 +150,69 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
     butia_vision_msgs::ImageRequest image_srv;
     image_srv.request.seq = frame_id;
     if (!image_request_client.call(image_srv)) {
-        ROS_ERROR("Failed to call image_request service");
+        ROS_ERROR("FAILED TO CALL IMAGE REQUEST SERVICE");
         return;
     }
 
     cv::Mat segmented_rgb_image, depth, segmented_depth_image;
+    PointCloud points;
 
     butia_vision_msgs::RGBDImage &rgbd_image = image_srv.response.rgbd_image;
-
     sensor_msgs::Image::ConstPtr depth_const_ptr( new sensor_msgs::Image(rgbd_image.depth));
-    sensor_msgs::CameraInfo::ConstPtr camera_info_const_ptr( new sensor_msgs::CameraInfo(image_srv.response.camera_info));
+    sensor_msgs::PointCloud2::ConstPtr points_const_ptr( new sensor_msgs::PointCloud2(image_srv.response.points));
 
     readImage(depth_const_ptr, depth);
-    readCameraInfo(camera_info_const_ptr);
+    readPoints(points_const_ptr, points);
 
     std::vector<butia_vision_msgs::Description> &descriptions = recognitions.descriptions;
 
-    butia_vision_msgs::SegmentationRequest segmentation_srv;
-    segmentation_srv.request.initial_rgbd_image = rgbd_image;
-    segmentation_srv.request.descriptions = descriptions;
-    if (!segmentation_request_client.call(segmentation_srv)) {
-        ROS_ERROR("Failed to call segmentation service");
-        return;
-    }
+    // butia_vision_msgs::SegmentationRequest segmentation_srv;
+    // segmentation_srv.request.initial_rgbd_image = rgbd_image;
+    // segmentation_srv.request.descriptions = descriptions;
+    // if (!segmentation_request_client.call(segmentation_srv)) {
+    //     ROS_ERROR("Failed to call segmentation service");
+    //     return;
+    // }
+
+    //here, it is possible to apply point cloud filters, as: cut-off, voxel grid, statistical and others
 
     std::vector<butia_vision_msgs::Description>::iterator it;
 
-    std::vector<sensor_msgs::Image> &segmented_rgb_images = segmentation_srv.response.segmented_rgb_images;
-    std::vector<sensor_msgs::Image>::iterator jt;
+    // std::vector<sensor_msgs::Image> &segmented_rgb_images = segmentation_srv.response.segmented_rgb_images;
+    // std::vector<sensor_msgs::Image>::iterator jt;
   
     std::vector<butia_vision_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
 
-    for(it = descriptions.begin(), jt = segmented_rgb_images.begin() ; it != descriptions.end() && jt != segmented_rgb_images.end() ; it++, jt++) {
+
+    for(it = descriptions.begin(); it != descriptions.end(); it++) {
         butia_vision_msgs::Description3D description3d;
         description3d.label_class = it->label_class;
         description3d.probability = it->probability;
         std_msgs::ColorRGBA &color =  description3d.color;
-        geometry_msgs::Point &point = description3d.position;
+        geometry_msgs::PoseWithCovariance &pose = description3d.pose;
+        cv::Mat mask;
+        if(it->mask.height * it->mask.width != 0) {
+            sensor_msgs::Image::ConstPtr mask_const_ptr( new sensor_msgs::Image(it->mask));
+            readImage(mask_const_ptr, mask);
+        }
 
-        cv::Rect roi;
-        roi.x = (*it).bounding_box.minX;
-        roi.y = (*it).bounding_box.minY;
-        roi.width = (*it).bounding_box.width;
-        roi.height = (*it).bounding_box.height;
-        segmented_depth_image = depth(roi);
+        // cv::Rect roi;
+        // roi.x = (*it).bounding_box.minX;
+        // roi.y = (*it).bounding_box.minY;
+        // roi.width = (*it).bounding_box.width;
+        // roi.height = (*it).bounding_box.height;
+        // segmented_depth_image = depth(roi);
 
-        sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
-        readImage(rgb_const_ptr, segmented_rgb_image);
+        // sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
+        // readImage(rgb_const_ptr, segmented_rgb_image);
 
-        if(rgbd2RGBPoint(segmented_rgb_image, segmented_depth_image, point, color))
+        if(points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask))
+            //refinePose(points.makeShared(), description3d.pose.pose, description3d.label_class);
             descriptions3d.push_back(description3d);
     }
 
-    publishTF(recognitions3d);
+    if(publish_tf)
+        publishTF(recognitions3d);
 }
 
 void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
@@ -240,18 +234,18 @@ void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
             current_rec[it->label_class]++;
         }
 
-        transform.setOrigin( tf::Vector3(it->position.x, it->position.y, it->position.z) );
+        transform.setOrigin( tf::Vector3(it->pose.pose.position.x, it->pose.pose.position.y, it->pose.pose.position.z) );
         q.setRPY(0, 0, 0);
         transform.setRotation(q);
         br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), recognitions3d.image_header.frame_id,
-                                              it->label_class + std::to_string(current_rec[it->label_class])));
+                                              it->label_class + std::to_string(current_rec[it->label_class]) + "_detect"));
     }
 }
 
 void Image2Kinect::objectRecognitionCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
-    segmentation_model_id = "median_full";
+    //segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     object_recognition_pub.publish(recognitions3d);
 }
@@ -259,31 +253,93 @@ void Image2Kinect::objectRecognitionCallback(butia_vision_msgs::Recognitions rec
 void Image2Kinect::faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
-    segmentation_model_id = "median_full";
+    //segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     face_recognition_pub.publish(recognitions3d);
+}
+
+void Image2Kinect::peopleDetectionCallback(butia_vision_msgs::Recognitions recognitions)
+{
+    butia_vision_msgs::Recognitions3D recognitions3d;
+    //segmentation_model_id = "median_full";
+    recognitions2Recognitions3d(recognitions, recognitions3d);
+    people_detection_pub.publish(recognitions3d);
 }
 
 void Image2Kinect::peopleTrackingCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
-    segmentation_model_id = "median_full";
+    //segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     people_tracking_pub.publish(recognitions3d);
 }
+/*
+void Image2Kinect::loadObjectClouds()
+{
+    std::string objects_dir = ros::package::getPath("image2kinect") + "/data";
+    for (boost::filesystem::directory_iterator iter(objects_dir); iter != boost::filesystem::directory_iterator(); ++iter)
+    {
+        if (iter->path().filename().extension() == "pcd")
+        {
+            pcl::io::loadPCDFile(iter->path().string(), object_clouds[iter->path().filename().stem().string()]);
+        }
+    }
+}
 
+void Image2Kinect::refinePose(const PointCloud::Ptr &points, geometry_msgs::Pose &pose, std::string label)
+{
+    if (object_clouds.count(label) > 0)
+    {
+        PointCloudNormal::Ptr normal_cloud;
+        pcl::NormalEstimation<pcl::PointXYZRGB, pcl::PointXYZRGBNormal> normal_estimation;
+        normal_estimation.setInputCloud(points);
+        normal_estimation.setSearchMethod(pcl::search::KdTree<pcl::PointXYZRGB>::Ptr (new pcl::search::KdTree<pcl::PointXYZRGB>));
+        normal_estimation.setKSearch(100);
+        normal_estimation.setRadiusSearch(0.0);
+        normal_estimation.compute(*normal_cloud);
+        Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Identity();
+        transformation_matrix(0, 3) = pose.position.x;
+        transformation_matrix(1, 3) = pose.position.y;
+        transformation_matrix(2, 3) = pose.position.z;
+        PointCloudNormal::Ptr object_cloud;
+        pcl::transformPointCloudWithNormals(object_clouds[label], *object_cloud, transformation_matrix);
+        pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal> icp;
+        icp.setInputSource(object_cloud);
+        icp.setInputTarget(normal_cloud);
+        icp.align(*object_cloud);
+        transformation_matrix = icp.getFinalTransformation().cast<double>();
+        pose.position.x = transformation_matrix(0, 3);
+        pose.position.y = transformation_matrix(1, 3);
+        pose.position.z = transformation_matrix(2, 3);
+        Eigen::Matrix3d rotation_matrix(transformation_matrix.block<3, 3>(0, 0));
+        Eigen::Quaterniond quaternion_rotation(rotation_matrix);
+        pose.orientation.x = quaternion_rotation.x();
+        pose.orientation.y = quaternion_rotation.y();
+        pose.orientation.z = quaternion_rotation.z();
+        pose.orientation.w = quaternion_rotation.w();
+    }
+}
+*/
 void Image2Kinect::readParameters()
 {
     node_handle.param("/image2kinect/subscribers/queue_size", sub_queue_size, 5);
     node_handle.param("/image2kinect/subscribers/object_recognition/topic", object_recognition_sub_topic, std::string("/butia_vision/or/object_recognition"));
     node_handle.param("/image2kinect/subscribers/face_recognition/topic", face_recognition_sub_topic, std::string("/butia_vision/fr/face_recognition"));
+    node_handle.param("/image2kinect/subscribers/people_detection/topic", people_detection_sub_topic, std::string("/butia_vision/or/people_detection"));
     node_handle.param("/image2kinect/subscribers/people_tracking/topic", people_tracking_sub_topic, std::string("/butia_vision/pt/people_tracking"));
 
     node_handle.param("/image2kinect/publishers/queue_size", pub_queue_size, 5);
     node_handle.param("/image2kinect/publishers/object_recognition/topic", object_recognition_pub_topic, std::string("/butia_vision/or/object_recognition3d"));
     node_handle.param("/image2kinect/publishers/face_recognition/topic", face_recognition_pub_topic, std::string("/butia_vision/fr/face_recognition3d"));
+    node_handle.param("/image2kinect/publishers/people_detection/topic", people_detection_pub_topic, std::string("/butia_vision/or/people_detection3d"));
     node_handle.param("/image2kinect/publishers/people_tracking/topic", people_tracking_pub_topic, std::string("/butia_vision/pt/people_tracking3d"));
     
-    node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/butia_vision/is/image_request"));
-    node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/butia_vision/seg/image_segmentation"));
+    node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/butia_vision/bvb/image_request"));
+    //node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/butia_vision/seg/image_segmentation"));
+
+    //node_handle.param("/image2kinect/segmentation_threshold", segmentation_threshold, (float)0.2);
+    node_handle.param("/image2kinect/max_depth", max_depth, 2000);
+    node_handle.param("/image2kinect/publish_tf", publish_tf, true);
+    node_handle.param("/image2kinect/kernel_size", kernel_size, 5);
+
 }

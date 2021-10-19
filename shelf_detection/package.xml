@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>shelf_detection</name>
+  <version>1.0.0</version>
+  <description>The shelf_detection package is used to integrate in tasks of object manipulation on shelfs</description>
+
+  <maintainer email="lucas.soares.avila@gmail.com.br">Lucas Soares Avila</maintainer>
+  <maintainer email="gus_nascimento98@hotmail.com">Gustavo Henrique do Nascimento</maintainer>
+
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rospy</depend>
+  <depend>butia_vision_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <exec_depend>message_runtime</exec_depend>
+
+  <export></export>
+</package>

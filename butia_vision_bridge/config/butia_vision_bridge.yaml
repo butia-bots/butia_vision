@@ -1,0 +1,4 @@
+use_exact_time: false
+buffer_size: 500
+image_width: 640
+image_height: 480
