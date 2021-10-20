@@ -42,7 +42,7 @@ WORKDIR /vision_ws
 
 COPY . ./src/butia_vision
 
-RUN vcs import . < src/butia_vision/butia_vision.repos
+RUN vcs import --recursive . < src/butia_vision/butia_vision.repos
 
 RUN source /butia_ws/devel/setup.bash && rosdep update && rosdep install --from-paths src --ignore-src -y
 
