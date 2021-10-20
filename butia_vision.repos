@@ -1,5 +1,5 @@
 repositories:
   src/darknet_ros:
-  type: git
-  url: https://github.com/wmoralesap/darknet_ros.git
-  version: yolov4
+    type: git
+    url: https://github.com/wmoralesap/darknet_ros.git
+    version: yolov4
