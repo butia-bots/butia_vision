@@ -19,6 +19,7 @@
   <depend>butia_vision_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>tf</depend>
+  <depend>pcl_ros</depend>
 
 
   <export>

@@ -31,12 +31,10 @@ SHELL ["/bin/bash", "-c"]
 
 ENV DEBIAN_FRONTEND noninteractive
 
-ENV NVIDIA_VISIBLE_DEVICES void
-
+ENV NVIDIA_VISIBLE_DEVICES \
+    ${NVIDIA_VISIBLE_DEVICES:-all}
 ENV NVIDIA_DRIVER_CAPABILITIES \
     ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}compute,compat32,graphics,utility,video,display
-
-RUN apt-get update && apt-get install --no-install-recommends -y libpcl-dev
 
 RUN mkdir -p /vision_ws/src
 
@@ -49,9 +47,6 @@ RUN vcs import . < src/butia_vision/butia_vision.repos
 RUN source /butia_ws/devel/setup.bash && rosdep update && rosdep install --from-paths src --ignore-src -y
 
 RUN source /butia_ws/devel/setup.bash && catkin_make -DCMAKE_BUILD_TYPE=Release
-
-ENV NVIDIA_VISIBLE_DEVICES \
-    ${NVIDIA_VISIBLE_DEVICES:-all}
 
 ADD entrypoint.sh /entrypoint.sh
 

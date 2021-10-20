@@ -12,6 +12,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+      - name: Install nvidia drivers
+        run: |
+          apt install nvidia-driver
       - name: Init and update submodules
         run: |
           git submodule init && git submodule update
