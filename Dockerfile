@@ -46,9 +46,12 @@ RUN vcs import --recursive . < src/butia_vision/butia_vision.repos
 
 RUN source /butia_ws/devel/setup.bash && rosdep update && rosdep install --from-paths src --ignore-src -y
 
-RUN source /butia_ws/devel/setup.bash && catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="darknet_ros_msgs,butia_vision_msgs"
+RUN source /butia_ws/devel/setup.bash && catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="darknet_ros_msgs"
+
+RUN source /vision_ws/devel/setup.bash && catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="butia_vision_msgs"
 
 RUN source /vision_ws/devel/setup.bash && catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES=""
+
 
 ADD entrypoint.sh /entrypoint.sh
 
