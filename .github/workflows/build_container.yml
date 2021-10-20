@@ -12,9 +12,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Set default docker runtime
+      - name: Install dependencies
         run: |
-          sudo apt update && sudo apt install nvidia-container-runtime nvidia-driver-470 && sudo systemctl stop docker && nvidia-smi && sudo dockerd --add-runtime nvidia=/usr/bin/nvidia-container-runtime --default-runtime=nvidia &
+          sudo apt update && sudo apt install nvidia-container-runtime nvidia-driver-470 && sudo systemctl stop docker && nvidia-smi
+      - name: Add nvidia runtime
+        run: |
+          sudo dockerd --add-runtime nvidia=/usr/bin/nvidia-container-runtime --default-runtime=nvidia &
       - name: Init and update submodules
         run: |
           git submodule init && git submodule update
