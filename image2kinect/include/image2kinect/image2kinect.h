@@ -24,6 +24,7 @@
 #include <pcl/console/print.h>
 #include <pcl/features/normal_3d_omp.h>
 #include <pcl/features/fpfh_omp.h>
+#include <pcl/features/moment_of_inertia_estimation.h>
 #include <pcl/filters/filter.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/registration/sample_consensus_prerejective.h>
@@ -62,6 +63,7 @@ class Image2Kinect{
         Image2Kinect(ros::NodeHandle _nh);
 
         bool points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask);
+        bool points2AxisAlignedBoundingBox(PointCloud &points, butia_vision_msgs::BoundingBox &bb, butia_vision_msgs::AxisAlignedBoundingBox &bb3d);
         bool robustPoseEstimation(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, cv::Mat &mask, std::string label);
 
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
@@ -95,6 +97,8 @@ class Image2Kinect{
 
         ros::ServiceClient image_request_client;
         //ros::ServiceClient segmentation_request_client;
+
+        tf2_ros::Buffer transform_buffer;
 
         int sub_queue_size;
         int pub_queue_size;

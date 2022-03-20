@@ -167,6 +167,54 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
     return true;
 }
 
+bool Image2Kinect::points2AxisAlignedBoundingBox(PointCloud &points, butia_vision_msgs::BoundingBox &bb, butia_vision_msgs::AxisAlignedBoundingBox &bb3d)
+{
+    PointCloud transformed_cloud;
+    int min_x, min_y, max_x, max_y;
+    min_x = bb.minX <= 0 ? 0 : bb.minX;
+    min_y = bb.minY <= 0 ? 0 : bb.minY;
+    max_x = min_x + bb.width > points.width - 1 ? points.width - 1 : min_x + bb.width;
+    max_y = min_y + bb.height > points.height - 1 ? points.height - 1 : min_y + bb.height;
+    std::vector<pcl::PointXYZRGB> valid_points;
+    for(int r = min_y; r <= max_y ; r++) {
+        for(int c = min_x; c <= max_x ; c++) {
+            pcl::PointXYZRGB point = points.at(c, r);
+            transformed_cloud.push_back(point);
+        }
+    }
+
+    if (transformed_cloud.size() <= 0)
+    {
+        return false;
+    }
+
+    geometry_msgs::TransformStamped transform_msg = transform_buffer.lookupTransform("base_footprint", "kinect2_link", ros::Time::now(), ros::Duration(10));
+    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+    transform(0,3) = transform_msg.transform.translation.x;
+    transform(1,3) = transform_msg.transform.translation.y;
+    transform(2,3) = transform_msg.transform.translation.z;
+    Eigen::Quaternionf quat({
+        transform_msg.transform.rotation.x,
+        transform_msg.transform.rotation.y,
+        transform_msg.transform.rotation.z,
+        transform_msg.transform.rotation.w,
+    });
+    transform.block<3,3>(0,0) = quat.toRotationMatrix();
+    pcl::transformPointCloud(transformed_cloud, transformed_cloud, transform);
+    pcl::MomentOfInertiaEstimation<pcl::PointXYZRGB> feature_extractor;
+    feature_extractor.setInputCloud(transformed_cloud.makeShared());
+    feature_extractor.compute();
+    pcl::PointXYZRGB min_point, max_point;
+    feature_extractor.getAABB(min_point, max_point);
+    bb3d.minX = min_point.x;
+    bb3d.minY = min_point.y;
+    bb3d.minZ = min_point.z;
+    bb3d.width = max_point.y - min_point.y;
+    bb3d.depth = max_point.x - min_point.x;
+    bb3d.height = max_point.z - min_point.z;
+    return true;
+}
+
 
 bool Image2Kinect::robustPoseEstimation(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, cv::Mat &mask, std::string label)
 {
@@ -388,6 +436,7 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         description3d.probability = it->probability;
         std_msgs::ColorRGBA &color =  description3d.color;
         geometry_msgs::PoseWithCovariance &pose = description3d.pose;
+        butia_vision_msgs::AxisAlignedBoundingBox & bounding_box3d = description3d.bounding_box;
         cv::Mat mask;
         if(it->mask.height * it->mask.width != 0) {
             sensor_msgs::Image::ConstPtr mask_const_ptr( new sensor_msgs::Image(it->mask));
@@ -409,7 +458,7 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
             success = robustPoseEstimation(points, (*it).bounding_box, pose, mask, it->reference_model);
         }
         else {
-            success = points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask);
+            success = points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask) && points2AxisAlignedBoundingBox(points, (*it).bounding_box, bounding_box3d);
         }
 
         if(success) {
