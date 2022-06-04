@@ -11,10 +11,10 @@ import numpy as np
 import rospkg
 import os
 from sensor_msgs.msg import Image
-from butia_vision_msgs.msg import Description, Recognitions
+from butia_vision_msgs.msg import Description, Recognitions, PoseLandmark
 from butia_vision_msgs.srv import ListClasses, ListClassesResponse
+import mediapipe as mp
 
-torch.set_num_threads(1)
 
 dictionary={"person_standing": "Person",
             "ycb_002_master_chef_can": "master_chef_can", 
@@ -100,6 +100,9 @@ class YoloRecognition():
         self.model = torch.hub.load('ultralytics/yolov5', 'custom', path=os.path.join(self.rospack.get_path('object_recognition'), 'yolov5_network_config', 'weights', self.model_file), autoshape=True)
         self.model.eval()
         print('Done loading model!')
+        self.mp_pose = mp.solutions.pose
+        self.mp_drawing = mp.solutions.drawing_utils
+        self.mp_drawing_styles = mp.solutions.drawing_styles
         self.image_sub = rospy.Subscriber(self.image_topic, Image, self.yoloRecognitionCallback, queue_size=self.image_qs)
 
         self.recognized_objects_pub = rospy.Publisher(self.object_recognition_topic, Recognitions, queue_size=self.object_recognition_qs)
@@ -128,7 +131,7 @@ class YoloRecognition():
             rospy.loginfo('Image ID: ' + str(img.header.seq))
 
             cv_img = self.bridge.imgmsg_to_cv2(img, desired_encoding='rgb8').copy()
-
+            img_h, img_w = cv_img.shape[:2]
             #results = self.model(torch.tensor(cv_img.reshape((1, 3, 640, 480)).astype(np.float32)).to(self.model.device))
             results = self.model(cv_img)
 
@@ -139,9 +142,9 @@ class YoloRecognition():
 
             for i in range(len(bbs_l)):
                 print(bbs_l['name'][i])
-                cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
-                cv_img = cv2.rectangle(cv_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), colors[bbs_l['name'][i]])
-                cv_img = cv2.putText(cv_img, bbs_l['name'][i], (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=colors[bbs_l['name'][i]])
+                debug_img = cv2.cvtColor(debug_img, cv2.COLOR_RGB2BGR)
+                debug_img = cv2.rectangle(debug_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), colors[bbs_l['name'][i]])
+                debug_img = cv2.putText(debug_img, bbs_l['name'][i], (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=colors[bbs_l['name'][i]])
                 if bbs_l['name'][i] in dictionary.keys():
                     reference_model = bbs_l['name'][i]
                     bbs_l['name'][i] = dictionary[bbs_l['name'][i]]
@@ -155,6 +158,22 @@ class YoloRecognition():
                     person.bounding_box.minY = int(bbs_l['ymin'][i])
                     person.bounding_box.width = int(bbs_l['xmax'][i] - bbs_l['xmin'][i])
                     person.bounding_box.height = int(bbs_l['ymax'][i] - bbs_l['ymin'][i])
+                    with self.mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5, model_complexity=2) as pose:
+                        results_pose = pose.process(cv_img[bbs_l['ymin']:bbs_l['ymax'],bbs_l['xmin']:bbs_l['xmax']])
+                        if results_pose.pose_landmarks:
+                            for i, landmark in enumerate(results_pose.pose_landmarks.landmark):
+                                landmark_msg = PoseLandmark()
+                                landmark_msg.position.x = (landmark.x*img_w) + bbs_l['xmin']
+                                landmark_msg.position.y = (landmark.y*img_h) + bbs_l['ymin']
+                                landmark_msg.position.z = 0.0
+                                landmark_msg.name = landmark.name
+                                person.pose_landmarks.landmarks.append(landmark_msg)
+                                self.mp_drawing.draw_landmarks(
+                                    debug_img[bbs_l['ymin']:bbs_l['ymax'],bbs_l['xmin']:bbs_l['xmax']],
+                                    results_pose.pose_landmarks,
+                                    self.mp_pose.POSE_CONNECTIONS,
+                                    landmark_drawing_spec=self.mp_drawing_styles.get_default_pose_landmarks_style()
+                                )
                     people.append(person)
 
                 elif bbs_l['name'][i] in [val for sublist in self.possible_classes.values() for val in sublist] and bbs_l['confidence'][i] >= self.threshold:
@@ -174,7 +193,7 @@ class YoloRecognition():
                     object_d.bounding_box.height = int(bbs_l['ymax'][i]- bbs_l['ymin'][i])
                     objects.append(object_d)
 
-            cv2.imshow('YoloV5', cv_img)
+            cv2.imshow('YoloV5', debug_img)
             cv2.waitKey(1)
 
             objects_msg = Recognitions()
