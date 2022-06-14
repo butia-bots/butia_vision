@@ -36,3 +36,9 @@ servers:
 
   list_faces:
     service: /butia_vision/fr/list_faces
+
+  start:
+    service: /butia_vision/fr/start
+
+  stop:
+    service: /butia_vision/fr/stop

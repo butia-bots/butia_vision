@@ -137,74 +137,76 @@ class YoloRecognition():
 
     def yoloRecognitionCallback(self, img):
 
-        with torch.no_grad():
+        if self.state == True:
 
-            rospy.loginfo('Image ID: ' + str(img.header.seq))
+            with torch.no_grad():
 
-            cv_img = self.bridge.imgmsg_to_cv2(img, desired_encoding='rgb8').copy()
+                rospy.loginfo('Image ID: ' + str(img.header.seq))
 
-            #results = self.model(torch.tensor(cv_img.reshape((1, 3, 640, 480)).astype(np.float32)).to(self.model.device))
-            results = self.model(cv_img)
+                cv_img = self.bridge.imgmsg_to_cv2(img, desired_encoding='rgb8').copy()
 
-            bbs_l = results.pandas().xyxy[0]
+                #results = self.model(torch.tensor(cv_img.reshape((1, 3, 640, 480)).astype(np.float32)).to(self.model.device))
+                results = self.model(cv_img)
 
-            objects = []
-            people = []
+                bbs_l = results.pandas().xyxy[0]
 
-            for i in range(len(bbs_l)):
-                print(bbs_l['name'][i])
-                cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
-                cv_img = cv2.rectangle(cv_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), colors[bbs_l['name'][i]])
-                cv_img = cv2.putText(cv_img, bbs_l['name'][i], (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=colors[bbs_l['name'][i]])
-                if bbs_l['name'][i] in dictionary.keys():
-                    reference_model = bbs_l['name'][i]
-                    bbs_l['name'][i] = dictionary[bbs_l['name'][i]]
-                    
-                if 'people' in self.possible_classes and bbs_l['name'][i] in self.possible_classes['people'] and bbs_l['confidence'][i] >= self.threshold:
-                    person = Description()
-                    person.label_class = 'people' + '/' + bbs_l['name'][i]
-                    person.reference_model = reference_model
-                    person.probability = bbs_l['confidence'][i]
-                    person.bounding_box.minX = int(bbs_l['xmin'][i])
-                    person.bounding_box.minY = int(bbs_l['ymin'][i])
-                    person.bounding_box.width = int(bbs_l['xmax'][i] - bbs_l['xmin'][i])
-                    person.bounding_box.height = int(bbs_l['ymax'][i] - bbs_l['ymin'][i])
-                    people.append(person)
+                objects = []
+                people = []
 
-                elif bbs_l['name'][i] in [val for sublist in self.possible_classes.values() for val in sublist] and bbs_l['confidence'][i] >= self.threshold:
-                    object_d = Description()
-                    index = 0
-                    j = 0
-                    for value in self.possible_classes.values():
-                        if bbs_l['name'][i] in value:
-                            index = j
-                        j += 1
-                    object_d.reference_model = reference_model
-                    object_d.label_class = list(self.possible_classes.keys())[index] + '/' + bbs_l['name'][i]
-                    object_d.probability = bbs_l['confidence'][i]
-                    object_d.bounding_box.minX = int(bbs_l['xmin'][i])
-                    object_d.bounding_box.minY = int(bbs_l['ymin'][i])
-                    object_d.bounding_box.width = int(bbs_l['xmax'][i] - bbs_l['xmin'][i])
-                    object_d.bounding_box.height = int(bbs_l['ymax'][i]- bbs_l['ymin'][i])
-                    objects.append(object_d)
+                for i in range(len(bbs_l)):
+                    print(bbs_l['name'][i])
+                    cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
+                    cv_img = cv2.rectangle(cv_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), colors[bbs_l['name'][i]])
+                    cv_img = cv2.putText(cv_img, bbs_l['name'][i], (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=colors[bbs_l['name'][i]])
+                    if bbs_l['name'][i] in dictionary.keys():
+                        reference_model = bbs_l['name'][i]
+                        bbs_l['name'][i] = dictionary[bbs_l['name'][i]]
+                        
+                    if 'people' in self.possible_classes and bbs_l['name'][i] in self.possible_classes['people'] and bbs_l['confidence'][i] >= self.threshold:
+                        person = Description()
+                        person.label_class = 'people' + '/' + bbs_l['name'][i]
+                        person.reference_model = reference_model
+                        person.probability = bbs_l['confidence'][i]
+                        person.bounding_box.minX = int(bbs_l['xmin'][i])
+                        person.bounding_box.minY = int(bbs_l['ymin'][i])
+                        person.bounding_box.width = int(bbs_l['xmax'][i] - bbs_l['xmin'][i])
+                        person.bounding_box.height = int(bbs_l['ymax'][i] - bbs_l['ymin'][i])
+                        people.append(person)
 
-            cv2.imshow('YoloV5', cv_img)
-            cv2.waitKey(1)
+                    elif bbs_l['name'][i] in [val for sublist in self.possible_classes.values() for val in sublist] and bbs_l['confidence'][i] >= self.threshold:
+                        object_d = Description()
+                        index = 0
+                        j = 0
+                        for value in self.possible_classes.values():
+                            if bbs_l['name'][i] in value:
+                                index = j
+                            j += 1
+                        object_d.reference_model = reference_model
+                        object_d.label_class = list(self.possible_classes.keys())[index] + '/' + bbs_l['name'][i]
+                        object_d.probability = bbs_l['confidence'][i]
+                        object_d.bounding_box.minX = int(bbs_l['xmin'][i])
+                        object_d.bounding_box.minY = int(bbs_l['ymin'][i])
+                        object_d.bounding_box.width = int(bbs_l['xmax'][i] - bbs_l['xmin'][i])
+                        object_d.bounding_box.height = int(bbs_l['ymax'][i]- bbs_l['ymin'][i])
+                        objects.append(object_d)
 
-            objects_msg = Recognitions()
-            people_msg = Recognitions()
+                cv2.imshow('YoloV5', cv_img)
+                cv2.waitKey(1)
 
-            if len(objects) > 0:
-                #objects_msg.header = bbs.header
-                objects_msg.image_header = img.header
-                objects_msg.descriptions = objects
-                self.recognized_objects_pub.publish(objects_msg)
+                objects_msg = Recognitions()
+                people_msg = Recognitions()
 
-            if len(people) > 0:
-                #people_msg.header = bbs.header
-                people_msg.image_header = img.header
-                people_msg.descriptions = people
-                self.recognized_people_pub.publish(people_msg)
+                if len(objects) > 0:
+                    #objects_msg.header = bbs.header
+                    objects_msg.image_header = img.header
+                    objects_msg.descriptions = objects
+                    self.recognized_objects_pub.publish(objects_msg)
+
+                if len(people) > 0:
+                    #people_msg.header = bbs.header
+                    people_msg.image_header = img.header
+                    people_msg.descriptions = people
+                    self.recognized_people_pub.publish(people_msg)
             
 
 
