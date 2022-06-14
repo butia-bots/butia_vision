@@ -172,6 +172,83 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
     return true;
 }
 
+bool Image2Kinect::points2clusters(PointCloud &points, std::vector<pcl::PointCloud<pcl::PointXYZ>> &object_points, std::vector<pcl::PointCloud<pcl::PointXYZ>> &planar_points)
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+    pcl::copyPointCloud(points, *filtered_cloud);
+    pcl::ModelCoefficientsPtr coeff(new pcl::ModelCoefficients());
+    pcl::PointIndicesPtr inliers(new pcl::PointIndices());
+    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    seg.setOptimizeCoefficients(true);
+    seg.setModelType(pcl::SACMODEL_PLANE);
+    seg.setMethodType(pcl::SAC_RANSAC);
+    seg.setMaxIterations(1000);
+    seg.setDistanceThreshold(0.01);
+    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    int i = 0;
+    int nr_points = (int) filtered_cloud->size();
+    while (filtered_cloud->size() > 0.3 * nr_points)
+    {
+        planar_points.resize(i+1);
+        seg.setInputCloud(filtered_cloud);
+        seg.segment(*inliers, *coeff);
+        if (inliers->indices.size() == 0)
+        {
+            break;
+        }
+        extract.setInputCloud(filtered_cloud);
+        extract.setIndices(inliers);
+        extract.setNegative(false);
+        extract.filter(planar_points[i]);
+        extract.setNegative(true);
+        extract.filter(*filtered_cloud);
+        i++;
+    }
+    std::vector<std::vector<pcl::PointCloud<pcl::PointXYZ>>> objects_per_plane;
+    objects_per_plane.resize(planar_points.size());
+    for (int i = 0; i < planar_points.size(); i++)
+    {
+        pcl::PointXYZ min_pt, max_pt;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr above_surface_points(new pcl::PointCloud<pcl::PointXYZ>());
+        pcl::getMinMax3D(planar_points[i], min_pt, max_pt);
+        pcl::PassThrough<pcl::PointXYZ> pass;
+        pass.setInputCloud(filtered_cloud);
+        pass.setFilterFieldName("x");
+        pass.setFilterLimits(min_pt.x, max_pt.x);
+        pass.filter(*above_surface_points);
+        pass.setInputCloud(above_surface_points);
+        pass.setFilterFieldName("z");
+        pass.setFilterLimits(min_pt.z, max_pt.z);
+        pass.filter(*above_surface_points);
+        pass.setInputCloud(above_surface_points);
+        pass.setFilterFieldName("y");
+        pass.setFilterLimits(min_pt.y+0.01, max_pt.y+0.2);
+        pass.filter(*above_surface_points);
+        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
+        tree->setInputCloud(above_surface_points);
+        std::vector<pcl::PointIndices> cluster_indices;
+        pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+        ec.setClusterTolerance(0.02);
+        ec.setMinClusterSize(100);
+        ec.setMaxClusterSize(250000);
+        ec.setSearchMethod(tree);
+        ec.setInputCloud(above_surface_points);
+        ec.extract(cluster_indices);
+        extract.setInputCloud(above_surface_points);
+        for (int j = 0; j < cluster_indices.size(); j++)
+        {
+            pcl::PointIndicesPtr cluster_inliers(new pcl::PointIndices());
+            cluster_inliers->header = cluster_indices[j].header;
+            cluster_inliers->indices = cluster_indices[j].indices;
+            extract.setIndices(cluster_inliers);
+            extract.setNegative(false);
+            pcl::PointCloud<pcl::PointXYZ>::Ptr object_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+            extract.filter(*object_cloud);
+            object_points.push_back(*object_cloud);
+        }
+    }
+    return true;
+}
 
 bool Image2Kinect::robustPoseEstimation(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, cv::Mat &mask, std::string label)
 {
@@ -367,6 +444,38 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
     readImage(depth_const_ptr, depth);
     readPoints(points_const_ptr, points);
 
+    std::vector<pcl::PointCloud<pcl::PointXYZ>> cluster_points, planar_points;
+
+    points2clusters(points, cluster_points, planar_points);
+
+    std::vector<butia_vision_msgs::Description3D> cluster_descriptions, planar_descriptions;
+    cluster_descriptions.resize(cluster_points.size());
+    for (auto cp : cluster_points)
+    {
+        butia_vision_msgs::Description3D cluster_description;
+        pcl::toROSMsg(cp, cluster_description.points);
+        pcl::PointXYZ min_pt, max_pt;
+        pcl::getMinMax3D(cp, min_pt, max_pt);
+        cluster_description.label_class = "unknown";
+        cluster_description.pose.pose.position.x = max_pt.x - min_pt.x;
+        cluster_description.pose.pose.position.y = max_pt.y - min_pt.y;
+        cluster_description.pose.pose.position.z = max_pt.z - min_pt.z;
+        cluster_descriptions.push_back(cluster_description);
+    }
+    planar_descriptions.resize(planar_points.size());
+    for (auto pp : planar_points)
+    {
+        butia_vision_msgs::Description3D planar_description;
+        pcl::toROSMsg(pp, planar_description.points);
+        pcl::PointXYZ min_pt, max_pt;
+        pcl::getMinMax3D(pp, min_pt, max_pt);
+        planar_description.label_class = "support_surface";
+        planar_description.pose.pose.position.x = max_pt.x - min_pt.x;
+        planar_description.pose.pose.position.y = max_pt.y - min_pt.y;
+        planar_description.pose.pose.position.z = max_pt.z - min_pt.z;
+        planar_descriptions.push_back(planar_description);
+    }
+
     std::vector<butia_vision_msgs::Description> &descriptions = recognitions.descriptions;
 
     butia_vision_msgs::SegmentationRequest segmentation_srv;
@@ -421,9 +530,37 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         }
 
         if(success) {
+            butia_vision_msgs::Description3D closest_cluster_description;
+            float closest_distance = sizeof(float);
+            int index = 0;
+            int closest_index = 0;
+            for (auto cd : cluster_descriptions)
+            {
+                auto distance = sqrt(pow(cd.pose.pose.position.x - description3d.pose.pose.position.x, 2) + pow(cd.pose.pose.position.y - description3d.pose.pose.position.y, 2) + pow(cd.pose.pose.position.z - description3d.pose.pose.position.z, 2));
+                if (distance <= closest_distance)
+                {
+                    closest_distance = distance;
+                    closest_cluster_description = cd;
+                    closest_index = index;
+                }
+                index++;
+            }
+            if (closest_distance < 0.1)
+            {
+                description3d.pose = closest_cluster_description.pose;
+                description3d.points = closest_cluster_description.points;
+                cluster_descriptions.erase(cluster_descriptions.begin() + closest_index);
+            }
             descriptions3d.push_back(description3d);
         }
-        
+        for (auto cd : cluster_descriptions)
+        {
+            descriptions3d.push_back(cd);
+        }
+        for (auto pd : planar_descriptions)
+        {
+            descriptions3d.push_back(pd);
+        }
     }
 
     if(publish_tf)
