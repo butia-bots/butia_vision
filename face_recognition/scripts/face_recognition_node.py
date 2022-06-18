@@ -3,6 +3,8 @@
 import cv2
 import rospy
 
+from std_srvs.srv import Empty, EmptyResponse
+
 from cv_bridge import CvBridge
 from face_recognition_ros import FaceRecognitionROS
 
@@ -67,6 +69,16 @@ def getFacesList(req):
     list_faces = face_recognition_ros.face_classifier[0].classes_.tolist()
     return ListClassesResponse(list_faces)
 
+def start(req):
+    global state
+    state = True
+    return EmptyResponse()
+
+def stop(req):
+    global state
+    state = False
+    return EmptyResponse()
+
 if __name__ == '__main__':
     rospy.init_node('face_recognition_node', anonymous = True)
 
@@ -90,6 +102,10 @@ if __name__ == '__main__':
 
     list_faces_service = rospy.get_param("/face_recognition/servers/list_faces/service", "/butia_vision/fr/list_faces")
 
+    start_service = rospy.get_param("/face_recognition/servers/start/service", "/butia_vision/fr/start")
+    
+    stop_service = rospy.get_param("/face_recognition/servers/stop/service", "/butia_vision/fr/stop")
+
     image_subscriber = rospy.Subscriber(camera_read_topic, Image, imageCallback, queue_size=camera_read_qs, buff_size=2**24)
 
     reload_subscriber = rospy.Subscriber(classifier_reload_topic, ClassifierReload, classifierReloadCallback, queue_size=classifier_reload_qs)
@@ -101,6 +117,12 @@ if __name__ == '__main__':
     face_list_updated_publisher = rospy.Publisher(face_list_updated_topic, Header, queue_size=face_list_updated_topic)
 
     list_faces_server = rospy.Service(list_faces_service, ListClasses, getFacesList)
+
+    start_server = rospy.Service(start_service, Empty, start)
+
+    stop_server = rospy.Service(stop_service, Empty, stop)
+
+    state = False
 
     face_list_header.stamp = rospy.get_rostime()
     face_list_header.frame_id = "list_faces"

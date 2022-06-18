@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import cv2
 import dlib
-from decorators import *
+from face_recognition_ros.decorators import *
 import os
 
 from dlib import rectangle, rectangles
