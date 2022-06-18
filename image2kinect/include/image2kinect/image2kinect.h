@@ -11,16 +11,21 @@
 #include "boost/filesystem.hpp"
 
 #include <pcl_ros/point_cloud.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/conversions.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/registration/icp.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/passthrough.h>
+
 #include <Eigen/Core>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/common/time.h>
+#include <pcl/common/common.h>
 #include <pcl/console/print.h>
 #include <pcl/features/normal_3d_omp.h>
 #include <pcl/features/fpfh_omp.h>
@@ -28,6 +33,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/registration/sample_consensus_prerejective.h>
 #include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
 #include "butia_vision_msgs/Recognitions.h"
@@ -61,7 +67,9 @@ class Image2Kinect{
     public:
         Image2Kinect(ros::NodeHandle _nh);
 
-        bool points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask);
+        bool points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask, PointCloud &object_points);
+        bool points2clusters(PointCloud &points, std::vector<pcl::PointCloud<pcl::PointXYZ>> &object_points, std::vector<pcl::PointCloud<pcl::PointXYZ>> &planar_points);
+
         bool robustPoseEstimation(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, cv::Mat &mask, std::string label);
 
         void readImage(const sensor_msgs::Image::ConstPtr &msg_image, cv::Mat &image);
@@ -94,7 +102,7 @@ class Image2Kinect{
         ros::Publisher people_tracking_pub;
 
         ros::ServiceClient image_request_client;
-        //ros::ServiceClient segmentation_request_client;
+        ros::ServiceClient segmentation_request_client;
 
         int sub_queue_size;
         int pub_queue_size;
@@ -113,11 +121,11 @@ class Image2Kinect{
         std::string people_tracking_pub_topic;
 
         std::string image_request_client_service;
-        //std::string segmentation_request_client_service;
+        std::string segmentation_request_client_service;
 
         bool use_align;
 
-        //float segmentation_threshold;
+        float segmentation_threshold;
         int max_depth;
 
         bool publish_tf;
@@ -127,7 +135,7 @@ class Image2Kinect{
 
         int kernel_size;
 
-        //std::string segmentation_model_id;
+        std::string segmentation_model_id;
 
         std::map<std::string,std::string> category2dataset = {
             {"Person","person_standing"},
