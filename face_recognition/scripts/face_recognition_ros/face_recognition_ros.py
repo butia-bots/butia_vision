@@ -6,11 +6,11 @@ import os
 import openface
 import rospy
 import rospkg
-from face_detector import *
-from face_aligner import *
-from face_embosser import *
-from face_classifier import *
-from two_fac_classifier import *
+from face_recognition_ros.face_detector import *
+from face_recognition_ros.face_aligner import *
+from face_recognition_ros.face_embosser import *
+from face_recognition_ros.face_classifier import *
+from face_recognition_ros.two_fac_classifier import *
 from dlib import rectangle, rectangles
 
 from cv_bridge import CvBridge

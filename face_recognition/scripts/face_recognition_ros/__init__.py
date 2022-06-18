@@ -1,1 +1,1 @@
-from face_recognition_ros import FaceRecognitionROS
+from .face_recognition_ros import FaceRecognitionROS

@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 import pickle
-from decorators import *
+from face_recognition_ros.decorators import *
 import os
 import numpy as np
 

@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import openface
 import cv2
-from decorators import *
+from face_recognition_ros.decorators import *
 import os
 
 @load(model_id='Openface Aligner')

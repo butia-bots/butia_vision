@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-from decorators import *
+from face_recognition_ros.decorators import *
 import openface
 import os
 
