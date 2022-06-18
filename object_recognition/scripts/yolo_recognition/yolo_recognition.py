@@ -101,6 +101,7 @@ class YoloRecognition():
         self.model.eval()
         print('Done loading model!')
         self.image_sub = rospy.Subscriber(self.image_topic, Image, self.yoloRecognitionCallback, queue_size=self.image_qs)
+        self.debug_image_pub = rospy.Publisher(self.debug_image_topic, Image, queue_size=self.debug_image_qs)
 
         self.recognized_objects_pub = rospy.Publisher(self.object_recognition_topic, Recognitions, queue_size=self.object_recognition_qs)
         self.recognized_people_pub = rospy.Publisher(self.people_detection_topic, Recognitions, queue_size=self.people_detection_qs)
@@ -190,8 +191,11 @@ class YoloRecognition():
                         object_d.bounding_box.height = int(bbs_l['ymax'][i]- bbs_l['ymin'][i])
                         objects.append(object_d)
 
-                cv2.imshow('YoloV5', cv_img)
-                cv2.waitKey(1)
+                #cv2.imshow('YoloV5', cv_img)
+                #cv2.waitKey(1)
+
+                debug_msg = self.bridge.cv2_to_imgmsg(cv_img)
+                self.debug_image_pub.publish(debug_msg)
 
                 objects_msg = Recognitions()
                 people_msg = Recognitions()
@@ -216,6 +220,9 @@ class YoloRecognition():
 
         self.image_topic = rospy.get_param("/object_recognition/subscribers/image/topic", "/butia_vision/bvb/image_rgb_raw")
         self.image_qs = rospy.get_param("/object_recognition/subscribers/image/queue_size", 1)
+
+        self.debug_image_topic = rospy.get_param("/object_recognition/publishers/debug_image/topic", "/butia_vision/or/debug")
+        self.debug_image_qs = rospy.get_param("/object_recognition/publishers/debug_image/queue_size", 1)
 
         self.object_recognition_topic = rospy.get_param("/object_recognition/publishers/object_recognition/topic", "/butia_vision/or/object_recognition")
         self.object_recognition_qs = rospy.get_param("/object_recognition/publishers/object_recognition/queue_size", 1)
