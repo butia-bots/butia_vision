@@ -10,3 +10,4 @@
 *.pbtxt
 *.prototxt
 __pycache__
+*CATKIN_IGNORE*
