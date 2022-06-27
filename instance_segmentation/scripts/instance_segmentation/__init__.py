@@ -1,1 +1,0 @@
-from instance_segmentation.maskrcnn_segmentation import MaskRCNNSegmentation

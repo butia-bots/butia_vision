@@ -1,4 +1,4 @@
 max_depth: 3000
-publish_tf: false
+publish_tf: true
 kernel_size: 80
 use_align: false
