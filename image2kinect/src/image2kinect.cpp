@@ -17,10 +17,10 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
     people_tracking_pub = node_handle.advertise<butia_vision_msgs::Recognitions3D>(people_tracking_pub_topic, pub_queue_size);
 
     image_request_client = node_handle.serviceClient<butia_vision_msgs::ImageRequest>(image_request_client_service);
-    segmentation_request_client = node_handle.serviceClient<butia_vision_msgs::SegmentationRequest>(segmentation_request_client_service);
+    //segmentation_request_client = node_handle.serviceClient<butia_vision_msgs::SegmentationRequest>(segmentation_request_client_service);
 }
 
-bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask, PointCloud &object_points)
+bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, std_msgs::ColorRGBA &color, cv::Mat &mask)
 {
     geometry_msgs::Point &mean_position = pose.pose.position;
     geometry_msgs::Quaternion &orientation = pose.pose.orientation;
@@ -78,11 +78,6 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
                 }
             }
         }
-    }
-
-    object_points.resize(valid_points.size());
-    for (auto point : valid_points) {
-        object_points.push_back(point);
     }
 
     if(valid_points.size() == 0) {
@@ -369,20 +364,20 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
 
     std::vector<butia_vision_msgs::Description> &descriptions = recognitions.descriptions;
 
-    butia_vision_msgs::SegmentationRequest segmentation_srv;
-    segmentation_srv.request.initial_rgbd_image = rgbd_image;
-    segmentation_srv.request.descriptions = descriptions;
-    if (!segmentation_request_client.call(segmentation_srv)) {
-        ROS_ERROR("Failed to call segmentation service");
-       return;
-    }
+    // butia_vision_msgs::SegmentationRequest segmentation_srv;
+    // segmentation_srv.request.initial_rgbd_image = rgbd_image;
+    // segmentation_srv.request.descriptions = descriptions;
+    // if (!segmentation_request_client.call(segmentation_srv)) {
+    //     ROS_ERROR("Failed to call segmentation service");
+    //     return;
+    // }
 
     //here, it is possible to apply point cloud filters, as: cut-off, voxel grid, statistical and others
 
     std::vector<butia_vision_msgs::Description>::iterator it;
 
-    std::vector<sensor_msgs::Image> &segmented_rgb_images = segmentation_srv.response.segmented_rgb_images;
-    std::vector<sensor_msgs::Image>::iterator jt;
+    // std::vector<sensor_msgs::Image> &segmented_rgb_images = segmentation_srv.response.segmented_rgb_images;
+    // std::vector<sensor_msgs::Image>::iterator jt;
   
     std::vector<butia_vision_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
 
@@ -394,30 +389,27 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
         std_msgs::ColorRGBA &color =  description3d.color;
         geometry_msgs::PoseWithCovariance &pose = description3d.pose;
         cv::Mat mask;
-        PointCloud object_points;
         if(it->mask.height * it->mask.width != 0) {
             sensor_msgs::Image::ConstPtr mask_const_ptr( new sensor_msgs::Image(it->mask));
             readImage(mask_const_ptr, mask);
-        } else {
-            cv::Rect roi;
-            roi.x = (*it).bounding_box.minX;
-            roi.y = (*it).bounding_box.minY;
-            roi.width = (*it).bounding_box.width;
-            roi.height = (*it).bounding_box.height;
-            segmented_depth_image = depth(roi);
-            mask = segmented_depth_image;
         }
 
-        sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
-        readImage(rgb_const_ptr, segmented_rgb_image);
+        // cv::Rect roi;
+        // roi.x = (*it).bounding_box.minX;
+        // roi.y = (*it).bounding_box.minY;
+        // roi.width = (*it).bounding_box.width;
+        // roi.height = (*it).bounding_box.height;
+        // segmented_depth_image = depth(roi);
+
+        // sensor_msgs::Image::ConstPtr rgb_const_ptr( new sensor_msgs::Image(*jt));
+        // readImage(rgb_const_ptr, segmented_rgb_image);
 
         bool success = false;
         if(use_align) {
             success = robustPoseEstimation(points, (*it).bounding_box, pose, mask, it->reference_model);
         }
         else {
-            success = points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask, object_points);
-            pcl::toROSMsg(object_points, description3d.points);
+            success = points2RGBPoseWithCovariance(points, (*it).bounding_box, pose, color, mask);
         }
 
         if(success) {
@@ -464,7 +456,7 @@ void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
 void Image2Kinect::objectRecognitionCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
-    segmentation_model_id = "median_full";
+    //segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     object_recognition_pub.publish(recognitions3d);
 }
@@ -472,7 +464,7 @@ void Image2Kinect::objectRecognitionCallback(butia_vision_msgs::Recognitions rec
 void Image2Kinect::faceRecognitionCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
-    segmentation_model_id = "median_full";
+    //segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     face_recognition_pub.publish(recognitions3d);
 }
@@ -480,7 +472,7 @@ void Image2Kinect::faceRecognitionCallback(butia_vision_msgs::Recognitions recog
 void Image2Kinect::peopleDetectionCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
-    segmentation_model_id = "median_full";
+    //segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     people_detection_pub.publish(recognitions3d);
 }
@@ -488,7 +480,7 @@ void Image2Kinect::peopleDetectionCallback(butia_vision_msgs::Recognitions recog
 void Image2Kinect::peopleTrackingCallback(butia_vision_msgs::Recognitions recognitions)
 {
     butia_vision_msgs::Recognitions3D recognitions3d;
-    segmentation_model_id = "median_full";
+    //segmentation_model_id = "median_full";
     recognitions2Recognitions3d(recognitions, recognitions3d);
     people_tracking_pub.publish(recognitions3d);
 }
@@ -575,9 +567,9 @@ void Image2Kinect::readParameters()
     node_handle.param("/image2kinect/publishers/people_tracking/topic", people_tracking_pub_topic, std::string("/butia_vision/pt/people_tracking3d"));
     
     node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/butia_vision/bvb/image_request"));
-    node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/butia_vision/seg/image_segmentation"));
+    //node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/butia_vision/seg/image_segmentation"));
 
-    node_handle.param("/image2kinect/segmentation_threshold", segmentation_threshold, (float)0.2);
+    //node_handle.param("/image2kinect/segmentation_threshold", segmentation_threshold, (float)0.2);
     node_handle.param("/image2kinect/max_depth", max_depth, 2000);
     node_handle.param("/image2kinect/publish_tf", publish_tf, true);
     node_handle.param("/image2kinect/kernel_size", kernel_size, 5);
