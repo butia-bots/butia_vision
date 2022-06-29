@@ -1,0 +1,14 @@
+<launch>
+  <arg name="machine" default="localhost"/>
+  <arg name="use_machine" default="true"/>
+  <arg name="output" default="screen"/>
+  <arg name="config_name" default="object_recognition.yaml"/>
+
+  <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+
+  <rosparam command="load" ns="object_recognition" file="$(find object_recognition)/config/ros.yaml"/>
+  <rosparam command="load" ns="object_recognition" file="$(find object_recognition)/config/$(arg config_name)"/>
+  
+  <node pkg="object_recognition" type="object_recognition_node.py" output="$(arg output)" machine="$(arg machine)"/>
+
+</launch>

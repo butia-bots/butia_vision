@@ -1,6 +1,12 @@
 <launch>
+  <arg name="machine" default="localhost"/>
+  <arg name="use_machine" default="true"/>
+  <arg name="output" default="screen"/>
+
+  <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+
   <rosparam command="load" ns="image2kinect" file="$(find image2kinect)/config/ros.yaml"/>
   <rosparam command="load" ns="image2kinect" file="$(find image2kinect)/config/image2kinect.yaml"/>
 
-  <node name="image2kinect_node" pkg="image2kinect" type="image2kinect_node" output="screen"/>
+  <node name="image2kinect_node" pkg="image2kinect" type="image2kinect_node" output="$(arg output)" machine="$(arg machine)"/>
 </launch>
