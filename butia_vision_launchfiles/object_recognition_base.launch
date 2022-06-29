@@ -1,5 +1,4 @@
 <launch>
-    <arg name="k2b_machine" default="localhost"/>
     <arg name="bvb_machine" default="localhost"/>
     <arg name="or_machine" default="localhost"/>
     <arg name="i2k_machine" default="localhost"/>
@@ -10,19 +9,22 @@
 
     <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
-    <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
-        <arg name="machine" value="$(arg k2b_machine)" />
+    <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch">
+        <arg name="machine" value="$(arg bvb_machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
         <arg name="output" value="$(arg output)"/>
     </include>
 
-    <include file="$(find butia_vision_launchfiles)/launch/object_recognition_base.launch">
-        <arg name="bvb_machine" value="$(arg bvb_machine)"/>
-        <arg name="or_machine" value="$(arg or_machine)"/>
-        <arg name="i2k_machine" value="$(arg i2k_machine)"/>
+    <include file="$(find object_recognition)/launch/object_recognition.launch">
+        <arg name="machine" value="$(arg or_machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
         <arg name="output" value="$(arg output)"/>
-        <arg name="or_config_file" value="$(arg or_config_file)"/>
+    </include>
+    
+    <include file="$(find image2kinect)/launch/image2kinect.launch">
+        <arg name="machine" value="$(arg i2k_machine)" />
+        <arg name="use_machine" value="$(arg use_machine)"/>
+        <arg name="output" value="$(arg output)"/>
     </include>
 
 </launch>
