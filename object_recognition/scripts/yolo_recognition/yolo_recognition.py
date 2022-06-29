@@ -119,7 +119,7 @@ class YoloRecognition():
 
         self.object_list_updated_pub.publish(self.object_list_updated_header)
 
-        self.state = False
+        self.state = True
 
     def start(self, req):
         self.state = True
@@ -156,7 +156,7 @@ class YoloRecognition():
 
                 for i in range(len(bbs_l)):
                     print(bbs_l['name'][i])
-                    cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
+                    #cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
                     cv_img = cv2.rectangle(cv_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), colors[bbs_l['name'][i]])
                     cv_img = cv2.putText(cv_img, bbs_l['name'][i], (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=colors[bbs_l['name'][i]])
                     if bbs_l['name'][i] in dictionary.keys():

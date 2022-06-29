@@ -5,5 +5,5 @@
     
     <include file="$(find image2kinect)/launch/image2kinect.launch"/>
 
-    <include file="$(find object_recognition)/launch/yolov4-simulator-foods.launch"/>
+    <include file="$(find object_recognition)/launch/yolov5-simulator-foods.launch"/>
 </launch>
