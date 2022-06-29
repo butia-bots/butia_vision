@@ -1,7 +1,13 @@
 <launch>
+  <arg name="machine" default="localhost"/>
+  <arg name="use_machine" default="true"/>
+  <arg name="output" default="screen"/>
+
+  <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+
   <rosparam command="load" ns="butia_vision_bridge" file="$(find butia_vision_bridge)/config/ros.yaml"/>
   <rosparam command="load" ns="butia_vision_bridge" file="$(find butia_vision_bridge)/config/butia_vision_bridge.yaml"/>
 
-  <node name="butia_vision_bridge_node" pkg="butia_vision_bridge" type="butia_vision_bridge_node" output="screen"/>
+  <node name="butia_vision_bridge_node" pkg="butia_vision_bridge" type="butia_vision_bridge_node" output="$(arg output)" machine="$(arg machine)"/>
 
 </launch>
