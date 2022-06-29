@@ -1,7 +1,8 @@
 <launch>
-    <arg name="bvb_machine" default="localhost"/>
-    <arg name="or_machine" default="localhost"/>
-    <arg name="i2k_machine" default="localhost"/>
+    <arg name="machine" default="localhost"/>
+    <arg name="bvb_machine" default="$(arg machine)"/>
+    <arg name="or_machine" default="$(arg machine)"/>
+    <arg name="i2k_machine" default="$(arg machine)"/>
     <arg name="use_machine" default="true"/>
     <arg name="output" default="screen"/>
 
