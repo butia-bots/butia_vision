@@ -97,7 +97,7 @@ class YoloRecognition():
 
         #self.bounding_boxes_sub = rospy.Subscriber(self.bounding_boxes_topic, BoundingBoxes, self.yoloRecognitionCallback, queue_size=self.bounding_boxes_qs)
         self.bridge = cv_bridge.CvBridge()
-        self.model = torch.hub.load('ultralytics/yolov5', 'custom', path=os.path.join(self.rospack.get_path('object_recognition'), 'yolov5_network_config', 'weights', self.model_file), autoshape=True)
+        self.model = torch.hub.load('ultralytics/yolov5', 'custom', path=os.path.join(self.rospack.get_path('object_recognition'), 'config', 'yolov5_network_config', 'weights', self.model_file), autoshape=True)
         self.model.eval()
         print('Done loading model!')
         self.image_sub = rospy.Subscriber(self.image_topic, Image, self.yoloRecognitionCallback, queue_size=self.image_qs)
@@ -155,14 +155,14 @@ class YoloRecognition():
                 people = []
 
                 for i in range(len(bbs_l)):
+                    if int(bbs_l['class']) >= len(self.all_classes):
+                        continue
+                    bbs_l['name'][i] = self.all_classes[int(bbs_l['class'])]
+                    reference_model = bbs_l['name'][i]
                     print(bbs_l['name'][i])
                     #cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
                     cv_img = cv2.rectangle(cv_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), colors[bbs_l['name'][i]])
                     cv_img = cv2.putText(cv_img, bbs_l['name'][i], (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=colors[bbs_l['name'][i]])
-                    if bbs_l['name'][i] in dictionary.keys():
-                        reference_model = bbs_l['name'][i]
-                        bbs_l['name'][i] = dictionary[bbs_l['name'][i]]
-                        
                     if 'people' in self.possible_classes and bbs_l['name'][i] in self.possible_classes['people'] and bbs_l['confidence'][i] >= self.threshold:
                         person = Description()
                         person.label_class = 'people' + '/' + bbs_l['name'][i]
@@ -240,5 +240,7 @@ class YoloRecognition():
         self.threshold = rospy.get_param("/object_recognition/threshold", 0.5)
         
         self.possible_classes = dict(rospy.get_param("/object_recognition/possible_classes"))
+
+        self.all_classes = list(rospy.get_param("/object_recognition/all_classes"))
 
         self.model_file = rospy.get_param("/object_recognition/model_file", "larc2021_go_and_get_it.pt")

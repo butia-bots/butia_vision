@@ -6,3 +6,7 @@ possible_classes:
     tools: [Large marker, Clamps]
     shape: [Mini soccer ball, Soft ball, Baseball, Tennis ball, Racquetball, Golf ball, Chain, Foam brick, Dice, Marbles, Cups]
     task: [Colored wood blocks, 9-peg-hole test, Toy airplane, Lego duplo, Rubik’s cube]
+all_classes:
+    #Note: fill this list with the class list from yolov5 dataset.yaml file used to train the model, or attempt to get this list by printing the state dictionary in the model file. The class names should be in the same order.
+    []
+model_file: larc2021_go_and_get_it.pt
