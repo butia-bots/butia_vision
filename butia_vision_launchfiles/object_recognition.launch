@@ -1,6 +1,5 @@
 <launch>
     <arg name="machine" default="localhost"/>
-    <arg name="k2b_machine" default="$(arg machine)"/>
     <arg name="bvb_machine" default="$(arg machine)"/>
     <arg name="or_machine" default="$(arg machine)"/>
     <arg name="i2k_machine" default="$(arg machine)"/>
@@ -10,12 +9,6 @@
     <arg name="or_config_file" default="object_recognition.yaml"/>
 
     <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
-
-    <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
-        <arg name="machine" value="$(arg k2b_machine)" />
-        <arg name="use_machine" value="$(arg use_machine)"/>
-        <arg name="output" value="$(arg output)"/>
-    </include>
 
     <include file="$(find butia_vision_launchfiles)/object_recognition_base.launch">
         <arg name="bvb_machine" value="$(arg bvb_machine)"/>
