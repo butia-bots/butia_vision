@@ -8,9 +8,9 @@
 
   <group if="$(arg use_kinect)">
     <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
-        <arg name="machine" value="$(arg k2b_machine)" />
+        <arg name="machine" value="$(arg machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
-          <arg name="output" value="$(arg output)"/>
+        <arg name="output" value="$(arg output)"/>
     </include>
   </group>
 
