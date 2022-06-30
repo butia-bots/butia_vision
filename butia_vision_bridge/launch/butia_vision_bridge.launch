@@ -2,8 +2,17 @@
   <arg name="machine" default="localhost"/>
   <arg name="use_machine" default="true"/>
   <arg name="output" default="screen"/>
+  <arg name="use_kinect" default="true"/>
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+
+  <group if="$(arg use_kinect)">
+    <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+        <arg name="machine" value="$(arg k2b_machine)" />
+        <arg name="use_machine" value="$(arg use_machine)"/>
+          <arg name="output" value="$(arg output)"/>
+    </include>
+  </group>
 
   <rosparam command="load" ns="butia_vision_bridge" file="$(find butia_vision_bridge)/config/ros.yaml"/>
   <rosparam command="load" ns="butia_vision_bridge" file="$(find butia_vision_bridge)/config/butia_vision_bridge.yaml"/>
