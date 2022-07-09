@@ -3,6 +3,7 @@
   <arg name="use_machine" default="true"/>
   <arg name="output" default="screen"/>
   <arg name="use_kinect" default="true"/>
+  <arg name="publish_tf" default="true"/>
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
@@ -11,6 +12,7 @@
         <arg name="machine" value="$(arg machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
         <arg name="output" value="$(arg output)"/>
+        <arg name="publish_tf" value="$(arg publish_tf)"/>
     </include>
   </group>
 
