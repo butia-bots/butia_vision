@@ -1,5 +1,9 @@
 subscribers:
 
+  image:
+    topic: /butia_vision/bvb/image_rgb_raw
+    qs: 1
+
   bounding_boxes:
     topic: /darknet_ros/bounding_boxes
     queue_size: 1

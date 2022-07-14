@@ -106,5 +106,5 @@ all_classes:
     - 076_timer
     - 077_rubiks_cube
     - home
-    - person
+    - people
 model_file: robocup2022.pt

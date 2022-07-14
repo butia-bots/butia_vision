@@ -7,15 +7,13 @@ from std_srvs.srv import Empty, EmptyResponse
 import torch
 import torchvision
 import cv2
-import cv_bridge
+#import cv_bridge
 import numpy as np
 import rospkg
 import os
 from sensor_msgs.msg import Image
 from butia_vision_msgs.msg import Description, Recognitions
 from butia_vision_msgs.srv import ListClasses, ListClassesResponse
-
-torch.set_num_threads(1)
 
 dictionary={"person_standing": "Person",
             "ycb_002_master_chef_can": "master_chef_can", 
@@ -86,7 +84,7 @@ dictionary={"person_standing": "Person",
             "ycb_077_rubiks_cube": "Rubik’s cube"
 }
 
-colors = dict([(k, np.random.randint(low=0, high=256, size=(3,)).tolist()) for k,v in dictionary.items()])
+#colors = dict([(k, np.random.randint(low=0, high=256, size=(3,)).tolist()) for k,v in dictionary.items()])
 
 
 class YoloRecognition():
@@ -97,12 +95,14 @@ class YoloRecognition():
         print(self.rospack.get_path('object_recognition'))
 
         #self.bounding_boxes_sub = rospy.Subscriber(self.bounding_boxes_topic, BoundingBoxes, self.yoloRecognitionCallback, queue_size=self.bounding_boxes_qs)
-        self.bridge = cv_bridge.CvBridge()
+        #self.bridge = cv_bridge.CvBridge()
         self.model = torch.hub.load('ultralytics/yolov5', 'custom', path=os.path.join(self.rospack.get_path('object_recognition'), 'config', 'yolov5_network_config', 'weights', self.model_file), autoshape=True)
         self.model.eval()
+        self.model.conf = self.threshold
         print('Done loading model!')
         self.image_sub = rospy.Subscriber(self.image_topic, Image, self.yoloRecognitionCallback, queue_size=self.image_qs)
         self.debug_image_pub = rospy.Publisher(self.debug_image_topic, Image, queue_size=self.debug_image_qs)
+        self.colors = dict([(k, np.random.randint(low=0, high=256, size=(3,)).tolist()) for k in self.all_classes])
 
         self.recognized_objects_pub = rospy.Publisher(self.object_recognition_topic, Recognitions, queue_size=self.object_recognition_qs)
         self.recognized_people_pub = rospy.Publisher(self.people_detection_topic, Recognitions, queue_size=self.people_detection_qs)
@@ -145,7 +145,9 @@ class YoloRecognition():
 
                 rospy.loginfo('Image ID: ' + str(img.header.seq))
 
-                cv_img = self.bridge.imgmsg_to_cv2(img, desired_encoding='rgb8').copy()
+                cv_img = np.frombuffer(img.data, dtype=np.uint8).reshape(img.height, img.width, -1)
+
+                #cv_img = self.bridge.imgmsg_to_cv2(img, desired_encoding='rgb8').copy()
 
                 #results = self.model(torch.tensor(cv_img.reshape((1, 3, 640, 480)).astype(np.float32)).to(self.model.device))
                 results = self.model(cv_img)
@@ -156,15 +158,15 @@ class YoloRecognition():
                 people = []
 
                 for i in range(len(bbs_l)):
-                    if int(bbs_l['class']) >= len(self.all_classes):
+                    if int(bbs_l['class'][i]) >= len(self.all_classes):
                         continue
-                    bbs_l['name'][i] = self.all_classes[int(bbs_l['class'])]
+                    bbs_l['name'][i] = self.all_classes[int(bbs_l['class'][i])]
                     reference_model = bbs_l['name'][i]
                     print(bbs_l['name'][i])
                     #cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
-                    cv_img = cv2.rectangle(cv_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), colors[bbs_l['name'][i]])
-                    cv_img = cv2.putText(cv_img, bbs_l['name'][i], (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=colors[bbs_l['name'][i]])
-                    if 'people' in self.possible_classes and bbs_l['name'][i] in self.possible_classes['people'] and bbs_l['confidence'][i] >= self.threshold:
+                    cv_img = cv2.rectangle(cv_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), self.colors[bbs_l['name'][i]])
+                    cv_img = cv2.putText(cv_img, bbs_l['name'][i], (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=self.colors[bbs_l['name'][i]])
+                    if ('people' in self.possible_classes and bbs_l['name'][i] in self.possible_classes['people'] or 'people' in self.all_classes and bbs_l['name'][i] == 'people') and bbs_l['confidence'][i] >= self.threshold:
                         person = Description()
                         person.label_class = 'people' + '/' + bbs_l['name'][i]
                         person.reference_model = reference_model
@@ -175,16 +177,16 @@ class YoloRecognition():
                         person.bounding_box.height = int(bbs_l['ymax'][i] - bbs_l['ymin'][i])
                         people.append(person)
 
-                    elif bbs_l['name'][i] in [val for sublist in self.possible_classes.values() for val in sublist] and bbs_l['confidence'][i] >= self.threshold:
+                    elif (bbs_l['name'][i] in [val for sublist in self.possible_classes.values() for val in sublist] or bbs_l['name'][i] in self.all_classes) and bbs_l['confidence'][i] >= self.threshold:
                         object_d = Description()
-                        index = 0
+                        index = None
                         j = 0
                         for value in self.possible_classes.values():
                             if bbs_l['name'][i] in value:
                                 index = j
                             j += 1
                         object_d.reference_model = reference_model
-                        object_d.label_class = list(self.possible_classes.keys())[index] + '/' + bbs_l['name'][i]
+                        object_d.label_class = list(self.possible_classes.keys())[index] + '/' + bbs_l['name'][i] if index is not None else bbs_l['name'][i]
                         object_d.probability = bbs_l['confidence'][i]
                         object_d.bounding_box.minX = int(bbs_l['xmin'][i])
                         object_d.bounding_box.minY = int(bbs_l['ymin'][i])
@@ -195,7 +197,12 @@ class YoloRecognition():
                 #cv2.imshow('YoloV5', cv_img)
                 #cv2.waitKey(1)
 
-                debug_msg = self.bridge.cv2_to_imgmsg(cv_img)
+                debug_msg = Image()
+                debug_msg.data = cv_img[:,:,::-1].flatten().tolist()
+                debug_msg.encoding = "rgb8"
+                debug_msg.width = cv_img.shape[1]
+                debug_msg.height = cv_img.shape[0]
+                debug_msg.step = debug_msg.width*3
                 self.debug_image_pub.publish(debug_msg)
 
                 objects_msg = Recognitions()
