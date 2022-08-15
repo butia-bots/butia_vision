@@ -49,7 +49,7 @@ class YoloRecognition():
 
         self.object_list_updated_pub.publish(self.object_list_updated_header)
 
-        self.state = False
+        self.state = True
 
     def start(self, req):
         self.state = True
