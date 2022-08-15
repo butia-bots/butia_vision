@@ -1,13 +1,35 @@
-<?xml version="1.0" encoding="utf-8"?>
-
 <launch>
-    <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch"/>
+    <arg name="machine" default="localhost"/>
+    <arg name="bvb_machine" default="$(arg machine)"/>
+    <arg name="or_machine" default="$(arg machine)"/>
+    <arg name="i2k_machine" default="$(arg machine)"/>
+    <arg name="use_machine" default="true"/>
+    <arg name="output" default="screen"/>
+    <arg name="use_kinect" default="true"/>
+    <arg name="publish_tf" default="true"/>
 
-    <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch"/>
+    <arg name="or_config_file" default="object_recognition.yaml"/>
 
-    <include file="$(find segmentation)/launch/segmentation.launch"/>
+    <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
-    <include file="$(find image2kinect)/launch/image2kinect.launch"/>
+    <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch">
+        <arg name="machine" value="$(arg bvb_machine)" />
+        <arg name="use_machine" value="$(arg use_machine)"/>
+        <arg name="output" value="$(arg output)"/>
+        <arg name="use_kinect" value="$(arg use_kinect)"/>
+        <arg name="publish_tf" value="$(arg publish_tf)"/>
+    </include>
 
-    <include file="$(find object_recognition)/launch/yolo_v3.launch"/>
+    <include file="$(find object_recognition)/launch/object_recognition.launch">
+        <arg name="machine" value="$(arg or_machine)" />
+        <arg name="use_machine" value="$(arg use_machine)"/>
+        <arg name="output" value="$(arg output)"/>
+    </include>
+    
+    <include file="$(find image2kinect)/launch/image2kinect.launch">
+        <arg name="machine" value="$(arg i2k_machine)" />
+        <arg name="use_machine" value="$(arg use_machine)"/>
+        <arg name="output" value="$(arg output)"/>
+    </include>
+
 </launch>

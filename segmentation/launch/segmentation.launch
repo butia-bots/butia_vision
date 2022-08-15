@@ -1,7 +1,13 @@
 <launch>
+  <arg name="machine" default="localhost"/>
+  <arg name="use_machine" default="true"/>
+  <arg name="output" default="screen"/>
+
+  <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+
   <rosparam command="load" ns="segmentation" file="$(find segmentation)/config/ros.yaml"/>
   <rosparam command="load" ns="segmentation" file="$(find segmentation)/config/segmentation.yaml"/>
 
-  <node name="segmentation_node" pkg="segmentation" type="segmentation_node" output="screen"/>
+  <node name="segmentation_node" pkg="segmentation" type="segmentation_node" output="$(arg output)" machine="$(arg machine)"//>
 
 </launch>
