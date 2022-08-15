@@ -1,8 +1,5 @@
 model_file: larc2021_go_and_get_it.pt
 threshold: 0.3
-all_classes:
-    #Note: fill this list with the class list from yolov5 dataset.yaml file used to train the model, or attempt to get this list by printing the state dictionary in the model file. The class names should be in the same order.
-    []
 classes_by_category:
     people: [Person]
     food: [master_chef_can, cracker_box, sugar_box, tomato_soup_can, mustard_bottle, tuna_fish_can, pudding_box, gelatin_box, potted_meat_can, banana, strawberry, apple, lemon, peach, pear, orange, plum]

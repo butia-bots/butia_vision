@@ -1,5 +1,5 @@
 threshold: 0.3
-possible_classes:
+classes_by_category:
     simple: [Apple, Banana, Carrot, Mayonnaise, Ketchup, Soap, Napkin, Toothpaste, Alcohol Bottle, Yeast, Chocolate Powder, Coconut Milk, Soda can, Beer can, Popcorn, Gelatine, Cracker, Chocolate Milk,]
 all_classes:
     - Apple
