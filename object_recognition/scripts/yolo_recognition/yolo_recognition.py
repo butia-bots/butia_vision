@@ -15,15 +15,22 @@ from sensor_msgs.msg import Image
 from butia_vision_msgs.msg import Description, Recognitions
 from butia_vision_msgs.srv import ListClasses, ListClassesResponse
 
+#colors = dict([(k, np.random.randint(low=0, high=256, size=(3,)).tolist()) for k,v in dictionary.items()])
+
+torch.set_num_threads(1)
+
 class YoloRecognition():
     def __init__(self):
         self.readParameters()
+
+        self.colors = dict([(k, np.random.randint(low=0, high=256, size=(3,)).tolist()) for k in self.all_classes])
 
         self.rospack = rospkg.RosPack()
         print(self.rospack.get_path('object_recognition'))
 
         #self.bounding_boxes_sub = rospy.Subscriber(self.bounding_boxes_topic, BoundingBoxes, self.yoloRecognitionCallback, queue_size=self.bounding_boxes_qs)
         #self.bridge = cv_bridge.CvBridge()
+
         self.model = torch.hub.load('ultralytics/yolov5', 'custom', path=os.path.join(self.rospack.get_path('object_recognition'), 'config', 'yolov5_network_config', 'weights', self.model_file), autoshape=True)
         self.model.eval()
         self.model.conf = self.threshold
@@ -60,7 +67,7 @@ class YoloRecognition():
     
     def getObjectList(self, req):
         objects_list = []
-        for key, value in self.possible_classes.items():
+        for key, value in self.classes_by_category.items():
             for elem in value:
                 objects_list.append(key + '/' + elem)
         return ListClassesResponse(objects_list)
@@ -86,6 +93,7 @@ class YoloRecognition():
                 people = []
 
                 for i in range(len(bbs_l)):
+
                     if int(bbs_l['class'][i]) >= len(self.all_classes):
                         continue
                     bbs_l['name'][i] = self.all_classes[int(bbs_l['class'][i])]
@@ -95,6 +103,7 @@ class YoloRecognition():
                     cv_img = cv2.rectangle(cv_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), self.colors[bbs_l['name'][i]])
                     cv_img = cv2.putText(cv_img, bbs_l['name'][i], (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=self.colors[bbs_l['name'][i]])
                     if ('people' in self.possible_classes and bbs_l['name'][i] in self.possible_classes['people'] or 'people' in self.all_classes and bbs_l['name'][i] == 'people') and bbs_l['confidence'][i] >= self.threshold:
+
                         person = Description()
                         person.label_class = 'people' + '/' + bbs_l['name'][i]
                         person.reference_model = reference_model
@@ -106,15 +115,17 @@ class YoloRecognition():
                         people.append(person)
 
                     elif (bbs_l['name'][i] in [val for sublist in self.possible_classes.values() for val in sublist] or bbs_l['name'][i] in self.all_classes) and bbs_l['confidence'][i] >= self.threshold:
+
                         object_d = Description()
                         index = None
                         j = 0
-                        for value in self.possible_classes.values():
+                        for value in self.classes_by_category.values():
                             if bbs_l['name'][i] in value:
                                 index = j
                             j += 1
                         object_d.reference_model = reference_model
                         object_d.label_class = list(self.possible_classes.keys())[index] + '/' + bbs_l['name'][i] if index is not None else bbs_l['name'][i]
+
                         object_d.probability = bbs_l['confidence'][i]
                         object_d.bounding_box.minX = int(bbs_l['xmin'][i])
                         object_d.bounding_box.minY = int(bbs_l['ymin'][i])
@@ -147,8 +158,6 @@ class YoloRecognition():
                     people_msg.image_header = img.header
                     people_msg.descriptions = people
                     self.recognized_people_pub.publish(people_msg)
-            
-
 
     def readParameters(self):
         self.bounding_boxes_topic = rospy.get_param("/object_recognition/subscribers/bounding_boxes/topic", "/darknet_ros/bounding_boxes")
@@ -174,8 +183,10 @@ class YoloRecognition():
         self.stop_service = rospy.get_param("/object_recognition/servers/stop/service", "/butia_vision/or/stop")
 
         self.threshold = rospy.get_param("/object_recognition/threshold", 0.5)
-        
-        self.possible_classes = dict(rospy.get_param("/object_recognition/possible_classes"))
+
+        self.all_classes = list(rospy.get_param("/object_recognition/all_classes"))
+
+        self.classes_by_category = dict(rospy.get_param("/object_recognition/classes_by_category"))
 
         self.all_classes = list(rospy.get_param("/object_recognition/all_classes"))
 
