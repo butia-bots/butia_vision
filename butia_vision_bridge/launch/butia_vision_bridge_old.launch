@@ -4,7 +4,6 @@
   <arg name="output" default="screen"/>
   <arg name="use_kinect" default="true"/>
   <arg name="publish_tf" default="true"/>
-  <arg name="sync_sources" default="[image_rgb,image_depth,points]"/>
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
@@ -20,15 +19,9 @@
     </group>
   </group>
 
+  <rosparam command="load" ns="butia_vision_bridge" file="$(find butia_vision_bridge)/config/ros.yaml"/>
+  <rosparam command="load" ns="butia_vision_bridge" file="$(find butia_vision_bridge)/config/butia_vision_bridge.yaml"/>
 
-  <node name="butia_vision_bridge_node" pkg="butia_vision_bridge" type="butia_vision_bridge_node.py" output="$(arg output)" machine="$(arg machine)">
-    <rosparam command="load" ns="butia_vision_bridge" file="$(find butia_vision_bridge)/config/butia_vision_bridge.yaml"/>
-    <rosparam param="sync_sources" subst_value="True">$(arg sync_sources)</rosparam> 
-    <remap from="sub/image_depth"  to="kinect2/qhd/image_depth_rect"/>
-    <remap from="sub/image_rgb"  to="kinect2/qhd/image_color_rect"/>
-    <remap from="sub/points"     to="kinect2/qhd/points"/>
-    <!-- <remap from="sub/image_rgb"  to="$(arg base_name)/sd/camera_info"/>
-    <remap from="sub/points"     to="$(arg base_name)/sd/points"/> -->
-  </node>
+  <node name="butia_vision_bridge_node" pkg="butia_vision_bridge" type="butia_vision_bridge_node" output="$(arg output)" machine="$(arg machine)"/>
 
 </launch>

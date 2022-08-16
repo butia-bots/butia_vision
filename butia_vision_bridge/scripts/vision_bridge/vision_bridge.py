@@ -9,6 +9,7 @@ from sensor_msgs.msg import Image, CameraInfo, PointCloud2
 
 import message_filters
 
+from multipledispatch import dispatch
 
 class VisionBridge:
     SOURCE_MESSAGE_TYPES = {
@@ -16,7 +17,7 @@ class VisionBridge:
         'camera_info_rgb': CameraInfo,
         'image_depth': Image,
         'camera_info_depth': CameraInfo,
-        'point_cloud': PointCloud2
+        'points': PointCloud2
     }
 
     def __init__(self):
@@ -24,15 +25,17 @@ class VisionBridge:
 
         self.createSubscribersAndPublishers()
     
+    @dispatch(Image)
     def processData(self, data: Image):
         image = np.frombuffer(data.data, dtype=np.uint8).reshape(data.height, data.width, -1)
-        image = cv2.resize(image, (self.width, self.height), self.INTER_LINEAR)
+        image = cv2.resize(image, (self.height, self.width), cv2.INTER_LINEAR)
 
-        data.data = image[:,:,::-1].flatten().tolist()
+        data.data = image.flatten().tolist()
         data.width = self.width
         data.height = self.height
         return data
     
+    @dispatch(CameraInfo)
     def processData(self, data: CameraInfo):
         scale_x = self.width/data.width
         scale_y = self.height/data.height
@@ -47,12 +50,15 @@ class VisionBridge:
 
         return data
     
+    @dispatch(PointCloud2)
     def processData(self, data: PointCloud2):
-        pc = np.frombuffer(data.data, dtype=np.uint8).reshape(data.height, data.width, -1)
-        #since point cloud is organized, I am using opencv to resize it
-        pc = cv2.resize(pc, (self.width, self.height), self.INTER_LINEAR)
+        pc = np.frombuffer(data.data, dtype=np.float32).reshape(data.height, data.width, -1)
+        print(pc)
+        # since point cloud is organized, I am using opencv to resize it
+        pc = cv2.resize(pc, (self.height, self.width), cv2.INTER_LINEAR)
+        #print(pc)
 
-        data.data = pc[:,:,::-1].flatten().tolist()
+        data.data = pc.flatten().tolist()
         data.width = self.width
         data.height = self.height
         return data
@@ -65,26 +71,27 @@ class VisionBridge:
         self.publish(publish_dict)
 
     def publish(self, data_dict):
-        for source, data in data_dict.values():
+        for source, data in data_dict.items():
             self.publishers[source].publish(data)
     
     def createSubscribersAndPublishers(self):
         self.subscribers = []
         self.publishers = {}
         for source in self.sync_sources:
-            self.subscribers.append(message_filters.Subscriber(source + '_sub', VisionBridge.SOURCE_MESSAGE_TYPES[source]))
-            self.publishers[source] = rospy.Publisher(source + '_pub', VisionBridge.SOURCE_MESSAGE_TYPES[source], queue_size=self.queue_size)
+            self.subscribers.append(message_filters.Subscriber('sub/' + source, VisionBridge.SOURCE_MESSAGE_TYPES[source]))
+            self.publishers[source] = rospy.Publisher('pub/' + source, VisionBridge.SOURCE_MESSAGE_TYPES[source], queue_size=self.queue_size)
         if self.use_exact_sync:
             self.time_synchronizer = message_filters.TimeSynchronizer(self.subscribers, self.queue_size)
         else:
-            self.time_synchronizer = message_filters.ApproximateTimeSynchronizer(self.subscribers, self.queue_size)
+            self.time_synchronizer = message_filters.ApproximateTimeSynchronizer(self.subscribers, self.queue_size, self.slop)
         self.time_synchronizer.registerCallback(self.callback)
 
     def readParameters(self):
-        self.sync_sources = list(rospy.get_param('sync_sources', ['image_rgb', 'point_cloud']))
+        self.sync_sources = list(rospy.get_param('~sync_sources', ['image_rgb', 'points']))
         assert all([source in self.sync_sources for source in self.sync_sources])
-        self.queue_size = rospy.get_param('queue_size', 1)
-        self.use_exact_sync = rospy.get_param('exact_sync', False)
-        size = tuple(rospy.get_param('size', [640, 480]))
+        self.queue_size = rospy.get_param('~queue_size', 1)
+        self.use_exact_sync = rospy.get_param('~exact_sync', False)
+        self.slop = rospy.get_param('~slop', 0.5)
+        size = tuple(rospy.get_param('~size', [640, 480]))
         assert len(size) == 2
         self.width, self.height = size
