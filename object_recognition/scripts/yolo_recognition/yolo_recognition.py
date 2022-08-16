@@ -102,7 +102,7 @@ class YoloRecognition():
                     #cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
                     cv_img = cv2.rectangle(cv_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), self.colors[bbs_l['name'][i]])
                     cv_img = cv2.putText(cv_img, bbs_l['name'][i], (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=self.colors[bbs_l['name'][i]])
-                    if ('people' in self.possible_classes and bbs_l['name'][i] in self.possible_classes['people'] or 'people' in self.all_classes and bbs_l['name'][i] == 'people') and bbs_l['confidence'][i] >= self.threshold:
+                    if ('people' in self.all_classes and bbs_l['name'][i] in self.classes_by_category['people'] or 'people' in self.all_classes and bbs_l['name'][i] == 'people') and bbs_l['confidence'][i] >= self.threshold:
 
                         person = Description()
                         person.label_class = 'people' + '/' + bbs_l['name'][i]
@@ -114,7 +114,7 @@ class YoloRecognition():
                         person.bounding_box.height = int(bbs_l['ymax'][i] - bbs_l['ymin'][i])
                         people.append(person)
 
-                    elif (bbs_l['name'][i] in [val for sublist in self.possible_classes.values() for val in sublist] or bbs_l['name'][i] in self.all_classes) and bbs_l['confidence'][i] >= self.threshold:
+                    elif (bbs_l['name'][i] in [val for sublist in self.all_classes for val in sublist] or bbs_l['name'][i] in self.all_classes) and bbs_l['confidence'][i] >= self.threshold:
 
                         object_d = Description()
                         index = None
@@ -124,7 +124,7 @@ class YoloRecognition():
                                 index = j
                             j += 1
                         object_d.reference_model = reference_model
-                        object_d.label_class = list(self.possible_classes.keys())[index] + '/' + bbs_l['name'][i] if index is not None else bbs_l['name'][i]
+                        object_d.label_class = self.all_classes[index] + '/' + bbs_l['name'][i] if index is not None else bbs_l['name'][i]
 
                         object_d.probability = bbs_l['confidence'][i]
                         object_d.bounding_box.minX = int(bbs_l['xmin'][i])
@@ -187,7 +187,5 @@ class YoloRecognition():
         self.all_classes = list(rospy.get_param("/object_recognition/all_classes"))
 
         self.classes_by_category = dict(rospy.get_param("/object_recognition/classes_by_category"))
-
-        self.all_classes = list(rospy.get_param("/object_recognition/all_classes"))
 
         self.model_file = rospy.get_param("/object_recognition/model_file", "larc2021_go_and_get_it.pt")
