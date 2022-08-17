@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import queue
 import rospy
 import ros_numpy
 
@@ -8,12 +9,10 @@ import cv2
 
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2
 
-import message_filters
-
 from multipledispatch import dispatch
 
 class VisionBridge:
-    SOURCE_MESSAGE_TYPES = {
+    SOURCES_TYPES = {
         'camera_info': CameraInfo,
         'image_rgb': Image,
         'image_depth': Image,
@@ -78,35 +77,21 @@ class VisionBridge:
         data = ros_numpy.msgify(PointCloud2, pc, stamp=header.stamp, frame_id=header.frame_id)
         return data
 
-    def callback(self, *args):
-        publish_dict = {}
-        for i, data in enumerate(args):
-            source = self.sync_sources[i]
-            publish_dict[source] = self.processData(data)
-        self.publish(publish_dict)
+    def callback(self, data, source):
+        data = self.processData(data)
+        self.publish(data, source)
 
-    def publish(self, data_dict):
-        for source, data in data_dict.items():
-            self.publishers[source].publish(data)
+    def publish(self, data, source):
+        self.publishers[source].publish(data)
     
     def createSubscribersAndPublishers(self):
-        self.subscribers = []
         self.publishers = {}
-        for source in self.sync_sources:
-            self.subscribers.append(message_filters.Subscriber('sub/' + source, VisionBridge.SOURCE_MESSAGE_TYPES[source]))
-            self.publishers[source] = rospy.Publisher('pub/' + source, VisionBridge.SOURCE_MESSAGE_TYPES[source], queue_size=self.queue_size)
-        if self.use_exact_sync:
-            self.time_synchronizer = message_filters.TimeSynchronizer(self.subscribers, self.queue_size)
-        else:
-            self.time_synchronizer = message_filters.ApproximateTimeSynchronizer(self.subscribers, self.queue_size, self.slop)
-        self.time_synchronizer.registerCallback(self.callback)
+        for source in VisionBridge.SOURCES_TYPES:
+            rospy.Subscriber('sub/' + source, VisionBridge.SOURCES_TYPES[source], callback=self.callback, callback_args=(source), queue_size=self.queue_size)
+            self.publishers[source] = rospy.Publisher('pub/' + source, VisionBridge.SOURCES_TYPES[source], queue_size=self.queue_size)
 
     def readParameters(self):
-        self.sync_sources = list(rospy.get_param('~sync_sources', ['image_rgb', 'points']))
-        assert all([source in self.sync_sources for source in self.sync_sources])
         self.queue_size = int(rospy.get_param('~queue_size', 1))
-        self.use_exact_sync = bool(rospy.get_param('~exact_sync', False))
-        self.slop = float(rospy.get_param('~slop', 0.5))
         size = tuple(rospy.get_param('~size', [640, 480]))
         assert len(size) == 2
         self.width = int(size[0])

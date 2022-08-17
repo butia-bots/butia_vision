@@ -10,5 +10,5 @@
 *.caffemodel
 *.pbtxt
 *.prototxt
-__pycache__
+*__pycache__*
 *CATKIN_IGNORE*

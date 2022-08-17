@@ -12,11 +12,8 @@
   <arg name="pub/camera_info" default="pub/camera_info"/>
   <arg name="pub/image_depth" default="pub/image_depth"/>
   <arg name="pub/points"      default="pub/points"/>
-  <arg name="queue_size"      default="5"/>
-  <arg name="exact_time"      default="true"/>
-  <arg name="slop"            default="0.5"/>
+  <arg name="queue_size"      default="1"/>
   <arg name="size"            default="[640,480]"/>
-  <arg name="sync_sources"    default="[image_rgb,points]"/>
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
@@ -35,10 +32,7 @@
 
   <node name="butia_vision_bridge_node" pkg="butia_vision_bridge" type="butia_vision_bridge_node.py" output="$(arg output)" machine="$(arg machine)">
     <param name="queue_size" value="$(arg queue_size)"/>
-    <param name="exact_time" value="$(arg exact_time)"/>
-    <param name="slop"       value="$(arg slop)"/>
     <rosparam param="size" subst_value="True">$(arg size)</rosparam>
-    <rosparam param="sync_sources" subst_value="True">$(arg sync_sources)</rosparam>
 
     <remap from="sub/image_rgb"  to="$(arg sub/image_rgb)"/>
     <remap from="sub/camera_info"  to="$(arg sub/camera_info)"/>
