@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import rospy
+import ros_numpy
 
 import numpy as np
 import cv2
@@ -27,14 +28,14 @@ class VisionBridge:
     
     @dispatch(Image)
     def processData(self, data: Image):
-        image = np.frombuffer(data.data, dtype=np.uint8).reshape(data.height, data.width, -1)
-        image = cv2.resize(image, (self.height, self.width), cv2.INTER_LINEAR)
+        encoding = data.encoding
+        image = ros_numpy.numpify(data)
+        image = cv2.resize(image, (self.width, self.height), cv2.INTER_LINEAR)
 
-        data.data = image.flatten().tolist()
-        data.width = self.width
-        data.height = self.height
+        data = ros_numpy.msgify(Image, image, encoding)
         return data
     
+    # just focal distances and optic centers must be rescaled
     @dispatch(CameraInfo)
     def processData(self, data: CameraInfo):
         scale_x = self.width/data.width
@@ -49,18 +50,35 @@ class VisionBridge:
         data.height = self.height
 
         return data
-    
+
+    '''
+        # this function took some time to made. The hardest part is to transform a number called 'rgb' that is a float32 in three uint8
+        # note the difference in the use of numpy 'view' and numpy 'astype':
+            - using .astype, the number is simple converted to the other type, as like: 32.0 (float) -> 32 (int)
+            - using .view, the binary of the number is viewed in another type, so the binary of a float32 can be read as a binary of an uint32.
+        # It is needed to evaluate if this is a problem, but the resize (downsample or upsample) of the point cloud is done in a separated way. First in points, and after in colors.
+    '''
     @dispatch(PointCloud2)
     def processData(self, data: PointCloud2):
-        pc = np.frombuffer(data.data, dtype=np.float32).reshape(data.height, data.width, -1)
-        print(pc)
-        # since point cloud is organized, I am using opencv to resize it
-        pc = cv2.resize(pc, (self.height, self.width), cv2.INTER_LINEAR)
-        #print(pc)
+        header = data.header
+        pc = ros_numpy.numpify(data)
+        points = np.zeros((pc.shape[0], pc.shape[1], 3), dtype=np.float)
+        colors = np.zeros((pc.shape[0], pc.shape[1], 3), dtype=np.uint8)
+        points[:, :, 0] = pc['x']
+        points[:, :, 1] = pc['y']
+        points[:, :, 2] = pc['z']
+        colors[:, :, 0] = (pc['rgb'].view(np.uint32) >> 16 & 255).astype(np.uint8)
+        colors[:, :, 1] = (pc['rgb'].view(np.uint32) >> 8 & 255).astype(np.uint8)
+        colors[:, :, 2] = (pc['rgb'].view(np.uint32) & 255).astype(np.uint8)
+        points = cv2.resize(points, (self.width, self.height), cv2.INTER_LINEAR)
+        colors = cv2.resize(colors, (self.width, self.height), cv2.INTER_LINEAR)
+        pc = np.zeros((points.shape[0], points.shape[1]), dtype={'names':('x', 'y', 'z', 'rgb'), 'formats':('f4', 'f4', 'f4', 'f4')})
+        pc['x'] = points[:, :, 0]
+        pc['y'] = points[:, :, 1]
+        pc['z'] = points[:, :, 2]
+        pc['rgb'] = (colors[:, :, 0].astype(np.uint32) << 16 | colors[:, :, 1].astype(np.uint32) << 8 | colors[:, :, 2].astype(np.uint32)).view(np.float32)
 
-        data.data = pc.flatten().tolist()
-        data.width = self.width
-        data.height = self.height
+        data = ros_numpy.msgify(PointCloud2, pc, stamp=header.stamp, frame_id=header.frame_id)
         return data
 
     def callback(self, *args):
