@@ -62,21 +62,19 @@ class VisionBridge:
     def processData(self, data: PointCloud2):
         header = data.header
         pc = ros_numpy.numpify(data)
-        points = np.zeros((pc.shape[0], pc.shape[1], 3), dtype=np.float)
-        colors = np.zeros((pc.shape[0], pc.shape[1], 3), dtype=np.uint8)
+        points = np.zeros((pc.shape[0], pc.shape[1], 6), dtype=np.float)
         points[:, :, 0] = pc['x']
         points[:, :, 1] = pc['y']
         points[:, :, 2] = pc['z']
-        colors[:, :, 0] = (pc['rgb'].view(np.uint32) >> 16 & 255).astype(np.uint8)
-        colors[:, :, 1] = (pc['rgb'].view(np.uint32) >> 8 & 255).astype(np.uint8)
-        colors[:, :, 2] = (pc['rgb'].view(np.uint32) & 255).astype(np.uint8)
+        points[:, :, 3] = (pc['rgb'].view(np.uint32) >> 16 & 255).astype(np.float)
+        points[:, :, 4] = (pc['rgb'].view(np.uint32) >> 8 & 255).astype(np.float)
+        points[:, :, 5] = (pc['rgb'].view(np.uint32) & 255).astype(np.float)
         points = cv2.resize(points, (self.width, self.height), cv2.INTER_LINEAR)
-        colors = cv2.resize(colors, (self.width, self.height), cv2.INTER_LINEAR)
         pc = np.zeros((points.shape[0], points.shape[1]), dtype={'names':('x', 'y', 'z', 'rgb'), 'formats':('f4', 'f4', 'f4', 'f4')})
         pc['x'] = points[:, :, 0]
         pc['y'] = points[:, :, 1]
         pc['z'] = points[:, :, 2]
-        pc['rgb'] = (colors[:, :, 0].astype(np.uint32) << 16 | colors[:, :, 1].astype(np.uint32) << 8 | colors[:, :, 2].astype(np.uint32)).view(np.float32)
+        pc['rgb'] = (points[:, :, 3].astype(np.uint32) << 16 | points[:, :, 4].astype(np.uint32) << 8 | points[:, :, 5].astype(np.uint32)).view(np.float32)
 
         data = ros_numpy.msgify(PointCloud2, pc, stamp=header.stamp, frame_id=header.frame_id)
         return data
