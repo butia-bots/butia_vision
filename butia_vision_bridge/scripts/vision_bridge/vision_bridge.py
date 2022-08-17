@@ -14,10 +14,9 @@ from multipledispatch import dispatch
 
 class VisionBridge:
     SOURCE_MESSAGE_TYPES = {
+        'camera_info': CameraInfo,
         'image_rgb': Image,
-        'camera_info_rgb': CameraInfo,
         'image_depth': Image,
-        'camera_info_depth': CameraInfo,
         'points': PointCloud2
     }
 
@@ -105,9 +104,10 @@ class VisionBridge:
     def readParameters(self):
         self.sync_sources = list(rospy.get_param('~sync_sources', ['image_rgb', 'points']))
         assert all([source in self.sync_sources for source in self.sync_sources])
-        self.queue_size = rospy.get_param('~queue_size', 1)
-        self.use_exact_sync = rospy.get_param('~exact_sync', False)
-        self.slop = rospy.get_param('~slop', 0.5)
+        self.queue_size = int(rospy.get_param('~queue_size', 1))
+        self.use_exact_sync = bool(rospy.get_param('~exact_sync', False))
+        self.slop = float(rospy.get_param('~slop', 0.5))
         size = tuple(rospy.get_param('~size', [640, 480]))
         assert len(size) == 2
-        self.width, self.height = size
+        self.width = int(size[0])
+        self.height = int(size[1])

@@ -1,10 +1,22 @@
 <launch>
-  <arg name="machine" default="localhost"/>
-  <arg name="use_machine" default="true"/>
-  <arg name="output" default="screen"/>
-  <arg name="use_kinect" default="true"/>
-  <arg name="publish_tf" default="true"/>
-  <arg name="sync_sources" default="[image_rgb,image_depth,points]"/>
+  <arg name="machine"         default="localhost"/>
+  <arg name="use_machine"     default="true"/>
+  <arg name="output"          default="screen"/>
+  <arg name="use_kinect"      default="true"/>
+  <arg name="publish_tf"      default="true"/>
+  <arg name="sub/image_rgb"   default="kinect2/qhd/image_color_rect"/>
+  <arg name="sub/camera_info" default="kinect2/qhd/camera_infot"/>
+  <arg name="sub/image_depth" default="kinect2/qhd/image_depth_rect"/>
+  <arg name="sub/points"      default="kinect2/qhd/points"/>
+  <arg name="pub/image_rgb"   default="pub/image_rgb"/>
+  <arg name="pub/camera_info" default="pub/camera_info"/>
+  <arg name="pub/image_depth" default="pub/image_depth"/>
+  <arg name="pub/points"      default="pub/points"/>
+  <arg name="queue_size"      default="5"/>
+  <arg name="exact_time"      default="true"/>
+  <arg name="slop"            default="0.5"/>
+  <arg name="size"            default="[640,480]"/>
+  <arg name="sync_sources"    default="[image_rgb,points]"/>
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
@@ -22,13 +34,21 @@
 
 
   <node name="butia_vision_bridge_node" pkg="butia_vision_bridge" type="butia_vision_bridge_node.py" output="$(arg output)" machine="$(arg machine)">
-    <rosparam command="load" ns="butia_vision_bridge" file="$(find butia_vision_bridge)/config/butia_vision_bridge.yaml"/>
-    <rosparam param="sync_sources" subst_value="True">$(arg sync_sources)</rosparam> 
-    <remap from="sub/image_depth"  to="kinect2/qhd/image_depth_rect"/>
-    <remap from="sub/image_rgb"  to="kinect2/qhd/image_color_rect"/>
-    <remap from="sub/points"     to="kinect2/qhd/points"/>
-    <!-- <remap from="sub/image_rgb"  to="$(arg base_name)/sd/camera_info"/>
-    <remap from="sub/points"     to="$(arg base_name)/sd/points"/> -->
+    <param name="queue_size" value="$(arg queue_size)"/>
+    <param name="exact_time" value="$(arg exact_time)"/>
+    <param name="slop"       value="$(arg slop)"/>
+    <rosparam param="size" subst_value="True">$(arg size)</rosparam>
+    <rosparam param="sync_sources" subst_value="True">$(arg sync_sources)</rosparam>
+
+    <remap from="sub/image_rgb"  to="$(arg sub/image_rgb)"/>
+    <remap from="sub/camera_info"  to="$(arg sub/camera_info)"/>
+    <remap from="sub/image_depth"  to="$(arg sub/image_depth)"/>
+    <remap from="sub/points"     to="$(arg sub/points)"/>
+
+    <remap from="pub/image_rgb"  to="$(arg pub/image_rgb)"/>
+    <remap from="pub/camera_info"  to="$(arg pub/camera_info)"/>
+    <remap from="pub/image_depth"  to="$(arg pub/image_depth)"/>
+    <remap from="pub/points"     to="$(arg pub/points)"/>
   </node>
 
 </launch>
