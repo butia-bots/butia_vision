@@ -1,1 +1,1 @@
-from .vision_bridge import VisionBridge
+from . import VisionBridge

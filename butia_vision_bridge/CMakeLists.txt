@@ -3,8 +3,10 @@ project(butia_vision_bridge)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED COMPONENTS roscpp std_msgs sensor_msgs std_srvs cv_bridge tf butia_vision_msgs message_filters image_transport)
+find_package(catkin REQUIRED COMPONENTS rospy roscpp std_msgs sensor_msgs std_srvs cv_bridge tf butia_vision_msgs message_filters image_transport)
 find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
+
+catkin_python_setup()
 
 catkin_package(
     INCLUDE_DIRS include/${PROJECT_NAME}
