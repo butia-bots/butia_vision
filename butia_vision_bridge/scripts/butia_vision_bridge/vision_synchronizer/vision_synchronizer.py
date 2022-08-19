@@ -7,7 +7,7 @@ from butia_vision_bridge import VisionBridge
 class VisionSynchronizer:
     def syncSubscribers(source_topic_dict, callback, queue_size=1, exact_time=False, slop=0.1):
         subscribers = {}
-        for source, topic in source_topic_dict.values():
+        for source, topic in source_topic_dict.items():
             subscribers[source] = message_filters.Subscriber(topic, VisionBridge.SOURCES_TYPES[source])
         
         ts = None

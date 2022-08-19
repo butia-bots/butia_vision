@@ -25,11 +25,13 @@ class VisionBridge:
     
     @dispatch(Image)
     def processData(self, data: Image):
+        header = data.header
         encoding = data.encoding
         image = ros_numpy.numpify(data)
         image = cv2.resize(image, (self.width, self.height), cv2.INTER_LINEAR)
 
         data = ros_numpy.msgify(Image, image, encoding)
+        data.header = header
         return data
     
     # just focal distances and optic centers must be rescaled
@@ -74,6 +76,7 @@ class VisionBridge:
         pc['rgb'] = (points[:, :, 3].astype(np.uint32) << 16 | points[:, :, 4].astype(np.uint32) << 8 | points[:, :, 5].astype(np.uint32)).view(np.float32)
 
         data = ros_numpy.msgify(PointCloud2, pc, stamp=header.stamp, frame_id=header.frame_id)
+        data.header = header
         return data
 
     def __callback(self, data, source):
