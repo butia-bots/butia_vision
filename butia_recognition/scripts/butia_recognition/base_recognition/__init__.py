@@ -1,1 +1,1 @@
-from .base_recognition import BaseRecognition
+from .base_recognition import *

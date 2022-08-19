@@ -1,1 +1,1 @@
-from .yolov5_recognition import YoloV5Recognition
+from .yolov5_recognition import *

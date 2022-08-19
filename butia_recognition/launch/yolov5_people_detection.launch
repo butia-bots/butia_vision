@@ -1,0 +1,12 @@
+<launch>
+  <arg name="machine" default="localhost"/>
+  <arg name="use_machine" default="true"/>
+  <arg name="output" default="screen"/>
+
+  <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+
+  <node pkg="butia_recognition" type="yolov5_recognition.py" output="$(arg output)" name="yolov5_people_detection" machine="$(arg machine)">
+    <rosparam command="load" file="$(find butia_recognition)/config/yolov5_people_detection.yaml"/>
+  </node>
+
+</launch>

@@ -4,7 +4,7 @@ import rospy
 
 import ros_numpy
 
-from base_recognition import BaseRecognition, ifState
+from butia_recognition import BaseRecognition, ifState
 
 import torch
 import torchvision
@@ -28,6 +28,7 @@ class YoloV5Recognition(BaseRecognition):
         self.colors = dict([(k, np.random.randint(low=0, high=256, size=(3,)).tolist()) for k in self.classes])
 
         self.loadModel()
+        self.initRosComm()
 
     def initRosComm(self):
         self.object_recognition_publisher = rospy.Publisher(self.object_recognition_topic, Recognitions2D, queue_size=self.object_recognition_qs)
@@ -138,8 +139,15 @@ class YoloV5Recognition(BaseRecognition):
 
         self.threshold = rospy.get_param("~threshold", 0.5)
 
-        self.classes_by_category = dict(rospy.get_param("~classes_by_category"))
+        self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
 
         self.model_file = rospy.get_param("~model_file", "larc2021_go_and_get_it.pt")
 
         super().readParameters()
+
+if __name__ == '__main__':
+    rospy.init_node('yolov5_recognition_node', anonymous = True)
+
+    yolo = YoloV5Recognition()
+
+    rospy.spin()

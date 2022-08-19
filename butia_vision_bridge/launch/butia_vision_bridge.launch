@@ -8,10 +8,10 @@
   <arg name="sub/camera_info" default="kinect2/qhd/camera_infot"/>
   <arg name="sub/image_depth" default="kinect2/qhd/image_depth_rect"/>
   <arg name="sub/points"      default="kinect2/qhd/points"/>
-  <arg name="pub/image_rgb"   default="pub/image_rgb"/>
-  <arg name="pub/camera_info" default="pub/camera_info"/>
-  <arg name="pub/image_depth" default="pub/image_depth"/>
-  <arg name="pub/points"      default="pub/points"/>
+  <arg name="pub/image_rgb"   default="butia_vision/bvb/image_rgb"/>
+  <arg name="pub/camera_info" default="butia_vision/bvb/camera_info"/>
+  <arg name="pub/image_depth" default="butia_vision/bvb/image_depth"/>
+  <arg name="pub/points"      default="butia_vision/bvb/points"/>
   <arg name="queue_size"      default="1"/>
   <arg name="size"            default="[640,480]"/>
 

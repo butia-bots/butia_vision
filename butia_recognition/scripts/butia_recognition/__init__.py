@@ -1,2 +1,2 @@
-from .base_recognition import BaseRecognition
-from .yolov5_recognition import YoloV5Recognition
+from .base_recognition import *
+from .yolov5_recognition import *

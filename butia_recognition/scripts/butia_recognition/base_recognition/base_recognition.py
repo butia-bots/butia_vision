@@ -17,9 +17,9 @@ def ifState(func):
     return wrapper_func
 
 class BaseRecognition:
-    def __init__(self, state=True):
+    def __init__(self, state=True, package_name='butia_recognition'):
         self.state = state
-        self.pkg_path = rospkg.RosPack().get_path('butia_generic_recognition')
+        self.pkg_path = rospkg.RosPack().get_path(package_name)
         self.seq = 0
     
     def initRosComm(self, callbacks_obj=None):
@@ -52,7 +52,7 @@ class BaseRecognition:
         pass
 
     def readParameters(self):
-        self.subscribers_dict = dict(rospy.get_param("~subscribers"))
+        self.subscribers_dict = dict(rospy.get_param("~subscribers", {}))
         self.queue_size = self.subscribers_dict.pop('queue_size', 1)
         self.exact_time = self.subscribers_dict.pop('exact_time', False)
         self.slop = self.subscribers_dict.pop('slop', 0.1)
@@ -61,7 +61,7 @@ class BaseRecognition:
         self.start_service = rospy.get_param("~servers/start/service", "/butia_vision/bgr/start")
         self.stop_service = rospy.get_param("~servers/stop/service", "/butia_vision/bgr/stop")
 
-        self.classes = list(rospy.get_param("~classes"))  
+        self.classes = list(rospy.get_param("~classes", []))  
 
 
 
