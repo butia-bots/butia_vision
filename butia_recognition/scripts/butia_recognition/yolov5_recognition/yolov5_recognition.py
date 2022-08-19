@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from email.mime import image
 import rospy
 
 import ros_numpy
@@ -7,7 +8,6 @@ import ros_numpy
 from butia_recognition import BaseRecognition, ifState
 
 import torch
-import torchvision
 import numpy as np
 import os
 from copy import copy
@@ -31,6 +31,7 @@ class YoloV5Recognition(BaseRecognition):
         self.initRosComm()
 
     def initRosComm(self):
+        self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
         self.object_recognition_publisher = rospy.Publisher(self.object_recognition_topic, Recognitions2D, queue_size=self.object_recognition_qs)
         self.people_detection_publisher = rospy.Publisher(self.people_detection_topic, Recognitions2D, queue_size=self.people_detection_qs)
         super().initRosComm(callbacks_obj=self)
@@ -67,13 +68,14 @@ class YoloV5Recognition(BaseRecognition):
             cv_img = ros_numpy.numpify(img)
 
             results = self.model(cv_img)
+            debug_img = copy(cv_img)
 
             bbs_l = results.pandas().xyxy[0]
 
             objects_recognition = Recognitions2D()
             h = Header()
             h.seq = self.seq
-            seq += 1
+            self.seq += 1
             h.stamp = rospy.Time.now()
             objects_recognition.header = h
             objects_recognition.image_rgb = copy(img)
@@ -87,39 +89,40 @@ class YoloV5Recognition(BaseRecognition):
                 if int(bbs_l['class'][i]) >= len(self.classes):
                     continue
 
-                bbs_l['name'][i] = self.classes[int(bbs_l['class'][i])]
+                label_class = self.classes[int(bbs_l['class'][i])]
 
                 description = Description2D()
                 description.header = copy(description_header)
                 description.type = Description2D.DETECTION
                 description.id = description.header.seq
                 description.score = bbs_l['confidence'][i]
-                description.bounding_box.minX = int(bbs_l['xmin'][i])
-                description.bounding_box.minY = int(bbs_l['ymin'][i])
-                description.bounding_box.width = int(bbs_l['xmax'][i] - bbs_l['xmin'][i])
-                description.bounding_box.height = int(bbs_l['ymax'][i] - bbs_l['ymin'][i])
+                size = int(bbs_l['xmax'][i] - bbs_l['xmin'][i]), int(bbs_l['ymax'][i] - bbs_l['ymin'][i])
+                description.bbox.center.x = int(bbs_l['xmin'][i]) + int(size[0]/2)
+                description.bbox.center.x = int(bbs_l['ymin'][i]) + int(size[1]/2)
+                description.bbox.size_x = size[0]
+                description.bbox.size_y = size[1]
 
-                if ('people' in self.classes and bbs_l['name'][i] in self.classes_by_category['people'] or 'people' in self.classes and bbs_l['name'][i] == 'people') and bbs_l['confidence'][i] >= self.threshold:
+                if ('people' in self.classes and label_class in self.classes_by_category['people'] or 'people' in self.classes and label_class == 'people') and bbs_l['confidence'][i] >= self.threshold:
 
-                    description.label = 'people' + '/' + bbs_l['name'][i]
+                    description.label = 'people' + '/' + label_class
                     people_recognition.descriptions.append(description)
 
-                elif (bbs_l['name'][i] in [val for sublist in self.classes for val in sublist] or bbs_l['name'][i] in self.classes) and bbs_l['confidence'][i] >= self.threshold:
+                elif (label_class in [val for sublist in self.classes for val in sublist] or label_class in self.classes) and bbs_l['confidence'][i] >= self.threshold:
                     index = None
                     j = 0
                     for value in self.classes_by_category.values():
-                        if bbs_l['name'][i] in value:
+                        if label_class in value:
                             index = j
                         j += 1
-                    description.label = self.classes[index] + '/' + bbs_l['name'][i] if index is not None else bbs_l['name'][i]
+                    description.label = self.classes[index] + '/' + label_class if index is not None else label_class
 
                     objects_recognition.descriptions.append(description)
 
-                cv_img = cv2.rectangle(cv_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), self.colors[bbs_l['name'][i]])
-                cv_img = cv2.putText(cv_img, bbs_l['name'][i], (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=self.colors[bbs_l['name'][i]])
+                debug_img = cv2.rectangle(debug_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), self.colors[label_class])
+                debug_img = cv2.putText(debug_img, label_class, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=self.colors[label_class])
                 description_header.seq += 1
-
-            self.debug_pub.publish(ros_numpy.msgify(Image, cv_img))
+            
+            self.debug_publisher.publish(ros_numpy.msgify(Image, np.flip(debug_img, 2), 'rgb8'))
 
             if len(objects_recognition.descriptions) > 0:
                 self.object_recognition_publisher.publish(objects_recognition)

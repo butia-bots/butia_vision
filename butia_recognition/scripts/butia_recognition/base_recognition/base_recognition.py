@@ -4,6 +4,7 @@ import rospy
 
 import rospkg
 
+from sensor_msgs.msg import Image
 from std_srvs.srv import Empty, EmptyResponse
 
 from butia_vision_msgs.srv import ListClasses, ListClassesResponse

@@ -11,11 +11,9 @@ subscribers:
   exact_time: false
   slop: 0.1
 
-  image_rgb:
-    topic: /butia_vision/bvb/image_rgb
+  image_rgb: /butia_vision/bvb/image_rgb
 
-  points:
-    topic: /butia_vision/bvb/points
+  points: /butia_vision/bvb/points
 
 publishers:
 
