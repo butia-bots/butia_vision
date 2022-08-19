@@ -19,9 +19,9 @@ class VisionBridge:
     }
 
     def __init__(self):
-        self.readParameters()
+        self.__readParameters()
 
-        self.createSubscribersAndPublishers()
+        self.__createSubscribersAndPublishers()
     
     @dispatch(Image)
     def processData(self, data: Image):
@@ -76,20 +76,20 @@ class VisionBridge:
         data = ros_numpy.msgify(PointCloud2, pc, stamp=header.stamp, frame_id=header.frame_id)
         return data
 
-    def callback(self, data, source):
+    def __callback(self, data, source):
         data = self.processData(data)
-        self.publish(data, source)
+        self.__publish(data, source)
 
-    def publish(self, data, source):
+    def __publish(self, data, source):
         self.publishers[source].publish(data)
     
-    def createSubscribersAndPublishers(self):
+    def __createSubscribersAndPublishers(self):
         self.publishers = {}
         for source in VisionBridge.SOURCES_TYPES:
-            rospy.Subscriber('sub/' + source, VisionBridge.SOURCES_TYPES[source], callback=self.callback, callback_args=(source), queue_size=self.queue_size)
+            rospy.Subscriber('sub/' + source, VisionBridge.SOURCES_TYPES[source], callback=self.__callback, callback_args=(source), queue_size=self.queue_size)
             self.publishers[source] = rospy.Publisher('pub/' + source, VisionBridge.SOURCES_TYPES[source], queue_size=self.queue_size)
 
-    def readParameters(self):
+    def __readParameters(self):
         self.queue_size = int(rospy.get_param('~queue_size', 1))
         size = tuple(rospy.get_param('~size', [640, 480]))
         assert len(size) == 2

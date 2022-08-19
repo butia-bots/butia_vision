@@ -2,19 +2,8 @@
 # -*- coding: utf-8 -*-
 import rospy
 
-from std_msgs.msg import Header
-from std_srvs.srv import Empty, EmptyResponse
 import torch
 import torchvision
-import cv2
-#import cv_bridge
-import numpy as np
-import rospkg
-import os
-from sensor_msgs.msg import Image
-from butia_vision_msgs.msg import Description2D, Recognitions2D
-from butia_vision_msgs.srv import ListClasses, ListClassesResponse
-
 
 torch.set_num_threads(1)
 

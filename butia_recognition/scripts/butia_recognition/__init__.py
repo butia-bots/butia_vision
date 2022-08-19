@@ -1,0 +1,2 @@
+from .base_recognition import BaseRecognition
+from .yolov5_recognition import YoloV5Recognition

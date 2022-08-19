@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>butia_recognition_pytorch</name>
+  <name>butia_recognition</name>
   <version>0.0.0</version>
   <description>The butia_recognition_pytorch package</description>
 
