@@ -30,7 +30,7 @@
   </group>
 
 
-  <node name="butia_vision_bridge_node" pkg="butia_vision_bridge" type="butia_vision_bridge_node.py" output="$(arg output)" machine="$(arg machine)">
+  <node name="butia_vision_bridge_node" pkg="butia_vision_bridge" type="vision_bridge.py" output="$(arg output)" machine="$(arg machine)">
     <param name="queue_size" value="$(arg queue_size)"/>
     <rosparam param="size" subst_value="True">$(arg size)</rosparam>
 

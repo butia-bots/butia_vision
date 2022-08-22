@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from typing import Tuple
 import rospy
 import ros_numpy
 
@@ -9,6 +10,7 @@ import cv2
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2
 
 from multipledispatch import dispatch
+from collections import Iterable
 
 class VisionBridge:
     SOURCES_TYPES = {
@@ -18,35 +20,32 @@ class VisionBridge:
         'points': PointCloud2
     }
 
-    def __init__(self):
-        self.__readParameters()
-
-        self.__createSubscribersAndPublishers()
-    
-    @dispatch(Image)
-    def processData(self, data: Image):
+    @dispatch(Image, Iterable)
+    def reescaleROSData(data: Image, size: Iterable):
+        width, height = size
         header = data.header
         encoding = data.encoding
         image = ros_numpy.numpify(data)
-        image = cv2.resize(image, (self.width, self.height), cv2.INTER_LINEAR)
+        image = cv2.resize(image, (width, height), cv2.INTER_LINEAR)
 
         data = ros_numpy.msgify(Image, image, encoding)
         data.header = header
         return data
     
     # just focal distances and optic centers must be rescaled
-    @dispatch(CameraInfo)
-    def processData(self, data: CameraInfo):
-        scale_x = self.width/data.width
-        scale_y = self.height/data.height
+    @dispatch(CameraInfo, Iterable)
+    def reescaleROSData(data: CameraInfo, size: Iterable):
+        width, height = size
+        scale_x = width/data.width
+        scale_y = height/data.height
 
         data.K[0] *= scale_x
         data.K[2] *= scale_x
         data.K[4] *= scale_y
         data.K[5] *= scale_y
 
-        data.width = self.width
-        data.height = self.height
+        data.width = width
+        data.height = height
 
         return data
 
@@ -57,44 +56,69 @@ class VisionBridge:
             - using .view, the binary of the number is viewed in another type, so the binary of a float32 can be read as a binary of an uint32.
         # It is needed to evaluate if this is a problem, but the resize (downsample or upsample) of the point cloud is done in a separated way. First in points, and after in colors.
     '''
-    @dispatch(PointCloud2)
-    def processData(self, data: PointCloud2):
-        header = data.header
+    def pointCloud2XYZRGBtoArrays(data: PointCloud2):
         pc = ros_numpy.numpify(data)
-        points = np.zeros((pc.shape[0], pc.shape[1], 6), dtype=np.float)
-        points[:, :, 0] = pc['x']
-        points[:, :, 1] = pc['y']
-        points[:, :, 2] = pc['z']
-        points[:, :, 3] = (pc['rgb'].view(np.uint32) >> 16 & 255).astype(np.float)
-        points[:, :, 4] = (pc['rgb'].view(np.uint32) >> 8 & 255).astype(np.float)
-        points[:, :, 5] = (pc['rgb'].view(np.uint32) & 255).astype(np.float)
-        points = cv2.resize(points, (self.width, self.height), cv2.INTER_LINEAR)
-        pc = np.zeros((points.shape[0], points.shape[1]), dtype={'names':('x', 'y', 'z', 'rgb'), 'formats':('f4', 'f4', 'f4', 'f4')})
-        pc['x'] = points[:, :, 0]
-        pc['y'] = points[:, :, 1]
-        pc['z'] = points[:, :, 2]
-        pc['rgb'] = (points[:, :, 3].astype(np.uint32) << 16 | points[:, :, 4].astype(np.uint32) << 8 | points[:, :, 5].astype(np.uint32)).view(np.float32)
+        xyz = np.zeros((pc.shape[0], pc.shape[1], 3), dtype=np.float)
+        rgb = np.zeros((pc.shape[0], pc.shape[1], 3), dtype=np.uint32)
+        xyz[:, :, 0] = pc['x']
+        xyz[:, :, 1] = pc['y']
+        xyz[:, :, 2] = pc['z']
+        rgb[:, :, 0] = (pc['rgb'].view(np.uint32) >> 16 & 255).astype(np.uint32)
+        rgb[:, :, 1] = (pc['rgb'].view(np.uint32) >> 8 & 255).astype(np.uint32)
+        rgb[:, :, 2] = (pc['rgb'].view(np.uint32) & 255).astype(np.uint32)
 
+        return xyz, rgb
+    
+    def arrays2toPointCloud2XYZRGB(xyz, rgb, header):
+        pc = np.zeros((xyz.shape[0], xyz.shape[1]), dtype={'names':('x', 'y', 'z', 'rgb'), 'formats':('f4', 'f4', 'f4', 'f4')})
+        pc['x'] = xyz[:, :, 0]
+        pc['y'] = xyz[:, :, 1]
+        pc['z'] = xyz[:, :, 2]
+        pc['rgb'] = (rgb[:, :, 0].astype(np.uint32) << 16 | rgb[:, :, 1].astype(np.uint32) << 8 | rgb[:, :, 2].astype(np.uint32)).view(np.float32)
         data = ros_numpy.msgify(PointCloud2, pc, stamp=header.stamp, frame_id=header.frame_id)
-        data.header = header
+        
         return data
 
-    def __callback(self, data, source):
-        data = self.processData(data)
-        self.__publish(data, source)
+    @dispatch(PointCloud2, Iterable)
+    def reescaleROSData(data: PointCloud2, size: Iterable):
+        width, height = size
+        header = data.header
+        xyz, rgb = VisionBridge.pointCloud2XYZRGBtoArrays(data)
+        points = np.append(xyz, rgb.astype(np.float), axis=2)
+        points = cv2.resize(points, (width, height), cv2.INTER_LINEAR)
+        data = VisionBridge.arrays2toPointCloud2XYZRGB(points[:, :, :3], points[:, :, 3:], header)
+        return data
 
-    def __publish(self, data, source):
-        self.publishers[source].publish(data)
-    
-    def __createSubscribersAndPublishers(self):
+    def initROS(self):
+        rospy.init_node('butia_vision_bridge_node', anonymous = True)
+
+        self.__readParameters()
+        
         self.publishers = {}
         for source in VisionBridge.SOURCES_TYPES:
             rospy.Subscriber('sub/' + source, VisionBridge.SOURCES_TYPES[source], callback=self.__callback, callback_args=(source), queue_size=self.queue_size)
             self.publishers[source] = rospy.Publisher('pub/' + source, VisionBridge.SOURCES_TYPES[source], queue_size=self.queue_size)
 
+        rospy.spin()
+
+    def __init__(self, init_ros=True):
+        if init_ros:
+            self.initROS()
+
+    def __callback(self, data, source):
+        data = VisionBridge.reescaleROSData(data, (self.width, self.height))
+        self.__publish(data, source)
+
+    def __publish(self, data, source):
+        self.publishers[source].publish(data)
+    
     def __readParameters(self):
         self.queue_size = int(rospy.get_param('~queue_size', 1))
         size = tuple(rospy.get_param('~size', [640, 480]))
         assert len(size) == 2
         self.width = int(size[0])
         self.height = int(size[1])
+
+
+if __name__ == '__main__':
+    vision_bridge = VisionBridge()

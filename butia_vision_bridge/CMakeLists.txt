@@ -24,6 +24,6 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PROJECT_NAME})
 
 install(PROGRAMS
-  scripts/butia_vision_bridge_node.py
+  scripts/butia_vision_bridge/vision_bridge/vision_bridge.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
