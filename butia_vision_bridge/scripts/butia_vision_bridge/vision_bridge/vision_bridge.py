@@ -88,11 +88,20 @@ class VisionBridge:
         return xyz, rgb
     
     def arrays2toPointCloud2XYZRGB(xyz, rgb, header):
-        pc = np.zeros((xyz.shape[0], xyz.shape[1]), dtype={'names':('x', 'y', 'z', 'rgb'), 'formats':('f4', 'f4', 'f4', 'f4')})
-        pc['x'] = xyz[:, :, 0]
-        pc['y'] = xyz[:, :, 1]
-        pc['z'] = xyz[:, :, 2]
-        pc['rgb'] = (rgb[:, :, 0].astype(np.uint32) << 16 | rgb[:, :, 1].astype(np.uint32) << 8 | rgb[:, :, 2].astype(np.uint32)).view(np.float32)
+        if len(xyz.shape) == 3:
+            pc = np.zeros((xyz.shape[0], xyz.shape[1]), dtype={'names':('x', 'y', 'z', 'rgb'), 'formats':('f4', 'f4', 'f4', 'f4')})
+            pc['x'] = xyz[:, :, 0]
+            pc['y'] = xyz[:, :, 1]
+            pc['z'] = xyz[:, :, 2]
+            pc['rgb'] = (rgb[:, :, 0].astype(np.uint32) << 16 | rgb[:, :, 1].astype(np.uint32) << 8 | rgb[:, :, 2].astype(np.uint32)).view(np.float32)
+        elif len(xyz.shape) == 2:
+            pc = np.zeros((xyz.shape[0]), dtype={'names':('x', 'y', 'z', 'rgb'), 'formats':('f4', 'f4', 'f4', 'f4')})
+            pc['x'] = xyz[:, 0]
+            pc['y'] = xyz[:, 1]
+            pc['z'] = xyz[:, 2]
+            pc['rgb'] = (rgb[:, 0].astype(np.uint32) << 16 | rgb[:, 1].astype(np.uint32) << 8 | rgb[:, 2].astype(np.uint32)).view(np.float32)
+        else:
+            return None
         data = ros_numpy.msgify(PointCloud2, pc, stamp=header.stamp, frame_id=header.frame_id)
         
         return data
