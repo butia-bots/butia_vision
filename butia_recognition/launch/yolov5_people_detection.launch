@@ -9,4 +9,8 @@
     <rosparam command="load" file="$(find butia_recognition)/config/yolov5_people_detection.yaml"/>
   </node>
 
+  <node pkg="butia_2Dto3D" type="twoD2threeD.py" output="$(arg output)" name="twoD2threeD_people_detection_node" machine="$(arg machine)">
+    <remap from="sub/recognitions2d"  to="/butia_vision/br/people_detection"/>
+ </node>
+
 </launch>

@@ -98,7 +98,7 @@ class YoloV5Recognition(BaseRecognition):
                 description.score = bbs_l['confidence'][i]
                 size = int(bbs_l['xmax'][i] - bbs_l['xmin'][i]), int(bbs_l['ymax'][i] - bbs_l['ymin'][i])
                 description.bbox.center.x = int(bbs_l['xmin'][i]) + int(size[0]/2)
-                description.bbox.center.x = int(bbs_l['ymin'][i]) + int(size[1]/2)
+                description.bbox.center.y = int(bbs_l['ymin'][i]) + int(size[1]/2)
                 description.bbox.size_x = size[0]
                 description.bbox.size_y = size[1]
 
