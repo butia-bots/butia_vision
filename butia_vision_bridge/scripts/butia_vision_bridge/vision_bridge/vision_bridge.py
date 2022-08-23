@@ -6,6 +6,7 @@ import ros_numpy
 
 import numpy as np
 import cv2
+import open3d as o3d
 
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2
 
@@ -56,6 +57,23 @@ class VisionBridge:
             - using .view, the binary of the number is viewed in another type, so the binary of a float32 can be read as a binary of an uint32.
         # It is needed to evaluate if this is a problem, but the resize (downsample or upsample) of the point cloud is done in a separated way. First in points, and after in colors.
     '''
+    def pointCloudArraystoOpen3D(xyz, rgb):
+        if len(xyz.shape) == 3:
+            xyz = xyz.reshape(-1, 3)
+        if len(rgb.shape) == 3:
+            rgb = rgb.reshape(-1, 3)
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(xyz)
+        pcd.colors = o3d.utility.Vector3dVector(rgb)
+        pcd.remove_non_finite_points()
+        return pcd
+
+    def pointCloud2XYZRGBtoOpen3D(data: PointCloud2):
+        xyz, rgb = VisionBridge.pointCloud2XYZRGBtoArrays(data)
+        pcd = VisionBridge.pointCloudArraystoOpen3D(xyz, rgb)
+
+        return pcd
+
     def pointCloud2XYZRGBtoArrays(data: PointCloud2):
         pc = ros_numpy.numpify(data)
         xyz = np.zeros((pc.shape[0], pc.shape[1], 3), dtype=np.float)
