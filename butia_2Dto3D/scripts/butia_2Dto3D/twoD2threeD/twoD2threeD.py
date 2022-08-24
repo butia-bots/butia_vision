@@ -44,6 +44,7 @@ class TwoD2ThreeD:
         box_rotation = np.eye(4,4)
         box_rotation[:3, :3] = box_r
         box_orientation = tf.transformations.quaternion_from_matrix(box_rotation)
+        box_size = np.dot(box_size, box_r)
 
         description3d.bbox.center.position.x = box_center[0]
         description3d.bbox.center.position.y = box_center[1]
@@ -65,16 +66,16 @@ class TwoD2ThreeD:
         description3d.raw_cloud = VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(raw_cloud.points), np.asarray(raw_cloud.colors), pcd_header)
         description3d.filtered_cloud = VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), np.asarray(filtered_cloud.colors), pcd_header)
 
-        colors = np.asarray(filtered_cloud.colors)
-        colors[:, :] = np.array([255, 0, 0])
+        # colors = np.asarray(filtered_cloud.colors)
+        # colors[:, :] = np.array([255, 0, 0])
         
-        self.debug.publish(VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), colors, pcd_header))
+        # self.debug.publish(VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), colors, pcd_header))
         
-        self.br.sendTransform((box_center[0], box_center[1], box_center[2]),
-                box_orientation,
-                pcd_header.stamp,
-                'test',
-                pcd_header.frame_id)
+        # self.br.sendTransform((box_center[0], box_center[1], box_center[2]),
+        #         box_orientation,
+        #         pcd_header.stamp,
+        #         'test',
+        #         pcd_header.frame_id)
         
         return description3d
 
@@ -109,8 +110,8 @@ class TwoD2ThreeD:
             return None
 
         pcd = pcd.remove_non_finite_points()
-        pcd = pcd.voxel_down_sample(0.05)
-        labels_array = np.array(pcd.cluster_dbscan(eps=0.05*1.2, min_points=4))
+        pcd = pcd.voxel_down_sample(0.03)
+        labels_array = np.array(pcd.cluster_dbscan(eps=0.03*1.2, min_points=4))
         labels, counts = np.unique(labels_array, return_counts=True)
         counts[labels==-1] = 0
 
@@ -161,16 +162,18 @@ class TwoD2ThreeD:
         pc2 = data.points
         img_depth = data.image_depth
         
+        recognitions = Recognitions3D()
         if pc2.width*pc2.height > 0:
             xyz, rgb = VisionBridge.pointCloud2XYZRGBtoArrays(pc2)
             array_point_cloud = np.append(xyz, rgb, axis=2)
-            return self.__recognitions3DComputation(array_point_cloud, descriptions2d, header, pc2.header)
+            recognitions = self.__recognitions3DComputation(array_point_cloud, descriptions2d, header, pc2.header)
         elif img_depth.width*img_depth.height > 0:
             rospy.logwarn('Feature not implemented: TwoD2ThreeD cannot use depth image as input yet.')
-            return Recognitions3D()
         else:
             rospy.logwarn('TwoD2ThreeD cannot be used because pointcloud and depth images are void.')
-            return Recognitions3D()   
+
+        self.publishMarkers(recognitions.descriptions)
+        return recognitions
 
     def __callback(self, data):
         data_3d = self.recognitions2DtoRecognitions3D(data)
@@ -179,8 +182,46 @@ class TwoD2ThreeD:
     def __publish(self, data):
         self.publisher.publish(data)
 
-    def publishMarkers(self, data):
-        self.publisher.publish(data)
+    def publishMarkers(self, descriptions3d):
+        markers = MarkerArray()
+        for i, det in enumerate(descriptions3d):
+            name = det.label
+
+            # cube marker
+            marker = Marker()
+            marker.header = det.poses_header
+            marker.action = Marker.ADD
+            marker.pose = det.bbox.center
+            marker.color.r = 1.
+            marker.color.g = 0
+            marker.color.b = 0
+            marker.color.a = 0.4
+            marker.ns = "bboxes"
+            marker.id = i
+            marker.type = Marker.CUBE
+            marker.scale = det.bbox.size
+            markers.markers.append(marker)
+
+            # text marker
+            marker = Marker()
+            marker.header = det.poses_header
+            marker.action = Marker.ADD
+            marker.pose = det.bbox.center
+            marker.color.r = 1.
+            marker.color.g = 0
+            marker.color.b = 0
+            marker.color.a = 1.0
+            marker.id = i
+            marker.ns = "texts"
+            marker.type = Marker.TEXT_VIEW_FACING
+            marker.scale.x = 0.05
+            marker.scale.y = 0.05
+            marker.scale.z = 0.05
+            marker.text = '{} ({:.2f})'.format(name, det.score)
+
+            markers.markers.append(marker)
+        
+        self.marker_publisher.publish(markers)
     
     def initROS(self):
         self.subscriber = rospy.Subscriber('sub/recognitions2d', Recognitions2D, self.__callback, queue_size=self.queue_size)
