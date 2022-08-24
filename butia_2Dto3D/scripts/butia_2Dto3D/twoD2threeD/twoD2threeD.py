@@ -15,20 +15,21 @@ from visualization_msgs.msg import Marker, MarkerArray
 import tf
 
 class TwoD2ThreeD:
-    def __init__(self):
+    def __init__(self, init_node=False):
         self.__readParameters()
+
+        self.DESCRIPTION_PROCESSING_ALGORITHMS = {
+            Description2D.DETECTION: self.__detectionDescriptionProcessing,
+            Description2D.INSTANCE_SEGMENTATION: self.__instanceSegmentationDescriptionProcessing,
+            Description2D.SEMANTIC_SEGMENTATION: self.__semanticSegmentationDescriptionProcessing
+        }
+
         self.br = tf.TransformBroadcaster()
         self.debug = rospy.Publisher('/debug', PointCloud2, queue_size=1)
 
         self.marker_publisher = rospy.Publisher('markers', MarkerArray, queue_size=self.queue_size)
-
-        self.DESCRIPTION_PROCESSING_ALGORITHMS = {
-            Description2D.DETECTION: self.detectionDescriptionProcessing,
-            Description2D.INSTANCE_SEGMENTATION: self.instanceSegmentationDescriptionProcessing,
-            Description2D.SEMANTIC_SEGMENTATION: self.semanticSegmentationDescriptionProcessing
-        }
     
-    def mountDescription3D(self, description2d, raw_cloud, filtered_cloud, pcd_header):
+    def __mountDescription3D(self, description2d, raw_cloud, filtered_cloud, pcd_header):
         description3d = Description3D()
         description3d.header = description2d.header
         description3d.poses_header = pcd_header
@@ -79,7 +80,7 @@ class TwoD2ThreeD:
         
         return description3d
 
-    def detectionDescriptionProcessing(self, array_point_cloud, description2d, pcd_header):
+    def __detectionDescriptionProcessing(self, array_point_cloud, description2d, pcd_header):
         center_x, center_y = description2d.bbox.center.x, description2d.bbox.center.y
         bbox_size_x, bbox_size_y = description2d.bbox.size_x, description2d.bbox.size_y
         if bbox_size_x == 0 or bbox_size_y == 0:
@@ -90,7 +91,7 @@ class TwoD2ThreeD:
         desc_point_cloud = array_point_cloud[bbox_limits[2]:bbox_limits[3], bbox_limits[0]:bbox_limits[1], :]
         pcd = VisionBridge.pointCloudArraystoOpen3D(desc_point_cloud[:, :, :3], desc_point_cloud[:, :, 3:])
 
-        kernel_scale = self.min_kernel_scale
+        kernel_scale = self.kernel_scale
         bbox_center = np.array([np.nan, np.nan, np.nan])
         while np.isnan(bbox_center).any() and kernel_scale <= 1.0:
             size_x = int(bbox_size_x*kernel_scale)
@@ -110,8 +111,8 @@ class TwoD2ThreeD:
             return None
 
         pcd = pcd.remove_non_finite_points()
-        pcd = pcd.voxel_down_sample(0.03)
-        labels_array = np.array(pcd.cluster_dbscan(eps=0.03*1.2, min_points=4))
+        pcd = pcd.voxel_down_sample(self.voxel_grid_resolution)
+        labels_array = np.array(pcd.cluster_dbscan(eps=self.voxel_grid_resolution*1.2, min_points=4))
         labels, counts = np.unique(labels_array, return_counts=True)
         counts[labels==-1] = 0
 
@@ -130,16 +131,16 @@ class TwoD2ThreeD:
             rospy.logwarn('Point Cloud has just noise.')
             return None
 
-        return self.mountDescription3D(description2d, pcd, desc_pcd, pcd_header)
+        return self.__mountDescription3D(description2d, pcd, desc_pcd, pcd_header)
 
 
-    def semanticSegmentationDescriptionProcessing(self, array_point_cloud, description2d, pcd_header):
+    def __semanticSegmentationDescriptionProcessing(self, array_point_cloud, description2d, pcd_header):
         return None
 
-    def instanceSegmentationDescriptionProcessing(self, array_point_cloud, description2d, pcd_header):
+    def __instanceSegmentationDescriptionProcessing(self, array_point_cloud, description2d, pcd_header):
         return None
 
-    def createDescription3D(self, array_point_cloud, description2d, pcd_header):
+    def __createDescription3D(self, array_point_cloud, description2d, pcd_header):
         if description2d.type in self.DESCRIPTION_PROCESSING_ALGORITHMS:
             return self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](array_point_cloud, description2d, pcd_header)
         else:
@@ -151,7 +152,7 @@ class TwoD2ThreeD:
 
         descriptions3d = [None]*len(descriptions2d)
         for i, d in enumerate(descriptions2d):
-            descriptions3d[i] = self.createDescription3D(array_point_cloud, d, pcd_header)
+            descriptions3d[i] = self.__createDescription3D(array_point_cloud, d, pcd_header)
 
         output_data.descriptions = [d3 for d3 in descriptions3d if d3 is not None]
         return output_data
@@ -229,8 +230,9 @@ class TwoD2ThreeD:
 
     def __readParameters(self):
         self.queue_size = int(rospy.get_param('~queue_size', 1))
-        self.min_kernel_scale = rospy.get_param('~kernel_scale', 0.1)
+        self.kernel_scale = rospy.get_param('~kernel_scale', 0.1)
         self.kernel_min_size = int(rospy.get_param('~kernel_min_size', 5))
+        self.voxel_grid_resolution = rospy.get_param('~voxel_grid_resolution', 0.03)
 
 if __name__ == '__main__':
     rospy.init_node('twoD2ThreeD_node', anonymous = True)
