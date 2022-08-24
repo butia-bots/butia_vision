@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from cmath import isnan
+from itertools import count
 import rospy
 
 import numpy as np
-import open3d as o3d
 
 from butia_vision_bridge import VisionBridge
 
-from std_msgs.msg import Header
-from vision_msgs.msg import BoundingBox2D, BoundingBox3D
-from sensor_msgs.msg import Image, PointCloud2
+from sensor_msgs.msg import PointCloud2
 from butia_vision_msgs.msg import Description2D, Recognitions2D, Description3D, Recognitions3D
+from visualization_msgs.msg import Marker, MarkerArray
 
 import tf
 
@@ -19,75 +18,141 @@ class TwoD2ThreeD:
     def __init__(self):
         self.__readParameters()
         self.br = tf.TransformBroadcaster()
-        self.debug = rospy.Publisher('/debug', PointCloud2)
- 
-    # def __createDescriptionOpen3DPCD(self, array_point_cloud, data):
-    #     if type==Description2D.DETECTION:
-    #         pass
-    #     elif type==Description2D.INSTANCE_SEGMENTATION or type==Description2D.SEMANTIC_SEGMENTATION:
-    #         pass
-    #     else:
-    #         pass
+        self.debug = rospy.Publisher('/debug', PointCloud2, queue_size=1)
+
+        self.marker_publisher = rospy.Publisher('markers', MarkerArray, queue_size=self.queue_size)
+
+        self.DESCRIPTION_PROCESSING_ALGORITHMS = {
+            Description2D.DETECTION: self.detectionDescriptionProcessing,
+            Description2D.INSTANCE_SEGMENTATION: self.instanceSegmentationDescriptionProcessing,
+            Description2D.SEMANTIC_SEGMENTATION: self.semanticSegmentationDescriptionProcessing
+        }
+    
+    def mountDescription3D(self, description2d, raw_cloud, filtered_cloud, pcd_header):
+        description3d = Description3D()
+        description3d.header = description2d.header
+        description3d.poses_header = pcd_header
+        description3d.id = description2d.id
+        description3d.global_id = description2d.global_id
+        description3d.label = description2d.label
+        description3d.score = description2d.score
+
+        box = filtered_cloud.get_oriented_bounding_box()
+        box_center = box.get_center()
+        box_size = box.get_max_bound() - box.get_min_bound()
+        box_r = box.R.copy()
+        box_rotation = np.eye(4,4)
+        box_rotation[:3, :3] = box_r
+        box_orientation = tf.transformations.quaternion_from_matrix(box_rotation)
+
+        description3d.bbox.center.position.x = box_center[0]
+        description3d.bbox.center.position.y = box_center[1]
+        description3d.bbox.center.position.z = box_center[2]
+        description3d.bbox.center.orientation.x = box_orientation[0]
+        description3d.bbox.center.orientation.y = box_orientation[1]
+        description3d.bbox.center.orientation.z = box_orientation[2]
+        description3d.bbox.center.orientation.w = box_orientation[3]
+
+        description3d.bbox.size.x = box_size[0]
+        description3d.bbox.size.y = box_size[1]
+        description3d.bbox.size.z = box_size[2]
+
+        mean_color = np.nanmean(np.asarray(filtered_cloud.colors), axis=0)/255.0
+        description3d.mean_color.r = mean_color[0]
+        description3d.mean_color.g = mean_color[1]
+        description3d.mean_color.b = mean_color[2]
+
+        description3d.raw_cloud = VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(raw_cloud.points), np.asarray(raw_cloud.colors), pcd_header)
+        description3d.filtered_cloud = VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), np.asarray(filtered_cloud.colors), pcd_header)
+
+        colors = np.asarray(filtered_cloud.colors)
+        colors[:, :] = np.array([255, 0, 0])
+        
+        self.debug.publish(VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), colors, pcd_header))
+        
+        self.br.sendTransform((box_center[0], box_center[1], box_center[2]),
+                box_orientation,
+                pcd_header.stamp,
+                'test',
+                pcd_header.frame_id)
+        
+        return description3d
+
+    def detectionDescriptionProcessing(self, array_point_cloud, description2d, pcd_header):
+        center_x, center_y = description2d.bbox.center.x, description2d.bbox.center.y
+        bbox_size_x, bbox_size_y = description2d.bbox.size_x, description2d.bbox.size_y
+        if bbox_size_x == 0 or bbox_size_y == 0:
+            rospy.logwarn('BBox with zero size.')
+            return None
+
+        bbox_limits = (int(center_x - bbox_size_x/2), int(center_x + bbox_size_x/2), int(center_y - bbox_size_y/2), int(center_y + bbox_size_y/2))
+        desc_point_cloud = array_point_cloud[bbox_limits[2]:bbox_limits[3], bbox_limits[0]:bbox_limits[1], :]
+        pcd = VisionBridge.pointCloudArraystoOpen3D(desc_point_cloud[:, :, :3], desc_point_cloud[:, :, 3:])
+
+        kernel_scale = self.min_kernel_scale
+        bbox_center = np.array([np.nan, np.nan, np.nan])
+        while np.isnan(bbox_center).any() and kernel_scale <= 1.0:
+            size_x = int(bbox_size_x*kernel_scale)
+            size_x = self.kernel_min_size if size_x < self.kernel_min_size else size_x
+            size_y = int(bbox_size_y*kernel_scale)
+            size_y = self.kernel_min_size if size_y < self.kernel_min_size else size_y
+            center_limits = (int(center_x - size_x/2), int(center_x + size_x/2), int(center_y - size_y/2), int(center_y + size_y/2))
+            bbox_center_points = array_point_cloud[center_limits[2]:center_limits[3], center_limits[0]:center_limits[1], :3].reshape(-1, 3)
+            bbox_center = np.nanmean(bbox_center_points, axis=0)
+            if kernel_scale < 1.0 and kernel_scale + 0.1 > 1.0:
+                kernel_scale = 1.0
+            else:
+                kernel_scale += 0.1
+
+        if np.isnan(bbox_center).any():
+            rospy.logwarn('BBox has no min valid points.')
+            return None
+
+        pcd = pcd.remove_non_finite_points()
+        pcd = pcd.voxel_down_sample(0.05)
+        labels_array = np.array(pcd.cluster_dbscan(eps=0.05*1.2, min_points=4))
+        labels, counts = np.unique(labels_array, return_counts=True)
+        counts[labels==-1] = 0
+
+        desc_pcd = None
+        min_dist = float('inf')
+        for label in labels:
+            if label != -1:
+                query_pcd = pcd.select_by_index(list(np.argwhere(labels_array==label)))
+                query_center = query_pcd.get_center()
+                query_dist = np.linalg.norm(query_center - bbox_center, ord=2)
+                if query_dist < min_dist:
+                    desc_pcd = query_pcd
+                    min_dist = query_dist
+
+        if desc_pcd is None:
+            rospy.logwarn('Point Cloud has just noise.')
+            return None
+
+        return self.mountDescription3D(description2d, pcd, desc_pcd, pcd_header)
+
+
+    def semanticSegmentationDescriptionProcessing(self, array_point_cloud, description2d, pcd_header):
+        return None
+
+    def instanceSegmentationDescriptionProcessing(self, array_point_cloud, description2d, pcd_header):
+        return None
+
+    def createDescription3D(self, array_point_cloud, description2d, pcd_header):
+        if description2d.type in self.DESCRIPTION_PROCESSING_ALGORITHMS:
+            return self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](array_point_cloud, description2d, pcd_header)
+        else:
+            return None
 
     def __recognitions3DComputation(self, array_point_cloud, descriptions2d, header, pcd_header):
         output_data = Recognitions3D()
         output_data.header = header
 
-        descriptions3d = []
-        for d in descriptions2d:
-            center_x, center_y = d.bbox.center.x, d.bbox.center.y
-            bbox_size_x, bbox_size_y = d.bbox.size_x, d.bbox.size_y
-            if bbox_size_x == 0 or bbox_size_y == 0:
-                rospy.logwarn('BBox with zero size.')
-                continue
+        descriptions3d = [None]*len(descriptions2d)
+        for i, d in enumerate(descriptions2d):
+            descriptions3d[i] = self.createDescription3D(array_point_cloud, d, pcd_header)
 
-            bbox_limits = (int(center_x - bbox_size_x/2), int(center_x + bbox_size_x/2), int(center_y - bbox_size_y/2), int(center_y + bbox_size_y/2))
-            desc_point_cloud = array_point_cloud[bbox_limits[2]:bbox_limits[3], bbox_limits[0]:bbox_limits[1], :]
-            pcd = VisionBridge.pointCloudArraystoOpen3D(desc_point_cloud[:, :, :3], desc_point_cloud[:, :, 3:])
-
-            kernel_scale = self.kernel_scale
-            bbox_center = np.array([np.nan, np.nan, np.nan])
-            while np.isnan(bbox_center).any() and kernel_scale <= 1:
-                size_x = int(bbox_size_x*kernel_scale)
-                size_x = self.kernel_min_size if size_x < self.kernel_min_size else size_x
-                size_y = int(bbox_size_y*kernel_scale)
-                size_y = self.kernel_min_size if size_y < self.kernel_min_size else size_y
-                center_limits = (int(center_x - size_x/2), int(center_x + size_x/2), int(center_y - size_y/2), int(center_y + size_y/2))
-                bbox_center_points = array_point_cloud[center_limits[2]:center_limits[3], center_limits[0]:center_limits[1], :3]
-                bbox_center = np.nanmean(bbox_center_points.reshape(-1, 3), axis=0)
-                kernel_scale += 0.1
-
-            bbox_center_distance = np.nanmean(np.linalg.norm((bbox_center_points.reshape(-1, 3) - bbox_center), axis=1, ord=2))
-
-            if np.isnan(bbox_center).any():
-                rospy.logwarn('BBox has only nan or inf values.')
-                continue
-
-            pcd.remove_non_finite_points()
-            labels_array = np.array(pcd.cluster_dbscan(eps=bbox_center_distance, min_points=20))
-            labels, counts = np.unique(labels_array, return_counts=True)
-            max_label = labels[np.argmax(counts)]
-    
-            desc_indices = np.argwhere(labels_array==max_label)
-
-            pcd = pcd.select_by_index(list(desc_indices))
-
-            colors = np.asarray(pcd.colors)
-            colors[:, :] = np.array([255, 0, 0])
-            
-            self.debug.publish(VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(pcd.points), colors, pcd_header))
-
-            aabb = pcd.get_axis_aligned_bounding_box()
-            
-            center = aabb.get_center()
-            if center[0] != np.nan:
-                self.br.sendTransform((center[0], center[1], center[2]),
-                        tf.transformations.quaternion_from_euler(0, 0, 0),
-                        pcd_header.stamp,
-                        'test',
-                        pcd_header.frame_id)
-
-        output_data.descriptions = descriptions3d
+        output_data.descriptions = [d3 for d3 in descriptions3d if d3 is not None]
         return output_data
 
     def recognitions2DtoRecognitions3D(self, data):
@@ -113,6 +178,9 @@ class TwoD2ThreeD:
 
     def __publish(self, data):
         self.publisher.publish(data)
+
+    def publishMarkers(self, data):
+        self.publisher.publish(data)
     
     def initROS(self):
         self.subscriber = rospy.Subscriber('sub/recognitions2d', Recognitions2D, self.__callback, queue_size=self.queue_size)
@@ -120,8 +188,8 @@ class TwoD2ThreeD:
 
     def __readParameters(self):
         self.queue_size = int(rospy.get_param('~queue_size', 1))
-        self.kernel_scale = rospy.get_param('~kernel_scale', 0.1)
-        self.kernel_min_size = int(rospy.get_param('~kernel_min_size', 1))
+        self.min_kernel_scale = rospy.get_param('~kernel_scale', 0.1)
+        self.kernel_min_size = int(rospy.get_param('~kernel_min_size', 5))
 
 if __name__ == '__main__':
     rospy.init_node('twoD2ThreeD_node', anonymous = True)
