@@ -5,12 +5,13 @@
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
-  <node pkg="butia_recognition" type="yolov5_recognition.py" output="$(arg output)" name="yolov5_people_detection" machine="$(arg machine)">
+  <node pkg="butia_recognition" type="yolov5_recognition.py" output="log" name="yolov5_people_detection" machine="$(arg machine)">
     <rosparam command="load" file="$(find butia_recognition)/config/yolov5_people_detection.yaml"/>
   </node>
 
   <node pkg="butia_2Dto3D" type="twoD2threeD.py" output="$(arg output)" name="twoD2threeD_people_detection_node" machine="$(arg machine)">
     <remap from="sub/recognitions2d"  to="/butia_vision/br/people_detection"/>
+    <remap from="pub/recognitions3d"  to="/butia_vision/br/people_detection3d"/>
  </node>
 
 </launch>

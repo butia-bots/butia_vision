@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "../../../../butia_2Dto3D"
+		},
+		{
+			"path": "../../.."
+		},
+		{
+			"path": "../../../../butia_recognition"
+		}
+	],
+	"settings": {
+		"python.autoComplete.extraPaths": [
+			"/home/igormaurell/Workspace/athome/catkin_ws/devel/lib/python3/dist-packages",
+			"/opt/ros/noetic/lib/python3/dist-packages"
+		],
+		"python.analysis.extraPaths": [
+			"/home/igormaurell/Workspace/athome/catkin_ws/devel/lib/python3/dist-packages",
+			"/opt/ros/noetic/lib/python3/dist-packages"
+		]
+	}
+}
