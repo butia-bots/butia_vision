@@ -12,7 +12,7 @@ from sensor_msgs.msg import PointCloud2
 from butia_vision_msgs.msg import Description2D, Recognitions2D, Description3D, Recognitions3D
 from visualization_msgs.msg import Marker, MarkerArray
 
-import tf
+from scipy.spatial.transform import Rotation
 
 class TwoD2ThreeD:
     def __init__(self, init_node=False):
@@ -24,9 +24,7 @@ class TwoD2ThreeD:
             Description2D.SEMANTIC_SEGMENTATION: self.__semanticSegmentationDescriptionProcessing
         }
 
-        self.br = tf.TransformBroadcaster()
         self.debug = rospy.Publisher('/debug', PointCloud2, queue_size=1)
-
         self.marker_publisher = rospy.Publisher('markers', MarkerArray, queue_size=self.queue_size)
     
     def __mountDescription3D(self, description2d, raw_cloud, filtered_cloud, pcd_header):
@@ -44,7 +42,8 @@ class TwoD2ThreeD:
         box_r = box.R.copy()
         box_rotation = np.eye(4,4)
         box_rotation[:3, :3] = box_r
-        box_orientation = tf.transformations.quaternion_from_matrix(box_rotation)
+        r = Rotation.from_matrix(box_r)
+        box_orientation = [0, 0, 0, 1]
         box_size = np.dot(box_size, box_r)
 
         description3d.bbox.center.position.x = box_center[0]
@@ -67,10 +66,10 @@ class TwoD2ThreeD:
         description3d.raw_cloud = VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(raw_cloud.points), np.asarray(raw_cloud.colors), pcd_header)
         description3d.filtered_cloud = VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), np.asarray(filtered_cloud.colors), pcd_header)
 
-        # colors = np.asarray(filtered_cloud.colors)
-        # colors[:, :] = np.array([255, 0, 0])
+        colors = np.asarray(filtered_cloud.colors)
+        colors[:, :] = np.array([255, 0, 0])
         
-        # self.debug.publish(VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), colors, pcd_header))
+        self.debug.publish(VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), colors, pcd_header))
         
         # self.br.sendTransform((box_center[0], box_center[1], box_center[2]),
         #         box_orientation,
@@ -127,8 +126,8 @@ class TwoD2ThreeD:
                     desc_pcd = query_pcd
                     min_dist = query_dist
 
-        if desc_pcd is None:
-            rospy.logwarn('Point Cloud has just noise.')
+        if desc_pcd is None or len(desc_pcd.points) < 4:
+            rospy.logwarn('Point Cloud has just noise. Try to increase voxel grid param.')
             return None
 
         return self.__mountDescription3D(description2d, pcd, desc_pcd, pcd_header)
@@ -232,7 +231,7 @@ class TwoD2ThreeD:
         self.queue_size = int(rospy.get_param('~queue_size', 1))
         self.kernel_scale = rospy.get_param('~kernel_scale', 0.1)
         self.kernel_min_size = int(rospy.get_param('~kernel_min_size', 5))
-        self.voxel_grid_resolution = rospy.get_param('~voxel_grid_resolution', 0.03)
+        self.voxel_grid_resolution = rospy.get_param('~voxel_grid_resolution', 0.05)
 
 if __name__ == '__main__':
     rospy.init_node('twoD2ThreeD_node', anonymous = True)
