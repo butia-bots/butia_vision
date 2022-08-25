@@ -9,7 +9,7 @@ subscribers:
   
   queue_size: 1
   exact_time: false
-  slop: 0.1
+  slop: 1
 
   image_rgb: /butia_vision/bvb/image_rgb
 
