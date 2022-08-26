@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(butia_2Dto3D)
+project(butia_image2world)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -185,7 +185,7 @@ include_directories(
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 install(FILES
-  scripts/butia_2Dto3D/twoD2threeD/twoD2threeD.py
+  scripts/butia_image2world/image2world/image2world.py
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from cmath import isnan
-from itertools import count
 import rospy
 
 import numpy as np
@@ -37,7 +35,7 @@ def quaternion_from_matrix(matrix):
     q *= 0.5 / math.sqrt(t * M[3, 3])
     return q
 
-class TwoD2ThreeD:
+class Image2World:
     def __init__(self, init_node=False):
         self.__readParameters()
 
@@ -190,9 +188,9 @@ class TwoD2ThreeD:
             array_point_cloud = np.append(xyz, rgb, axis=2)
             recognitions = self.__recognitions3DComputation(array_point_cloud, descriptions2d, header, pc2.header)
         elif img_depth.width*img_depth.height > 0:
-            rospy.logwarn('Feature not implemented: TwoD2ThreeD cannot use depth image as input yet.')
+            rospy.logwarn('Feature not implemented: Image2World cannot use depth image as input yet.')
         else:
-            rospy.logwarn('TwoD2ThreeD cannot be used because pointcloud and depth images are void.')
+            rospy.logwarn('Image2World cannot be used because pointcloud and depth images are void.')
 
         self.publishMarkers(recognitions.descriptions)
         return recognitions
@@ -256,9 +254,9 @@ class TwoD2ThreeD:
         self.voxel_grid_resolution = rospy.get_param('~voxel_grid_resolution', 0.05)
 
 if __name__ == '__main__':
-    rospy.init_node('twoD2ThreeD_node', anonymous = True)
+    rospy.init_node('image2world_node', anonymous = True)
 
-    twod2threed = TwoD2ThreeD()
-    twod2threed.initROS()
+    Image2World = Image2World()
+    Image2World.initROS()
 
     rospy.spin()

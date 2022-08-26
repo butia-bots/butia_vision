@@ -14,7 +14,7 @@
   <arg name="pub/camera_info" default="butia_vision/bvb/camera_info"/>
   <arg name="pub/image_depth" default="butia_vision/bvb/image_depth"/>
   <arg name="pub/points"      default="butia_vision/bvb/points"/>
-  <arg name="queue_size"      default="1"/>
+  <arg name="queue_size"      default="5"/>
   <arg name="size"            default="[640,480]"/>
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>

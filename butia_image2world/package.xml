@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>butia_2Dto3D</name>
+  <name>butia_image2world</name>
   <version>0.0.0</version>
-  <description>The butia_2Dto3D package</description>
+  <description>The butia_image2world package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
