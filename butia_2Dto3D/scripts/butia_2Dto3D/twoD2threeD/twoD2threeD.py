@@ -5,6 +5,7 @@ from itertools import count
 import rospy
 
 import numpy as np
+import math
 
 from butia_vision_bridge import VisionBridge
 
@@ -12,7 +13,29 @@ from sensor_msgs.msg import PointCloud2
 from butia_vision_msgs.msg import Description2D, Recognitions2D, Description3D, Recognitions3D
 from visualization_msgs.msg import Marker, MarkerArray
 
-from scipy.spatial.transform import Rotation
+#from tf.transformations (that it is not working on jetson)
+def quaternion_from_matrix(matrix):
+    q = np.empty((4, ), dtype=np.float64)
+    M = np.array(matrix, dtype=np.float64, copy=False)[:4, :4]
+    t = np.trace(M)
+    if t > M[3, 3]:
+        q[3] = t
+        q[2] = M[1, 0] - M[0, 1]
+        q[1] = M[0, 2] - M[2, 0]
+        q[0] = M[2, 1] - M[1, 2]
+    else:
+        i, j, k = 0, 1, 2
+        if M[1, 1] > M[0, 0]:
+            i, j, k = 1, 2, 0
+        if M[2, 2] > M[i, i]:
+            i, j, k = 2, 0, 1
+        t = M[i, i] - (M[j, j] + M[k, k]) + M[3, 3]
+        q[i] = t
+        q[j] = M[i, j] + M[j, i]
+        q[k] = M[k, i] + M[i, k]
+        q[3] = M[k, j] - M[j, k]
+    q *= 0.5 / math.sqrt(t * M[3, 3])
+    return q
 
 class TwoD2ThreeD:
     def __init__(self, init_node=False):
@@ -42,8 +65,7 @@ class TwoD2ThreeD:
         box_r = box.R.copy()
         box_rotation = np.eye(4,4)
         box_rotation[:3, :3] = box_r
-        r = Rotation.from_matrix(box_r)
-        box_orientation = [0, 0, 0, 1]
+        box_orientation = quaternion_from_matrix(box_rotation)
         box_size = np.dot(box_size, box_r)
 
         description3d.bbox.center.position.x = box_center[0]
