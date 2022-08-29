@@ -9,11 +9,13 @@
     <rosparam command="load" file="$(find butia_recognition)/config/yolov5_people_detection.yaml"/>
   </node>
 
+  <include file="$(find people_tracking)/launch/people_tracking.launch"/>
+
   <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_people_detection_node" machine="$(arg machine)">
-    <remap from="sub/recognitions2d"  to="/butia_vision/br/people_detection"/>
-    <remap from="pub/recognitions3d"  to="/butia_vision/br/people_detection3d"/>
+    <remap from="sub/recognitions2d"  to="/butia_vision/pt/people_tracking"/>
+    <remap from="pub/recognitions3d"  to="/butia_vision/br/people_tracking3d"/>
     <remap from="pub/markers" to="/butia_vision/br/markers"/>
-    <rosparam param="color">[255,0,0]</rosparam>
+    <rosparam param="color">[0,255,0]</rosparam>
  </node>
 
 </launch>

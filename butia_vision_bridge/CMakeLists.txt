@@ -14,14 +14,14 @@ catkin_package(
     CATKIN_DEPENDS roscpp std_msgs std_srvs sensor_msgs cv_bridge butia_vision_msgs message_filters image_transport
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+# include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
-add_library(${PROJECT_NAME} src/butia_vision_bridge.cpp)
+# add_library(${PROJECT_NAME} src/butia_vision_bridge.cpp)
 
-add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
 
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PROJECT_NAME})
+# target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+# target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PROJECT_NAME})
 
 install(PROGRAMS
   scripts/butia_vision_bridge/vision_bridge/vision_bridge.py

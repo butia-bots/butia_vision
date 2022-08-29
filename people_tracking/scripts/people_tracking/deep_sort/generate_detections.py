@@ -4,7 +4,13 @@ import errno
 import argparse
 import numpy as np
 import cv2
-import tensorflow as tf
+import tensorflow
+if int(tensorflow.__version__[0]) == 2:
+    import tensorflow.compat.v1 as tf
+    physical_devices = tf.config.list_physical_devices('GPU') 
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+else:
+    import tensorflow as tf
 
 
 def _run_in_batches(f, data_dict, out, batch_size):
@@ -78,9 +84,9 @@ class ImageEncoder(object):
             graph_def.ParseFromString(file_handle.read())
         tf.import_graph_def(graph_def, name="net")
         self.input_var = tf.compat.v1.get_default_graph().get_tensor_by_name(
-            "net/%s:0" % input_name)
+            "%s:0" % input_name)
         self.output_var = tf.compat.v1.get_default_graph().get_tensor_by_name(
-            "net/%s:0" % output_name)
+            "%s:0" % output_name)
 
         assert len(self.output_var.get_shape()) == 2
         assert len(self.input_var.get_shape()) == 4

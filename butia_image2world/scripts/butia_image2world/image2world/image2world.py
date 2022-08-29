@@ -245,6 +245,7 @@ class Image2World:
             marker.id = i
             marker.type = Marker.CUBE
             marker.scale = det.bbox.size
+            marker.lifetime = rospy.Time.from_sec(2)
             markers.markers.append(marker)
 
             # text marker
@@ -263,7 +264,7 @@ class Image2World:
             marker.scale.y = 0.05
             marker.scale.z = 0.05
             marker.text = '{} ({:.2f})'.format(name, det.score)
-
+            marker.lifetime = rospy.Time.from_sec(2)
             markers.markers.append(marker)
         
         self.marker_publisher.publish(markers)

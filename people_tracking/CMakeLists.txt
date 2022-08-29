@@ -3,13 +3,13 @@ project(people_tracking)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED rospy cv_bridge butia_vision_msgs std_msgs sensor_msgs)
+find_package(catkin REQUIRED rospy butia_vision_msgs std_msgs sensor_msgs)
 
-find_package(OpenCV REQUIRED PATHS "/usr/local/lib")
+find_package(OpenCV REQUIRED)
 
 catkin_package(
   LIBRARIES people_tracking
-  CATKIN_DEPENDS rospy cv_bridge butia_vision_msgs std_msgs sensor_msgs
+  CATKIN_DEPENDS rospy butia_vision_msgs std_msgs sensor_msgs
 )
 
 include_directories(

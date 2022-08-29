@@ -1,15 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from deep_sort import nn_matching
-from deep_sort.tracker import Tracker 
-from deep_sort import preprocessing as prep
-from deep_sort import visualization
-from deep_sort.detection import Detection
-from deep_sort import generate_detections
+from .deep_sort import nn_matching
+from .deep_sort.tracker import Tracker 
+from .deep_sort import preprocessing as prep
+from .deep_sort.detection import Detection
+from .deep_sort import generate_detections
 
-from butia_vision_msgs.msg import Recognitions, Description, BoundingBox
-from std_msgs.msg import Header
-from sensor_msgs.msg import Image
+from butia_vision_msgs.msg import Recognitions2D, Description2D
 
 import cv2
 import os
@@ -19,10 +16,6 @@ import numpy as np
 class PeopleTracking():
     
     def __init__(self, model_path, matching_threshold = .5, max_iou_distance = 0.7, max_age=60, n_init=5):
-        print(matching_threshold)
-        print(max_iou_distance)
-        print(max_age)
-        print(n_init)
         self.encoder = generate_detections.create_box_encoder(os.path.abspath(model_path))
         self.metric = nn_matching.NearestNeighborDistanceMetric("cosine", matching_threshold)
         self.tracker = Tracker(self.metric,max_iou_distance,max_age,n_init)
@@ -37,42 +30,34 @@ class PeopleTracking():
         
     def track(self, descriptions):
         
-        if descriptions == []:
+        if len(descriptions) == 0:
             self.tracker.predict()
             print("No detections")
-            trackers = self.tracker.tracks 
-            return trackers, None
+            return self.tracker, []
 
-        detections = np.array([(description.bounding_box.minX, description.bounding_box.minY, description.bounding_box.width, description.bounding_box.height) for description in descriptions])
+        detections = np.array([(int(d.bbox.center.x-d.bbox.size_x/2), int(d.bbox.center.y-d.bbox.size_y/2), d.bbox.size_x, d.bbox.size_y) for d in descriptions])
 
-        out_scores = [description.probability for description in descriptions]
+        out_scores = [d.score for d in descriptions]
 
         features = self.encoder(self.frame, detections)
 
         dets = [Detection(bbox, score, feature) for bbox, score, feature in zip(detections, out_scores, features)]
 
-        outboxes = np.array([d.tlwh for d in dets])
-        outscores = np.array([d.confidence for d in dets])
-
-        indices = prep.non_max_suppression(outboxes, 0.5, outscores)
-
-        dets = [dets[i] for i in indices]
-
         self.tracker.predict()
         self.tracker.update(dets)
 
-        return self.tracker,dets
+        return self.tracker, dets
 
     def startTrack(self):
-        Bigbb = None
+        bigger_bbox = None
         for track in self.tracker.tracks:
             if track.is_confirmed() and track.time_since_update <= 1:
-                if Bigbb is None:
+                if bigger_bbox is None:
                     self.trackingPerson = track
-                    Bigbb = track.to_tlwh()[2]*track.to_tlwh()[3]
+                    bigger_bbox = track.to_tlwh()[2]*track.to_tlwh()[3]
                 else:
-                    if Bigbb < track.to_tlwh()[2]*track.to_tlwh()[3]:
-                        Bigbb = track.to_tlwh()[2]*track.to_tlwh()[3]
+                    if bigger_bbox < track.to_tlwh()[2]*track.to_tlwh()[3]:
+                        bigger_bbox = track.to_tlwh()[2]*track.to_tlwh()[3]
                         self.trackingPerson = track
     
     def stopTrack(self):
