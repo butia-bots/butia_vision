@@ -117,7 +117,7 @@ class Image2World:
             size_y = self.kernel_min_size if size_y < self.kernel_min_size else size_y
             center_limits = (int(center_x - size_x/2), int(center_x + size_x/2), int(center_y - size_y/2), int(center_y + size_y/2))
             bbox_center_points = array_point_cloud[center_limits[2]:center_limits[3], center_limits[0]:center_limits[1], :3].reshape(-1, 3)
-            bbox_center = np.nanmean(bbox_center_points, axis=0)
+            bbox_center = np.nanmedian(bbox_center_points, axis=0)
             if kernel_scale < 1.0 and kernel_scale + 0.1 > 1.0:
                 kernel_scale = 1.0
             else:
@@ -275,7 +275,7 @@ class Image2World:
 
     def __readParameters(self):
         self.queue_size = int(rospy.get_param('~queue_size', 1))
-        self.kernel_scale = rospy.get_param('~kernel_scale', 0)
+        self.kernel_scale = rospy.get_param('~kernel_scale', 0.1)
         self.kernel_min_size = int(rospy.get_param('~kernel_min_size', 5))
         self.voxel_grid_resolution = rospy.get_param('~voxel_grid_resolution', 0.03)
         self.n_neighbors_cluster_selection = int(rospy.get_param('~n_neighbors_cluster_selection', 5))

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>people_tracking</name>
+  <name>butia_people_tracking</name>
   <version>2.0.0</version>
   <description>The people_tracking package is used for the "Follow Me" task.</description>
 
