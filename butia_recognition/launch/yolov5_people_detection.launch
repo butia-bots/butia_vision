@@ -13,6 +13,7 @@
     <remap from="sub/recognitions2d"  to="/butia_vision/br/people_detection"/>
     <remap from="pub/recognitions3d"  to="/butia_vision/br/people_detection3d"/>
     <remap from="pub/markers" to="/butia_vision/br/markers"/>
+    <rosparam param="color">[0,0,0]</rosparam>
  </node>
 
 </launch>

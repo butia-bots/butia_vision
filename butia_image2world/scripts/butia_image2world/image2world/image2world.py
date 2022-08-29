@@ -91,7 +91,7 @@ class Image2World:
 
         if self.publish_debug:
             colors = np.asarray(filtered_cloud.colors)
-            colors[:, :] = np.array([255, 0, 0])
+            colors[:, :] = np.array(self.color)
             
             self.debug.publish(VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), colors, pcd_header))
         
@@ -228,6 +228,7 @@ class Image2World:
 
     def publishMarkers(self, descriptions3d):
         markers = MarkerArray()
+        color = np.asarray(self.color)/255.0
         for i, det in enumerate(descriptions3d):
             name = det.label
 
@@ -236,9 +237,9 @@ class Image2World:
             marker.header = det.poses_header
             marker.action = Marker.ADD
             marker.pose = det.bbox.center
-            marker.color.r = 1.
-            marker.color.g = 0
-            marker.color.b = 0
+            marker.color.r = color[0]
+            marker.color.g = color[1]
+            marker.color.b = color[2]
             marker.color.a = 0.4
             marker.ns = "bboxes"
             marker.id = i
@@ -251,9 +252,9 @@ class Image2World:
             marker.header = det.poses_header
             marker.action = Marker.ADD
             marker.pose = det.bbox.center
-            marker.color.r = 1.
-            marker.color.g = 0
-            marker.color.b = 0
+            marker.color.r = color[0]
+            marker.color.g = color[1]
+            marker.color.b = color[2]
             marker.color.a = 1.0
             marker.id = i
             marker.ns = "texts"
@@ -279,6 +280,7 @@ class Image2World:
         self.n_neighbors_cluster_selection = int(rospy.get_param('~n_neighbors_cluster_selection', 5))
         self.publish_debug = rospy.get_param('~publish_debug', False)
         self.publish_markers = rospy.get_param('~publish_markers', True)
+        self.color = rospy.get_param('~color', [255, 0, 0])
 
 if __name__ == '__main__':
     rospy.init_node('image2world_node', anonymous = True)
