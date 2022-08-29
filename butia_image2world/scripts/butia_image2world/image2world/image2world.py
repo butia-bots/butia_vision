@@ -14,8 +14,6 @@ from sensor_msgs.msg import PointCloud2
 from butia_vision_msgs.msg import Description2D, Recognitions2D, Description3D, Recognitions3D
 from visualization_msgs.msg import Marker, MarkerArray
 
-import tf
-
 #from tf.transformations (that it is not working on jetson)
 def quaternion_from_matrix(matrix):
     q = np.empty((4, ), dtype=np.float64)
@@ -50,9 +48,8 @@ class Image2World:
             Description2D.SEMANTIC_SEGMENTATION: self.__semanticSegmentationDescriptionProcessing
         }
 
-        self.debug = rospy.Publisher('/debug', PointCloud2, queue_size=1)
-        self.marker_publisher = rospy.Publisher('markers', MarkerArray, queue_size=self.queue_size)
-        self.br = tf.TransformBroadcaster()
+        self.debug = rospy.Publisher('pub/debug', PointCloud2, queue_size=1)
+        self.marker_publisher = rospy.Publisher('pub/markers', MarkerArray, queue_size=self.queue_size)
     
     def __mountDescription3D(self, description2d, raw_cloud, filtered_cloud, pcd_header):
         description3d = Description3D()
@@ -92,10 +89,11 @@ class Image2World:
         description3d.raw_cloud = VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(raw_cloud.points), np.asarray(raw_cloud.colors), pcd_header)
         description3d.filtered_cloud = VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), np.asarray(filtered_cloud.colors), pcd_header)
 
-        colors = np.asarray(filtered_cloud.colors)
-        colors[:, :] = np.array([255, 0, 0])
-        
-        self.debug.publish(VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), colors, pcd_header))
+        if self.publish_debug:
+            colors = np.asarray(filtered_cloud.colors)
+            colors[:, :] = np.array([255, 0, 0])
+            
+            self.debug.publish(VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), colors, pcd_header))
         
         return description3d
 
@@ -217,7 +215,8 @@ class Image2World:
         else:
             rospy.logwarn('Image2World cannot be used because pointcloud and depth images are void.')
 
-        self.publishMarkers(recognitions.descriptions)
+        if self.publish_markers:
+            self.publishMarkers(recognitions.descriptions)
         return recognitions
 
     def __callback(self, data):
@@ -277,7 +276,9 @@ class Image2World:
         self.kernel_scale = rospy.get_param('~kernel_scale', 0)
         self.kernel_min_size = int(rospy.get_param('~kernel_min_size', 5))
         self.voxel_grid_resolution = rospy.get_param('~voxel_grid_resolution', 0.03)
-        self.n_neighbors_cluster_selection = int(rospy.get_param('~n_neighbors_cluster_selection', 30))
+        self.n_neighbors_cluster_selection = int(rospy.get_param('~n_neighbors_cluster_selection', 5))
+        self.publish_debug = rospy.get_param('~publish_debug', False)
+        self.publish_markers = rospy.get_param('~publish_markers', True)
 
 if __name__ == '__main__':
     rospy.init_node('image2world_node', anonymous = True)
