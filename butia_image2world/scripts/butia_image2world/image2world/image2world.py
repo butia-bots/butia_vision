@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from operator import invert
+from re import L
 import rospy
 
+import open3d as o3d
 import numpy as np
 import math
 
@@ -10,6 +13,8 @@ from butia_vision_bridge import VisionBridge
 from sensor_msgs.msg import PointCloud2
 from butia_vision_msgs.msg import Description2D, Recognitions2D, Description3D, Recognitions3D
 from visualization_msgs.msg import Marker, MarkerArray
+
+import tf
 
 #from tf.transformations (that it is not working on jetson)
 def quaternion_from_matrix(matrix):
@@ -46,7 +51,9 @@ class Image2World:
         }
 
         self.debug = rospy.Publisher('/debug', PointCloud2, queue_size=1)
+        self.debug2 = rospy.Publisher('/debug2', PointCloud2, queue_size=1)
         self.marker_publisher = rospy.Publisher('markers', MarkerArray, queue_size=self.queue_size)
+        self.br = tf.TransformBroadcaster()
     
     def __mountDescription3D(self, description2d, raw_cloud, filtered_cloud, pcd_header):
         description3d = Description3D()
@@ -91,12 +98,6 @@ class Image2World:
         
         self.debug.publish(VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(filtered_cloud.points), colors, pcd_header))
         
-        # self.br.sendTransform((box_center[0], box_center[1], box_center[2]),
-        #         box_orientation,
-        #         pcd_header.stamp,
-        #         'test',
-        #         pcd_header.frame_id)
-        
         return description3d
 
     def __detectionDescriptionProcessing(self, array_point_cloud, description2d, pcd_header):
@@ -131,22 +132,49 @@ class Image2World:
 
         pcd = pcd.remove_non_finite_points()
         pcd = pcd.voxel_down_sample(self.voxel_grid_resolution)
-        labels_array = np.array(pcd.cluster_dbscan(eps=self.voxel_grid_resolution*1.2, min_points=4))
+        
+        pcd_tree = o3d.geometry.KDTreeFlann(pcd)
+        [_, idx, _] = pcd_tree.search_knn_vector_3d(bbox_center, 30)
+
+        labels_array = np.asarray(pcd.cluster_dbscan(eps=self.voxel_grid_resolution*1.2, min_points=4))
         labels, counts = np.unique(labels_array, return_counts=True)
-        counts[labels==-1] = 0
+
+        labels_neigh_array = labels_array[idx]
+        labels_neigh, counts_neigh = np.unique(labels_neigh_array, return_counts=True)
+        counts_neigh[labels_neigh==-1] = 0
 
         desc_pcd = None
-        min_dist = float('inf')
-        for label in labels:
-            if label != -1:
-                query_pcd = pcd.select_by_index(list(np.argwhere(labels_array==label)))
-                query_center = query_pcd.get_center()
-                query_dist = np.linalg.norm(query_center - bbox_center, ord=2)
-                if query_dist < min_dist:
-                    desc_pcd = query_pcd
-                    min_dist = query_dist
+        query_count = 1
+        while desc_pcd is None and query_count > 0:
+            argmax = np.argmax(counts_neigh)
+            query_count = counts_neigh[argmax]
+            label = labels_neigh[argmax]
+            if counts[labels==label] >= 4:
+                desc_pcd = pcd.select_by_index(list(np.argwhere(labels_array==label)))
+            else:
+                counts_neigh[argmax] = 0
 
-        if desc_pcd is None or len(desc_pcd.points) < 4:
+        # d_pcd = pcd.select_by_index(list(np.argwhere(labels_array==label)), invert=True)
+
+        # colors = np.asarray(d_pcd.colors)
+        # colors[:, :] = np.array([0, 0, 255])
+        
+        #self.debug2.publish(VisionBridge.arrays2toPointCloud2XYZRGB(np.asarray(d_pcd.points), colors, pcd_header))
+
+        # desc_pcd = None
+        # min_dist = float('inf')
+        # for label in labels:
+        #     if label != -1:
+        #         query_pcd = pcd.select_by_index(list(np.argwhere(labels_array==label)))
+        #         query_center = query_pcd.get_center()
+        #         query_dist = np.linalg.norm(query_center - bbox_center, ord=2)
+        #         if query_dist < min_dist:
+        #             desc_pcd = query_pcd
+        #             min_dist = query_dist
+
+
+
+        if desc_pcd is None:
             rospy.logwarn('Point Cloud has just noise. Try to increase voxel grid param.')
             return None
 
@@ -249,9 +277,9 @@ class Image2World:
 
     def __readParameters(self):
         self.queue_size = int(rospy.get_param('~queue_size', 1))
-        self.kernel_scale = rospy.get_param('~kernel_scale', 0.1)
+        self.kernel_scale = rospy.get_param('~kernel_scale', 0)
         self.kernel_min_size = int(rospy.get_param('~kernel_min_size', 5))
-        self.voxel_grid_resolution = rospy.get_param('~voxel_grid_resolution', 0.05)
+        self.voxel_grid_resolution = rospy.get_param('~voxel_grid_resolution', 0.03)
 
 if __name__ == '__main__':
     rospy.init_node('image2world_node', anonymous = True)
