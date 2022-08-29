@@ -51,7 +51,6 @@ class Image2World:
         }
 
         self.debug = rospy.Publisher('/debug', PointCloud2, queue_size=1)
-        self.debug2 = rospy.Publisher('/debug2', PointCloud2, queue_size=1)
         self.marker_publisher = rospy.Publisher('markers', MarkerArray, queue_size=self.queue_size)
         self.br = tf.TransformBroadcaster()
     
@@ -134,7 +133,7 @@ class Image2World:
         pcd = pcd.voxel_down_sample(self.voxel_grid_resolution)
         
         pcd_tree = o3d.geometry.KDTreeFlann(pcd)
-        [_, idx, _] = pcd_tree.search_knn_vector_3d(bbox_center, 30)
+        [_, idx, _] = pcd_tree.search_knn_vector_3d(bbox_center, self.n_neighbors_cluster_selection)
 
         labels_array = np.asarray(pcd.cluster_dbscan(eps=self.voxel_grid_resolution*1.2, min_points=4))
         labels, counts = np.unique(labels_array, return_counts=True)
@@ -171,8 +170,6 @@ class Image2World:
         #         if query_dist < min_dist:
         #             desc_pcd = query_pcd
         #             min_dist = query_dist
-
-
 
         if desc_pcd is None:
             rospy.logwarn('Point Cloud has just noise. Try to increase voxel grid param.')
@@ -280,6 +277,7 @@ class Image2World:
         self.kernel_scale = rospy.get_param('~kernel_scale', 0)
         self.kernel_min_size = int(rospy.get_param('~kernel_min_size', 5))
         self.voxel_grid_resolution = rospy.get_param('~voxel_grid_resolution', 0.03)
+        self.n_neighbors_cluster_selection = int(rospy.get_param('~n_neighbors_cluster_selection', 30))
 
 if __name__ == '__main__':
     rospy.init_node('image2world_node', anonymous = True)
