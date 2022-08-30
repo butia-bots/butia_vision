@@ -36,7 +36,7 @@ segmentation_request_client=None
 frame=None
 descriptions=None
 
-PACK_DIR = rospkg.RosPack().get_path('people_tracking')
+PACK_DIR = rospkg.RosPack().get_path('butia_people_tracking')
 
 def debug(cv_frame, tracker, dets, person=None):
     for track in tracker.tracks:
@@ -113,18 +113,17 @@ if __name__ == '__main__':
     max_age = rospy.get_param("people_tracking/thresholds/max_age", 60)
     n_init = rospy.get_param("people_tracking/thresholds/n_init", 5)
     
-    queue_size = rospy.get_param("/people_tracking/queue/size", 20)
+    queue_size = rospy.get_param("/people_tracking/queue/size", 1)
 
     param_start_service = rospy.get_param("/services/people_tracking/start_tracking", "/butia_vision/pt/start")
     param_stop_service = rospy.get_param("/services/people_tracking/stop_tracking", "/butia_vision/pt/stop")
-    param_image_request_service = rospy.get_param("/services/image_server/image_request", "/butia_vision/is/image_request")
 
     param_people_detection_topic = rospy.get_param("/topics/butia_recognition/people_detection", "/butia_vision/br/people_detection")
     param_people_tracking_topic = rospy.get_param("/topics/people_tracking/people_tracking", "/butia_vision/pt/people_tracking")
 
     tracker_publisher = rospy.Publisher(param_people_tracking_topic, Recognitions2D, queue_size = 1)
     view_publisher = rospy.Publisher('/butia_vision/pt/people_tracking_view', Image, queue_size = 1)
-    tracker_subscriber = rospy.Subscriber(param_people_detection_topic, Recognitions2D, peopleDetectionCallBack, queue_size = 10)
+    tracker_subscriber = rospy.Subscriber(param_people_detection_topic, Recognitions2D, peopleDetectionCallBack, queue_size = 1)
 
     start_service = rospy.Service(param_start_service, Empty, startTracking)
     stop_service = rospy.Service(param_stop_service, Empty, stopTracking)
