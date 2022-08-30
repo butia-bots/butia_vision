@@ -9,8 +9,8 @@
     <arg name="use_bridge" default="false"/>
     <arg name="use_image2world" default="true"/>
     <arg name="publish_tf" default="true"/>
-    <arg name="config_file" default="yolov5_object_recognition.yaml"/>
-    <arg name="node_name" default="butia_object_recognition_node"/>
+    <arg name="config_file" default="yolov5_people_detection.yaml"/>
+    <arg name="node_name" default="butia_people_detection_node"/>
 
     <include file="$(find butia_vision_launchfiles)/butia_recognition.launch">
         <arg name="machine" value="$(arg machine)"/>
@@ -28,9 +28,9 @@
 
     <group if="$(arg use_image2world)">
         <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_$(arg node_name)" machine="$(arg i2w_machine)">
-            <remap from="sub/recognitions2d"  to="/butia_vision/br/object_recognition"/>
-            <remap from="pub/recognitions3d"  to="/butia_vision/br/object_recognition3d"/>
-            <remap from="pub/markers" to="/butia_vision/br/object_recognition_markers"/>
+            <remap from="sub/recognitions2d"  to="/butia_vision/br/people_detection"/>
+            <remap from="pub/recognitions3d"  to="/butia_vision/br/people_detection3d"/>
+            <remap from="pub/markers" to="/butia_vision/br/people_detection_markers"/>
             <rosparam param="color">[255,0,0]</rosparam>
         </node>
     </group>
