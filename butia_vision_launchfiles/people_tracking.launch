@@ -25,9 +25,13 @@
         <arg name="use_image2world" value="false"/>
     </include>
     
-    <include file="$(find butia_people_tracking)/launch/people_tracking.launch"/>
+    <include file="$(find butia_people_tracking)/launch/people_tracking.launch">
+        <arg name="machine" value="$(arg br_machine)"/>
+        <arg name="use_machine" value="$(arg use_machine)"/>
+        <arg name="output" value="$(arg output)"/>
+    </include>
 
-    <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_people_detection_node" machine="$(arg machine)">
+    <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_people_detection_node" machine="$(arg i2w_machine)">
         <remap from="sub/recognitions2d"  to="/butia_vision/pt/people_tracking"/>
         <remap from="pub/recognitions3d"  to="/butia_vision/br/people_tracking3d"/>
         <remap from="pub/markers" to="/butia_vision/br/people_tracking_markers"/>
