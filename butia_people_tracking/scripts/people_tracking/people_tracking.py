@@ -78,6 +78,7 @@ class PeopleTracking():
         self.count = 0
     
     def stopTrack(self):
+        del self.tracker
         self.tracker = None
         self.trackingPerson = None
         self.count = 0
