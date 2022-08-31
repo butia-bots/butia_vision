@@ -39,26 +39,27 @@ descriptions=None
 PACK_DIR = rospkg.RosPack().get_path('butia_people_tracking')
 
 def debug(cv_frame, tracker, dets, person=None):
-    for track in tracker.tracks:
-        if not track.is_confirmed() or track.time_since_update > 1:
-            continue
+    if tracker is not None:
+        for track in tracker.tracks:
+            if not track.is_confirmed() or track.time_since_update > 1:
+                continue
 
-        bbox = track.to_tlbr()
-        id_num= str(track.track_id)
-        if person is not None:
-            if person == track:
-                cv_frame = cv2.rectangle(cv_frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,0,255), 2)
-                cv_frame = cv2.putText(cv_frame, str(id_num),(int(bbox[0]), int(bbox[1])),0, 5e-3 * 200, (0,255,0),2)
+            bbox = track.to_tlbr()
+            id_num= str(track.track_id)
+            if person is not None:
+                if person == track:
+                    cv_frame = cv2.rectangle(cv_frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(0,0,255), 2)
+                    cv_frame = cv2.putText(cv_frame, str(id_num),(int(bbox[0]), int(bbox[1])),0, 5e-3 * 200, (0,255,0),2)
+                else:
+                    cv_frame = cv2.rectangle(cv_frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 2)
+                    cv_frame = cv2.putText(cv_frame, str(id_num),(int(bbox[0]), int(bbox[1])),0, 5e-3 * 200, (0,255,0),2)
             else:
                 cv_frame = cv2.rectangle(cv_frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 2)
                 cv_frame = cv2.putText(cv_frame, str(id_num),(int(bbox[0]), int(bbox[1])),0, 5e-3 * 200, (0,255,0),2)
-        else:
-            cv_frame = cv2.rectangle(cv_frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 2)
-            cv_frame = cv2.putText(cv_frame, str(id_num),(int(bbox[0]), int(bbox[1])),0, 5e-3 * 200, (0,255,0),2)
 
-        for det in dets:
-            bbox = det.to_tlbr()
-            cv_frame = cv2.rectangle(cv_frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,0), 2)
+    for det in dets:
+        bbox = det.to_tlbr()
+        cv_frame = cv2.rectangle(cv_frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,0), 2)
 
     view_publisher.publish(ros_numpy.msgify(Image, np.flip(cv_frame, 2), encoding = 'rgb8'))
     
@@ -68,11 +69,10 @@ def peopleDetectionCallBack(recognitions):
     frame = recognitions.image_rgb
     descriptions = recognitions.descriptions
     cv_frame = ros_numpy.numpify(frame)
-    #frame_rgb = cv2.cvtColor(cv_frame,cv2.COLOR_BGR2RGB)
     people_tracking.setFrame(frame.header, recognitions.header, frame.header.seq, cv_frame.copy())
 
     tracker, detections = people_tracking.track(descriptions)
-    if people_tracking.trackingPerson is not None:
+    if tracker is not None and people_tracking.trackingPerson is not None:
         if people_tracking.trackingPerson.is_confirmed() and people_tracking.trackingPerson.time_since_update <= 1:
             response = Recognitions2D()
             response.header = recognitions.header
@@ -91,7 +91,7 @@ def peopleDetectionCallBack(recognitions):
             response.descriptions[0].bbox = bbox
             tracker_publisher.publish(response)
         else:
-            people_tracking.findPerson()
+            people_tracking.reFindPerson()
     debug(cv_frame.copy(), tracker, detections, people_tracking.trackingPerson)
 
 def startTracking(req):
@@ -121,9 +121,9 @@ if __name__ == '__main__':
     param_people_detection_topic = rospy.get_param("/topics/butia_recognition/people_detection", "/butia_vision/br/people_detection")
     param_people_tracking_topic = rospy.get_param("/topics/people_tracking/people_tracking", "/butia_vision/pt/people_tracking")
 
-    tracker_publisher = rospy.Publisher(param_people_tracking_topic, Recognitions2D, queue_size = 1)
-    view_publisher = rospy.Publisher('/butia_vision/pt/people_tracking_view', Image, queue_size = 1)
-    tracker_subscriber = rospy.Subscriber(param_people_detection_topic, Recognitions2D, peopleDetectionCallBack, queue_size = 1)
+    tracker_publisher = rospy.Publisher(param_people_tracking_topic, Recognitions2D, queue_size = queue_size)
+    view_publisher = rospy.Publisher('/butia_vision/pt/people_tracking_view', Image, queue_size = queue_size)
+    tracker_subscriber = rospy.Subscriber(param_people_detection_topic, Recognitions2D, peopleDetectionCallBack, queue_size = queue_size)
 
     start_service = rospy.Service(param_start_service, Empty, startTracking)
     stop_service = rospy.Service(param_stop_service, Empty, stopTracking)
