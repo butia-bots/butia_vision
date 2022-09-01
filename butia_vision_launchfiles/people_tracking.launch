@@ -33,8 +33,8 @@
 
     <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_people_detection_node" machine="$(arg i2w_machine)">
         <remap from="sub/recognitions2d"  to="/butia_vision/pt/people_tracking"/>
-        <remap from="pub/recognitions3d"  to="/butia_vision/br/people_tracking3d"/>
-        <remap from="pub/markers" to="/butia_vision/br/people_tracking_markers"/>
+        <remap from="pub/recognitions3d"  to="/butia_vision/pt/people_tracking3d"/>
+        <remap from="pub/markers" to="/butia_vision/pt/people_tracking_markers"/>
         <rosparam param="color">[0,255,0]</rosparam>
         <rosparam param="n_neighbors_cluster_selection">30</rosparam>
     </node>
