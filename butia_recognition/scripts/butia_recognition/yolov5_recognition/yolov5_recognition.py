@@ -45,7 +45,7 @@ class YoloV5Recognition(BaseRecognition):
         return super().serverStop(req)
 
     def loadModel(self):
-        self.model = torch.hub.load('ultralytics/yolov5', 'custom', path=os.path.join(self.pkg_path, 'config', 'yolov5_network_config', 'weights', self.model_file), autoshape=True)
+        self.model = torch.hub.load(os.path.join(self.pkg_path, 'include', 'yolov5'), 'custom', path=os.path.join(self.pkg_path, 'config', 'yolov5_network_config', 'weights', self.model_file), autoshape=True, source='local')
         self.model.eval()
         self.model.conf = self.threshold
         print('Done loading model!')
