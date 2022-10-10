@@ -4,7 +4,7 @@ Image2Kinect::Image2Kinect(ros::NodeHandle _nh) : node_handle(_nh), width(0), he
 {
     readParameters();
 
-    loadObjectClouds();
+    //loadObjectClouds();
 
     object_recognition_sub = node_handle.subscribe(object_recognition_sub_topic, sub_queue_size, &Image2Kinect::objectRecognitionCallback, this);
     face_recognition_sub = node_handle.subscribe(face_recognition_sub_topic, sub_queue_size, &Image2Kinect::faceRecognitionCallback, this);
@@ -25,14 +25,6 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
     geometry_msgs::Point &mean_position = pose.pose.position;
     geometry_msgs::Quaternion &orientation = pose.pose.orientation;
     std_msgs::ColorRGBA &mean_color = color;
-
-    mean_position.x = 0.0f;
-    mean_position.y = 0.0f;
-    mean_position.z = 0.0f;
-
-    mean_color.r = 0.0f;
-    mean_color.g = 0.0f;
-    mean_color.b = 0.0f;
 
     bool use_mask = false;
     if(mask.rows*mask.cols != 0) use_mask = true;
@@ -59,264 +51,200 @@ bool Image2Kinect::points2RGBPoseWithCovariance(PointCloud &points, butia_vision
         max_y = min_y + bb.height > points.height - 1 ? points.height - 1 : min_y + bb.height; 
     }
     
-
-    std::vector<pcl::PointXYZRGB> valid_points;
-    for(int r = min_y; r <= max_y ; r++) {
-        for(int c = min_x; c <= max_x ; c++) {
-            pcl::PointXYZRGB point = points.at(c, r);
-            float depth = sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
-            if((use_mask && mask.at<int>(r - min_y,c - min_x) != 0) || !use_mask) {
-                if(depth <= max_depth && depth != 0){     
-                    mean_position.x += point.x;
-                    mean_position.y += point.y;
-                    mean_position.z += point.z;
-
-                    mean_color.r += point.r;
-                    mean_color.g += point.g;
-                    mean_color.b += point.b;
-                    valid_points.push_back(point);
-                }
-            }
+    PointCloud::Ptr cropped (new PointCloud);
+    cropped->width = max_x - min_x;
+    cropped->height = max_y - min_y;
+    cropped->points.resize(cropped->width * cropped->height);
+    for( size_t i = 0, ii = min_x; i < cropped->height; i++, ii++){
+        for( size_t j = 0, jj = min_y; j < cropped->width; j++, jj++){
+            cropped->at(j, i) = points.at(jj, ii); //at(column, row)
         }
     }
 
-    if(valid_points.size() == 0) {
-        std::cout<< "No valid point." << std::endl;
-        return false;
-    } 
+    sor.setInputCloud(cropped);
+    sor.setMeanK (50);
+    sor.setStddevMulThresh (1.0);
+    sor.filter(*cropped);
 
-    mean_position.x /= valid_points.size();
-    mean_position.y /= valid_points.size();
-    mean_position.z /= valid_points.size();
+    pcl::PointXYZRGB point_centroid;
+    pcl::computeCentroid(*cropped, point_centroid);
+
+    Eigen::Matrix3f covariance_matrix_part;
+    Eigen::Vector4f centroid(point_centroid.x, point_centroid.y, point_centroid.z, 1);
+    pcl::computeCovarianceMatrix(*cropped, centroid, covariance_matrix_part);
+    Eigen::Matrix<float, 6, 6> covariance_matrix = Eigen::Matrix<float, 6, 6>::Identity();;
+    covariance_matrix.block<3,3>(0,0) = covariance_matrix_part;
+
+    mean_position.x = point_centroid.x;
+    mean_position.y = point_centroid.y;
+    mean_position.z = point_centroid.z;
 
     orientation.x = 0;
     orientation.y = 0;
     orientation.z = 0;
     orientation.w = 1;
 
-    mean_color.r /= valid_points.size();
-    mean_color.g /= valid_points.size();
-    mean_color.b /= valid_points.size();
+    mean_color.r = point_centroid.r;
+    mean_color.g = point_centroid.g;
+    mean_color.b = point_centroid.b;
 
-    //review this, may be wrong
-    std::vector<pcl::PointXYZRGB>::iterator it;
-    for(it = valid_points.begin() ; it != valid_points.end() ; it++) {
-        pose.covariance[6*0 + 0] += (it->x - mean_position.x)*(it->x - mean_position.x); //xx
-        pose.covariance[6*0 + 1] += (it->x - mean_position.x)*(it->y - mean_position.y); //xy
-        pose.covariance[6*0 + 2] += (it->x - mean_position.x)*(it->z - mean_position.z); //xz
-        pose.covariance[6*1 + 1] += (it->y - mean_position.y)*(it->y - mean_position.y); //yy
-        pose.covariance[6*1 + 2] += (it->y - mean_position.y)*(it->z - mean_position.z); //yz
-        pose.covariance[6*2 + 2] += (it->z - mean_position.z)*(it->z - mean_position.z); //zz
-    }
-
-    pose.covariance[6*1 + 0] = pose.covariance[6*0 + 1]; //yx
-    pose.covariance[6*2 + 0] = pose.covariance[6*0 + 2]; //zx
-    pose.covariance[6*2 + 1] = pose.covariance[6*1 + 2]; //zy
-
-    for(int i = 0 ; i < 3 ; i++) {
-        for(int j = 0 ; j < 3 ; j++) {
-            pose.covariance[6*i + j] /= valid_points.size();
-        }
-    }
-
-    // if(use_align){
-    //     std::vector<std::string> split_label;
-    //     boost::algorithm::split(split_label, label, boost::is_any_of("/"));
-    //     if (category2dataset.count(split_label.back()) > 0) {
-    //         std::string translated_label = category2dataset[split_label.back()];
-    //         PointCloud::Ptr shared_points(new PointCloud());
-    //         for (auto &point : valid_points) {
-    //             shared_points->points.push_back(point);
-    //         }
-    //         if (object_clouds.count(translated_label) > 0)
-    //         {
-    //             PointCloud::Ptr voxelized_cloud(new PointCloud);
-    //             pcl::VoxelGrid<pcl::PointXYZRGB> voxel_grid;
-    //             voxel_grid.setLeafSize(0.01, 0.01, 0.01);
-    //             voxel_grid.setInputCloud(shared_points);
-    //             voxel_grid.filter(*voxelized_cloud);
-    //             Eigen::Vector4f centroid;
-    //             pcl::compute3DCentroid(*voxelized_cloud, centroid);
-    //             Eigen::Matrix4f center_cloud_transform = Eigen::Matrix4f::Identity();
-    //             center_cloud_transform(0, 3) = -centroid(0);
-    //             center_cloud_transform(1, 3) = -centroid(1);
-    //             center_cloud_transform(2, 3) = -centroid(2);
-    //             PointCloud::Ptr centered_cloud(new PointCloud());
-    //             pcl::transformPointCloud(*voxelized_cloud, *centered_cloud, center_cloud_transform);
-    //             std::cout << center_cloud_transform << std::endl;
-    //             pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
-    //             icp.setInputSource(centered_cloud);
-    //             icp.setInputTarget(object_clouds[translated_label]);
-    //             icp.setMaximumIterations(100);
-    //             PointCloud::Ptr aligned_object_cloud(new PointCloud());
-    //             icp.align(*aligned_object_cloud);
-    //             Eigen::Matrix4f icp_transform = icp.getFinalTransformation();
-    //             Eigen::Matrix4f final_transform = -center_cloud_transform * icp_transform;
-    //             std::cout << final_transform << std::endl;
-    //             Eigen::Quaternionf rotation(final_transform.block<3,3>(0, 0));
-    //             mean_position.x = (double)final_transform(0, 3);
-    //             mean_position.y = (double)final_transform(1, 3);
-    //             mean_position.z = (double)final_transform(2, 3);
-    //             orientation.w = (double)rotation.w();
-    //             orientation.x = (double)rotation.x();
-    //             orientation.y = (double)rotation.y();
-    //             orientation.z = (double)rotation.z();
-    //         }
-    //     }
-    // }
+    for(int i = 0; i < 6; i++)
+        for(int j = 0; j < 6; j++) 
+            pose.covariance[6*i + j] = covariance_matrix(i, j);
+        
     return true;
 }
 
 
 bool Image2Kinect::robustPoseEstimation(PointCloud &points, butia_vision_msgs::BoundingBox &bb, geometry_msgs::PoseWithCovariance &pose, cv::Mat &mask, std::string label)
 {
-    geometry_msgs::Point &position = pose.pose.position;
-    geometry_msgs::Quaternion &orientation = pose.pose.orientation;
+    // geometry_msgs::Point &position = pose.pose.position;
+    // geometry_msgs::Quaternion &orientation = pose.pose.orientation;
 
-    bool use_mask = false;
-    if(mask.rows*mask.cols != 0) use_mask = true;
+    // bool use_mask = false;
+    // if(mask.rows*mask.cols != 0) use_mask = true;
 
-    int min_x, min_y, max_x, max_y;
+    // int min_x, min_y, max_x, max_y;
 
-    if(!use_mask && kernel_size > 0) {
-        min_x = (bb.minX + bb.width/2 - kernel_size/2) < bb.minX ? bb.minX : (bb.minX + bb.width/2 - kernel_size/2);
-        min_y = (bb.minY + bb.height/2 - kernel_size/2) < bb.minY ? bb.minY : (bb.minY + bb.height/2 - kernel_size/2);
-        max_x = (bb.minX + bb.width/2 + kernel_size/2) > (bb.minX + bb.width) ? (bb.minX + bb.width) : (bb.minX + bb.width/2 + kernel_size/2);
-        max_y = (bb.minY + bb.height/2 + kernel_size/2) > (bb.minY + bb.height) ? (bb.minY + bb.height) : (bb.minY + bb.height/2 + kernel_size/2);
+    // if(!use_mask && kernel_size > 0) {
+    //     min_x = (bb.minX + bb.width/2 - kernel_size/2) < bb.minX ? bb.minX : (bb.minX + bb.width/2 - kernel_size/2);
+    //     min_y = (bb.minY + bb.height/2 - kernel_size/2) < bb.minY ? bb.minY : (bb.minY + bb.height/2 - kernel_size/2);
+    //     max_x = (bb.minX + bb.width/2 + kernel_size/2) > (bb.minX + bb.width) ? (bb.minX + bb.width) : (bb.minX + bb.width/2 + kernel_size/2);
+    //     max_y = (bb.minY + bb.height/2 + kernel_size/2) > (bb.minY + bb.height) ? (bb.minY + bb.height) : (bb.minY + bb.height/2 + kernel_size/2);
 
-        min_x = min_x < 0 ? 0 : min_x;
-        min_y = min_y < 0 ? 0 : min_y;
+    //     min_x = min_x < 0 ? 0 : min_x;
+    //     min_y = min_y < 0 ? 0 : min_y;
 
-        max_x = max_x >= points.width ? points.width - 1 : max_x;
-        max_y = max_y >= points.height ? points.height - 1 : max_y;
-    }
-    else {
-        min_x = bb.minX <= 0 ? 0 : bb.minX;
-        min_y = bb.minY <= 0 ? 0 : bb.minY;
+    //     max_x = max_x >= points.width ? points.width - 1 : max_x;
+    //     max_y = max_y >= points.height ? points.height - 1 : max_y;
+    // }
+    // else {
+    //     min_x = bb.minX <= 0 ? 0 : bb.minX;
+    //     min_y = bb.minY <= 0 ? 0 : bb.minY;
 
-        max_x = min_x + bb.width > points.width - 1 ? points.width - 1 : min_x + bb.width;
-        max_y = min_y + bb.height > points.height - 1 ? points.height - 1 : min_y + bb.height; 
-    }
+    //     max_x = min_x + bb.width > points.width - 1 ? points.width - 1 : min_x + bb.width;
+    //     max_y = min_y + bb.height > points.height - 1 ? points.height - 1 : min_y + bb.height; 
+    // }
 
-    PointCloudT::Ptr scene(new PointCloudT);
-    FeatureCloudT::Ptr object_features (new FeatureCloudT);
-    FeatureCloudT::Ptr scene_features (new FeatureCloudT);
-    PointCloudT::Ptr object_aligned (new PointCloudT);
+    // PointCloudT::Ptr scene(new PointCloudT);
+    // FeatureCloudT::Ptr object_features (new FeatureCloudT);
+    // FeatureCloudT::Ptr scene_features (new FeatureCloudT);
+    // PointCloudT::Ptr object_aligned (new PointCloudT);
 
-    for(int r = min_y; r <= max_y ; r++) {
-        for(int c = min_x; c <= max_x ; c++) {
-            pcl::PointXYZRGB point = points.at(c, r);
-            float depth = sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
-            if((use_mask && mask.at<int>(r - min_y,c - min_x) != 0) || !use_mask) {
-                if(depth <= max_depth && depth != 0){  
-                    PointNT pn;
-                    pn.x = point.x;
-                    pn.y = point.y;
-                    pn.z = point.z;
-                    scene->push_back(pn);
-                }
-            }
-        }
-    }
+    // for(int r = min_y; r <= max_y ; r++) {
+    //     for(int c = min_x; c <= max_x ; c++) {
+    //         pcl::PointXYZRGB point = points.at(c, r);
+    //         float depth = sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
+    //         if((use_mask && mask.at<int>(r - min_y,c - min_x) != 0) || !use_mask) {
+    //             if(depth <= max_depth && depth != 0){  
+    //                 PointNT pn;
+    //                 pn.x = point.x;
+    //                 pn.y = point.y;
+    //                 pn.z = point.z;
+    //                 scene->push_back(pn);
+    //             }
+    //         }
+    //     }
+    // }
 
-    if(scene->width*scene->height == 0) {
-        ROS_ERROR("Alignment Error!");
-        return false;
-    }
+    // if(scene->width*scene->height == 0) {
+    //     ROS_ERROR("Alignment Error!");
+    //     return false;
+    // }
 
-    pcl::VoxelGrid<PointNT> voxel_grid;
-    voxel_grid.setLeafSize(0.01, 0.01, 0.01);
-    voxel_grid.setInputCloud(scene);
-    voxel_grid.filter(*scene);
-    Eigen::Vector4f centroid;
-    pcl::compute3DCentroid(*scene, centroid);
-    Eigen::Matrix4f center_cloud_transform = Eigen::Matrix4f::Identity();
-    center_cloud_transform(0, 3) = -centroid(0);
-    center_cloud_transform(1, 3) = -centroid(1);
-    center_cloud_transform(2, 3) = -centroid(2);
-    pcl::transformPointCloudWithNormals(*scene, *scene, center_cloud_transform);
+    // pcl::VoxelGrid<PointNT> voxel_grid;
+    // voxel_grid.setLeafSize(0.01, 0.01, 0.01);
+    // voxel_grid.setInputCloud(scene);
+    // voxel_grid.filter(*scene);
+    // Eigen::Vector4f centroid;
+    // pcl::compute3DCentroid(*scene, centroid);
+    // Eigen::Matrix4f center_cloud_transform = Eigen::Matrix4f::Identity();
+    // center_cloud_transform(0, 3) = -centroid(0);
+    // center_cloud_transform(1, 3) = -centroid(1);
+    // center_cloud_transform(2, 3) = -centroid(2);
+    // pcl::transformPointCloudWithNormals(*scene, *scene, center_cloud_transform);
 
-    if (object_clouds.count(label) > 0 && scene->size() > 10)
-    {
-        pcl::NormalEstimationOMP<PointNT,PointNT> nest;
-        nest.setRadiusSearch(0.02);
-        nest.setInputCloud(scene);
-        nest.compute(*scene);
+    // if (object_clouds.count(label) > 0 && scene->size() > 10)
+    // {
+    //     pcl::NormalEstimationOMP<PointNT,PointNT> nest;
+    //     nest.setRadiusSearch(0.02);
+    //     nest.setInputCloud(scene);
+    //     nest.compute(*scene);
 
-        std::cout<<"Reference model: "<<object_clouds[label]->size()<<" points."<<std::endl;
-        std::cout<<"Scene Cloud: "<<scene->size()<<" points."<<std::endl;
+    //     std::cout<<"Reference model: "<<object_clouds[label]->size()<<" points."<<std::endl;
+    //     std::cout<<"Scene Cloud: "<<scene->size()<<" points."<<std::endl;
 
-        // if(label == "002_master_chef_can"){
-        //     pcl::io::savePCDFileASCII ("/home/igormaurell/object_pre.pcd", *object_clouds[label]);
-        // }
+    //     // if(label == "002_master_chef_can"){
+    //     //     pcl::io::savePCDFileASCII ("/home/igormaurell/object_pre.pcd", *object_clouds[label]);
+    //     // }
 
-        // pcl::IterativeClosestPoint<PointNT, PointNT> align;
-        // align.setInputSource(scene);
-        // align.setInputTarget(object_clouds[label]);
-        // align.setMaximumIterations(100);
-        // align.align(*object_aligned);
+    //     // pcl::IterativeClosestPoint<PointNT, PointNT> align;
+    //     // align.setInputSource(scene);
+    //     // align.setInputTarget(object_clouds[label]);
+    //     // align.setMaximumIterations(100);
+    //     // align.align(*object_aligned);
 
-        FeatureEstimationT fest;
-        fest.setRadiusSearch (0.025);
-        fest.setInputCloud (object_clouds[label]);
-        fest.setInputNormals (object_clouds[label]);
-        fest.compute (*object_features);
-        fest.setInputCloud (scene);
-        fest.setInputNormals (scene);
-        fest.compute (*scene_features);
+    //     FeatureEstimationT fest;
+    //     fest.setRadiusSearch (0.025);
+    //     fest.setInputCloud (object_clouds[label]);
+    //     fest.setInputNormals (object_clouds[label]);
+    //     fest.compute (*object_features);
+    //     fest.setInputCloud (scene);
+    //     fest.setInputNormals (scene);
+    //     fest.compute (*scene_features);
 
-        pcl::SampleConsensusPrerejective<PointNT, PointNT, FeatureT> align;
-        align.setInputSource (object_clouds[label]);
-        align.setSourceFeatures (object_features);
-        align.setInputTarget (scene);
-        align.setTargetFeatures (scene_features);
-        align.setMaximumIterations (20000); // Number of RANSAC iterations
-        align.setNumberOfSamples (3); // Number of points to sample for generating/prerejecting a pose
-        align.setCorrespondenceRandomness (5); // Number of nearest features to use
-        align.setSimilarityThreshold (0.9f); // Polygonal edge length similarity threshold
-        align.setMaxCorrespondenceDistance (2.5f * 0.01); // Inlier threshold
-        align.setInlierFraction (0.25f);
+    //     pcl::SampleConsensusPrerejective<PointNT, PointNT, FeatureT> align;
+    //     align.setInputSource (object_clouds[label]);
+    //     align.setSourceFeatures (object_features);
+    //     align.setInputTarget (scene);
+    //     align.setTargetFeatures (scene_features);
+    //     align.setMaximumIterations (20000); // Number of RANSAC iterations
+    //     align.setNumberOfSamples (3); // Number of points to sample for generating/prerejecting a pose
+    //     align.setCorrespondenceRandomness (5); // Number of nearest features to use
+    //     align.setSimilarityThreshold (0.9f); // Polygonal edge length similarity threshold
+    //     align.setMaxCorrespondenceDistance (2.5f * 0.01); // Inlier threshold
+    //     align.setInlierFraction (0.25f);
 
-        align.align (*object_aligned);
+    //     align.align (*object_aligned);
         
-        if (align.hasConverged ())
-        {
-            ROS_INFO("Alignment Done!");
-            Eigen::Matrix4f transformation = align.getFinalTransformation ();
+    //     if (align.hasConverged ())
+    //     {
+    //         ROS_INFO("Alignment Done!");
+    //         Eigen::Matrix4f transformation = align.getFinalTransformation ();
 
-            // if(label == "002_master_chef_can"){
-            //     pcl::io::savePCDFileASCII ("/home/igormaurell/object.pcd", *object_aligned);
-            //     pcl::io::savePCDFileASCII ("/home/igormaurell/scene.pcd", *scene);
-            // }'
+    //         // if(label == "002_master_chef_can"){
+    //         //     pcl::io::savePCDFileASCII ("/home/igormaurell/object.pcd", *object_aligned);
+    //         //     pcl::io::savePCDFileASCII ("/home/igormaurell/scene.pcd", *scene);
+    //         // }'
 
-            Eigen::Matrix4f final_transform = center_cloud_transform.inverse() * transformation;
+    //         Eigen::Matrix4f final_transform = center_cloud_transform.inverse() * transformation;
 
-            Eigen::Quaternionf rotation(final_transform.block<3,3>(0, 0));
-            position.x = (double)final_transform(0, 3);
-            position.y = (double)final_transform(1, 3);
-            position.z = (double)final_transform(2, 3);
-            orientation.w = (double)rotation.w();
-            orientation.x = (double)rotation.x();
-            orientation.y = (double)rotation.y();
-            orientation.z = (double)rotation.z();
+    //         Eigen::Quaternionf rotation(final_transform.block<3,3>(0, 0));
+    //         position.x = (double)final_transform(0, 3);
+    //         position.y = (double)final_transform(1, 3);
+    //         position.z = (double)final_transform(2, 3);
+    //         orientation.w = (double)rotation.w();
+    //         orientation.x = (double)rotation.x();
+    //         orientation.y = (double)rotation.y();
+    //         orientation.z = (double)rotation.z();
             
-            return true;
-        }
-        ROS_ERROR("Alignment Error!");
-    }
-    else {
-        std::string error = "There is no Reference Model with name: ";
-        error += label + "!";
-        ROS_ERROR(error.c_str());
-    }
+    //         return true;
+    //     }
+    //     ROS_ERROR("Alignment Error!");
+    // }
+    // else {
+    //     std::string error = "There is no Reference Model with name: ";
+    //     error += label + "!";
+    //     ROS_ERROR(error.c_str());
+    // }
 
-    position.x = -center_cloud_transform(0, 3);
-    position.y = -center_cloud_transform(1, 3);
-    position.z = -center_cloud_transform(2, 3);
-    orientation.w = 0;
-    orientation.x = 0;
-    orientation.y = 0;
-    orientation.z = 1;
+    // position.x = -center_cloud_transform(0, 3);
+    // position.y = -center_cloud_transform(1, 3);
+    // position.z = -center_cloud_transform(2, 3);
+    // orientation.w = 0;
+    // orientation.x = 0;
+    // orientation.y = 0;
+    // orientation.z = 1;
     return true;
 }
 
@@ -347,10 +275,12 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
 
     butia_vision_msgs::ImageRequest image_srv;
     image_srv.request.seq = frame_id;
+    ROS_INFO("REQUESTING...");
     if (!image_request_client.call(image_srv)) {
         ROS_ERROR("FAILED TO CALL IMAGE REQUEST SERVICE");
         return;
     }
+    ROS_INFO("REQUESTED");
 
     cv::Mat segmented_rgb_image, depth, segmented_depth_image;
     PointCloud points;
@@ -363,24 +293,11 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
     readPoints(points_const_ptr, points);
 
     std::vector<butia_vision_msgs::Description> &descriptions = recognitions.descriptions;
-
-    // butia_vision_msgs::SegmentationRequest segmentation_srv;
-    // segmentation_srv.request.initial_rgbd_image = rgbd_image;
-    // segmentation_srv.request.descriptions = descriptions;
-    // if (!segmentation_request_client.call(segmentation_srv)) {
-    //     ROS_ERROR("Failed to call segmentation service");
-    //     return;
-    // }
-
     //here, it is possible to apply point cloud filters, as: cut-off, voxel grid, statistical and others
 
     std::vector<butia_vision_msgs::Description>::iterator it;
 
-    // std::vector<sensor_msgs::Image> &segmented_rgb_images = segmentation_srv.response.segmented_rgb_images;
-    // std::vector<sensor_msgs::Image>::iterator jt;
-  
     std::vector<butia_vision_msgs::Description3D> &descriptions3d = recognitions3d.descriptions;
-
 
     for(it = descriptions.begin(); it != descriptions.end(); it++) {
         butia_vision_msgs::Description3D description3d;
@@ -420,6 +337,8 @@ void Image2Kinect::recognitions2Recognitions3d(butia_vision_msgs::Recognitions &
 
     if(publish_tf)
         publishTF(recognitions3d);
+    
+    ROS_INFO("Sending data...");
 }
 
 void Image2Kinect::publishTF(butia_vision_msgs::Recognitions3D &recognitions3d)
@@ -567,10 +486,7 @@ void Image2Kinect::readParameters()
     node_handle.param("/image2kinect/publishers/people_tracking/topic", people_tracking_pub_topic, std::string("/butia_vision/pt/people_tracking3d"));
     
     node_handle.param("/image2kinect/clients/image_request/service", image_request_client_service, std::string("/butia_vision/bvb/image_request"));
-    //node_handle.param("/image2kinect/clients/segmentation_request/service", segmentation_request_client_service, std::string("/butia_vision/seg/image_segmentation"));
 
-    //node_handle.param("/image2kinect/segmentation_threshold", segmentation_threshold, (float)0.2);
-    node_handle.param("/image2kinect/max_depth", max_depth, 2000);
     node_handle.param("/image2kinect/publish_tf", publish_tf, true);
     node_handle.param("/image2kinect/kernel_size", kernel_size, 5);
     node_handle.param("/image2kinect/use_align", use_align, true);

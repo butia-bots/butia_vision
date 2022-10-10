@@ -1,0 +1,9 @@
+thresholds:
+  probability: 0.7
+  matching: 0.85
+  max_iou_distance: 0.7
+  max_age: 20
+  n_init: 5
+  boundingBox: 0.05
+queue:
+  size: 5

@@ -1,0 +1,12 @@
+<launch>
+  <arg name="machine" default="localhost"/>
+  <arg name="use_machine" default="true"/>
+  <arg name="output" default="screen"/>
+
+  <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+
+  <rosparam command="load" ns="people_tracking" file="$(find butia_people_tracking)/config/ros.yaml"/>
+  <rosparam command="load" ns="people_tracking" file="$(find butia_people_tracking)/config/people_tracking.yaml"/>
+
+  <node name="people_tracking_node" pkg="butia_people_tracking" type="people_tracking_node.py" output="$(arg output)" machine="$(arg machine)"/>
+</launch>

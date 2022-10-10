@@ -1,27 +1,57 @@
 <launch>
-  <arg name="machine" default="localhost"/>
-  <arg name="use_machine" default="true"/>
-  <arg name="output" default="screen"/>
-  <arg name="use_kinect" default="true"/>
-  <arg name="publish_tf" default="true"/>
+  <arg name="machine"         default="localhost"/>
+  <arg name="use_machine"     default="true"/>
+  <arg name="output"          default="screen"/>
+  <arg name="use_kinect"      default="true"/>
+  <arg name="qhd_downsampling_scale"      default="3"/>
+  <arg name="use_bridge"      default="false"/>
+  <arg name="publish_tf"      default="true"/>
+  <arg name="sub/image_rgb"   default="kinect2/qhd/image_color_rect"/>
+  <arg name="sub/camera_info" default="kinect2/qhd/camera_info"/>
+  <arg name="sub/image_depth" default="kinect2/qhd/image_depth_rect"/>
+  <arg name="sub/points"      default="kinect2/qhd/points"/>
+  <arg name="pub/image_rgb"   default="butia_vision/bvb/image_rgb"/>
+  <arg name="pub/camera_info" default="butia_vision/bvb/camera_info"/>
+  <arg name="pub/image_depth" default="butia_vision/bvb/image_depth"/>
+  <arg name="pub/points"      default="butia_vision/bvb/points"/>
+  <arg name="queue_size"      default="5"/>
+  <arg name="size"            default="[640,480]"/>
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
   <group if="$(arg use_kinect)">
+    <remap unless="$(arg use_bridge)" from="$(arg sub/image_rgb)"  to="$(arg pub/image_rgb)"/>
+    <remap unless="$(arg use_bridge)" from="$(arg sub/camera_info)"  to="$(arg pub/camera_info)"/>
+    <remap unless="$(arg use_bridge)" from="$(arg sub/image_depth)"  to="$(arg pub/image_depth)"/>
+    <remap unless="$(arg use_bridge)"  from="$(arg sub/points)"  to="$(arg pub/points)"/>
     <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
       <arg name="machine" value="$(arg machine)" />
       <arg name="use_machine" value="$(arg use_machine)"/>
       <arg name="output" value="$(arg output)"/>
+      <arg name="queue_size" value="$(arg queue_size)"/>
       <arg name="publish_tf" value="$(arg publish_tf)"/>
+      <arg name="qhd_downsampling_scale" value="$(arg qhd_downsampling_scale)"/>
     </include>
     <group if="$(arg publish_tf)">
       <node pkg="tf" type="static_transform_publisher" name="static_kinect" args="0.1362 0 0.8465 -1.57 0 -1.57 /dorso_link /kinect2_link 100"/> 
     </group>
   </group>
 
-  <rosparam command="load" ns="butia_vision_bridge" file="$(find butia_vision_bridge)/config/ros.yaml"/>
-  <rosparam command="load" ns="butia_vision_bridge" file="$(find butia_vision_bridge)/config/butia_vision_bridge.yaml"/>
+  <group if="$(arg use_bridge)">
+    <node name="butia_vision_bridge_node" pkg="butia_vision_bridge" type="vision_bridge.py" output="$(arg output)" machine="$(arg machine)">
+      <param name="queue_size" value="$(arg queue_size)"/>
+      <rosparam param="size" subst_value="True">$(arg size)</rosparam>
 
-  <node name="butia_vision_bridge_node" pkg="butia_vision_bridge" type="butia_vision_bridge_node" output="$(arg output)" machine="$(arg machine)"/>
+      <remap from="sub/image_rgb"  to="$(arg sub/image_rgb)"/>
+      <remap from="sub/camera_info"  to="$(arg sub/camera_info)"/>
+      <remap from="sub/image_depth"  to="$(arg sub/image_depth)"/>
+      <remap from="sub/points"     to="$(arg sub/points)"/>
+
+      <remap from="pub/image_rgb"  to="$(arg pub/image_rgb)"/>
+      <remap from="pub/camera_info"  to="$(arg pub/camera_info)"/>
+      <remap from="pub/image_depth"  to="$(arg pub/image_depth)"/>
+      <remap from="pub/points"     to="$(arg pub/points)"/>
+    </node>
+  </group>
 
 </launch>
