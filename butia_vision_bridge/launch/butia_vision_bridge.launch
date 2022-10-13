@@ -33,7 +33,7 @@
       <arg name="qhd_downsampling_scale" value="$(arg qhd_downsampling_scale)"/>
     </include>
     <group if="$(arg publish_tf)">
-      <node pkg="tf" type="static_transform_publisher" name="static_kinect" args="0.1362 0 0.8465 -1.57 0 -1.57 /dorso_link /kinect2_link 100"/> 
+      <node pkg="tf" type="static_transform_publisher" name="static_kinect" args="0.1362 0 0.8465 -1.57 0 -1.57 dorso_link kinect2_link 100"/> 
     </group>
   </group>
 
