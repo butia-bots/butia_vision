@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from email.mime import image
 import rospy
 
 import ros_numpy
@@ -68,6 +67,7 @@ class YoloV5Recognition(BaseRecognition):
             cv_img = ros_numpy.numpify(img)
 
             results = self.model(cv_img)
+  
             debug_img = copy(cv_img)
 
             bbs_l = results.pandas().xyxy[0]
