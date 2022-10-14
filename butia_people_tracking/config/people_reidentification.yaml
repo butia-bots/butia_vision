@@ -1,0 +1,7 @@
+thresholds:
+  matching: 0.5
+  max_iou_distance: 0.5
+  max_age: 60
+  n_init: 5
+queue:
+  size: 1
