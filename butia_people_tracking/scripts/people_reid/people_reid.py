@@ -11,7 +11,7 @@ class PeopleReId:
         self.frame = None
         self.is_tracking = False
         #TODO: baixar o modelo daqui: https://kaiyangzhou.github.io/deep-person-reid/MODEL_ZOO.html, minha sugestao e nao comitar o modelo no repositorio, pois na minha experiencia pessoal, se for um modelo muito grande, pode bugar o git.
-        self.feature_extractor = torchreid.utils.FeatureExtractor(model_name='osnet_x1_0', model_path='/home/butiabots/Workspace/osnet_x1_0_imagenet.pth')
+        self.feature_extractor = torchreid.utils.FeatureExtractor(model_name='osnet_x1_0', model_path='/home/butiabots/Workspace/osnet_ms_d_c.pth')
 
     def setFrame(self, image_header, header, frame_id, frame):
         self.image_header = image_header
@@ -59,8 +59,8 @@ class PeopleReId:
         person_image = frame[max_bb[1]:max_bb[3], max_bb[0]:max_bb[2]]
         self.gallery_features = self.feature_extractor([person_image,])
         #normalize features
-        #self.gallery_features = F.normalize(gallery_features, p=2, dim=1)
-        self.gallery_matrix = torchreid.metrics.compute_distance_matrix(self.gallery_features, self.gallery_features)
+        self.gallery_features = F.normalize(self.gallery_features, p=2, dim=1)
+        self.gallery_matrix = torchreid.metrics.compute_distance_matrix(self.gallery_features, self.gallery_features, metric="cosine")
         self.is_tracking = True
         self.person_image = person_image
 
@@ -74,16 +74,16 @@ class PeopleReId:
         self.person_images = person_images
         query_features = self.feature_extractor(person_images)
         #normalize
-        #query_features = F.normalize(query_features, p=2, dim=1)
+        query_features = F.normalize(query_features, p=2, dim=1)
         #compute distance
         #distance is a np array of shape (num_query_images, num_gallery_images)
-        distance = torchreid.metrics.compute_distance_matrix(query_features, self.gallery_features).cpu()
+        distance = torchreid.metrics.compute_distance_matrix(query_features, self.gallery_features, metric="cosine").cpu()
         #TODO: setar isso aqui e o normalize por parametros
-        reranking = False
+        reranking = True
         if reranking:
-            query_matrix = torchreid.metrics.compute_distance_matrix(query_features, query_features)
+            query_matrix = torchreid.metrics.compute_distance_matrix(query_features, query_features, metric="cosine")
             distance = torchreid.utils.re_ranking(distance, query_matrix.cpu(), self.gallery_matrix.cpu())
         #talvez aqui tenha que mudar para axis=1
         print(distance)
-        closest_match_id = np.argmin(distance, axis=1)
+        closest_match_id = np.argmin(distance, axis=0)
         return closest_match_id[0]
