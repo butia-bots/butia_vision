@@ -1,0 +1,56 @@
+threshold: 0.3
+classes_by_category:
+    drinks: ['CoconutWater', 'Coke', 'Guarana', 'IceTea', 'Tonic', 'Water']
+    cleaning_supplies: ['Cleaner', 'Cloth', 'Sponge']
+    pantry_items: ['CornFlakes', 'EnglishSauce', 'Mustard', 'TomatoSauce', 'TunaCan']
+    fruits: ['Apple', 'Banana', 'Orange', 'Kiwi']
+    snacks: ['Cookie', 'Pringles']
+classes:
+    - Apple
+    - Banana
+    - Cleaner
+    - Cloth
+    - CoconutWater
+    - Coke
+    - Cookies
+    - CornFlakes
+    - EnglishSauce
+    - Guarana
+    - IceTea
+    - Kiwi
+    - Mustard
+    - Orange
+    - Pringles
+    - Sponge
+    - TomatoSauce
+    - Tonic
+    - TunaCan
+    - Water
+model_file: larc2022_best.pt
+
+subscribers:
+  
+  queue_size: 1
+  exact_time: false
+  slop: 0.2
+
+  image_rgb: /butia_vision/bvb/image_rgb
+
+  points: /butia_vision/bvb/points
+
+publishers:
+
+  people_detection:
+    topic: /butia_vision/br/object_recognition
+    queue_size: 1
+
+servers:
+
+  list_classes:
+    service: /butia_vision/br/object_recognition/list_classes
+
+  start:
+    service: /butia_vision/br/object_recognition/start
+
+  stop:
+    service: /butia_vision/br/object_recognition/stop
