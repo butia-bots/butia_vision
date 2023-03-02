@@ -50,6 +50,11 @@ class Image2World:
 
         self.debug = rospy.Publisher('pub/debug', PointCloud2, queue_size=1)
         self.marker_publisher = rospy.Publisher('pub/markers', MarkerArray, queue_size=self.queue_size)
+
+        # Create a dictionary to store the history of detections for each object type
+        self.object_history = {}
+        for object_type in self.object_types:
+            self.object_history[object_type] = []
     
     def __mountDescription3D(self, description2d, raw_cloud, filtered_cloud, pcd_header):
         description3d = Description3D()
@@ -188,6 +193,62 @@ class Image2World:
         else:
             return None
 
+    def recognitions3DFiltering(self, recognitions):
+        object_types = [description.label for description in recognitions.descriptions]
+        object_scores = [description.score for description in recognitions.descriptions]
+        object_dimensions = [(description.bbox.size.x,description.bbox.size.y,description.bbox.size.z) for description in recognitions.descriptions]
+        object_xyz = [(description.bbox.center.position.x,description.bbox.center.position.y,description.bbox.center.position.z) for description in recognitions.descriptions]
+
+        filtered_idxs = []
+        filtered_object_xyz = []
+        # Iterate over the detections
+        for i in range(len(object_types)):
+            object_type = object_types[i]
+            object_score = object_scores[i]
+            object_dimensions = object_dimensions[i]
+            object_xyz = object_xyz[i]
+
+            # Filter out detections below score threshold
+            if object_score < self.score_threshold:
+                continue
+
+            # Filter out detections with unrealistic dimensions
+            expected_dims = self.expected_dimensions.get(object_type, None)
+            if expected_dims is not None:
+                for j in range(3):
+                    if abs(object_dimensions[j] - expected_dims[j]) / expected_dims[j] > self.dimension_threshold:
+                        continue
+
+            # Use temporal information to filter detections
+            filtered = False
+            for previous_detections in self.object_history[object_type][-self.num_previous_frames:]:
+                for previous_detection in previous_detections:
+                    if abs(previous_detection[0] - object_xyz[0]) < 0.2 and \
+                    abs(previous_detection[1] - object_xyz[1]) < 0.2 and \
+                    abs(previous_detection[2] - object_xyz[2]) < 0.2:
+                        filtered = True
+                        break
+                if filtered:
+                    break
+
+            if filtered:
+                continue
+
+            # If the detection passed all the filters, keep it and update the object history
+            filtered_object_xyz.append(object_xyz)
+            filtered_idxs.append(i)
+
+            self.object_history[object_type].append(filtered_object_xyz[-1])
+
+            if len(self.object_history[object_type]) > self.num_previous_frames:
+                self.object_history[object_type].pop(0)
+        
+        filtered_descriptions = [recognitions.descriptions[i] for i in filtered_idxs]
+        recognitions.descriptions = filtered_descriptions
+        return recognitions
+
+
+
     def __recognitions3DComputation(self, array_point_cloud, descriptions2d, header, pcd_header):
         output_data = Recognitions3D()
         output_data.header = header
@@ -220,7 +281,7 @@ class Image2World:
         return recognitions
 
     def __callback(self, data):
-        data_3d = self.recognitions2DtoRecognitions3D(data)
+        data_3d = self.recognitions3DFiltering(self.recognitions2DtoRecognitions3D(data))
         self.__publish(data_3d)
 
     def __publish(self, data):
@@ -282,6 +343,14 @@ class Image2World:
         self.publish_debug = rospy.get_param('~publish_debug', False)
         self.publish_markers = rospy.get_param('~publish_markers', True)
         self.color = rospy.get_param('~color', [255, 0, 0])
+        # Set the number of previous frames to use for temporal filtering
+        self.num_previous_frames = 3
+        self.object_types = ['shelf', 'table', 'bottle', 'snack', 'cup']
+        self.score_threshold = 0.5
+        self.dimension_threshold = 0.2
+        self.expected_dimensions = {'shelf': (1.0, 0.3, 2.0), 'table': (1.2, 0.6, 0.8),
+                       'bottle': (0.2, 0.2, 0.3), 'snack': (0.3, 0.3, 0.3), 'cup': (0.1, 0.1, 0.1)}
+
 
 if __name__ == '__main__':
     rospy.init_node('image2world_node', anonymous = True)
