@@ -33,13 +33,10 @@ The vision system has three main packages and other four helpers.
 ## Instalation
 Before run catkin_make command, is adiviseble to run the follow commands:
 
-	$ echo "export PYTHONPATH=/usr/local/lib/:$PYTHONPATH" >> ~/.bashrc
-	$ echo "export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH" >> ~/.bashrc
-	$ echo "export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH" >> ~/.bashrc
-	$ source ~/.bashrc
-
-	$ echo "export PYTHONPATH=/usr/local/lib/:$PYTHONPATH" >> ~/.zshrc
-	$ echo "export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH" >> ~/.zshrc
-	$ echo "export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH" >> ~/.zshrc
-	$ source ~/.zshrc
- 
+	```
+	chmod +x install.sh
+	```
+	To execute the install file:
+	```
+	sudo ./install.sh
+	```
