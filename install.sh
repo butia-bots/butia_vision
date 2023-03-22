@@ -3,7 +3,20 @@
 [ $(which git) ] || sudo apt install git
 pip install -r ./requirements.txt
 
-cd ~/butia_ws/src/butia_vision/
+mkdir -p ~/butia_ws/src
+cd ~/butia_ws/src
+
+# Clonando repositórios
+git clone https://github.com/butia-bots/butia_vision.git
+git clone https://github.com/butia-bots/butia_vision_msgs.git
+git clone https://github.com/butia-bots/iai_kinect2.git
+git clone https://github.com/butia-bots/libfreenect2.git
+
+cd ~/butia_ws/src/butia_vision/butia_recognition/include
+
+git clone https://github.com/butia-bots/yolov5.git
+
+cd ~/butia_ws/src/butia_vision
 
 if [[ $SHELL_TYPE == "bash" ]]; then
     echo "export PYTHONPATH=/usr/local/lib/:$PYTHONPATH" >> ~/.bashrc

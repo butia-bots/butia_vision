@@ -7,7 +7,7 @@ This is a group of ROS packages responsable for perform computer vision process 
 **Author: [Miguel Martins], migueldossantos@furg.br**
 
 ## Dependencies
-This software is built on the Robotic Operating System ([ROS]), which needs to be [installed](http://wiki.ros.org) first. Additionally, the packages depends of a few libraries and frameworks:
+This software is built on the Robotic Operating System ([ROS Noetic]), which needs to be [installed](https://github.com/butia-bots/butia_learning/wiki/Instala%C3%A7%C3%B5es-importantes#ros-robot-operating-system) first. Additionally, the packages depends of a few libraries and frameworks:
 
 - [OpenCV](http://opencv.org/) (computer vision library)
 - [Openface](https://cmusatyalab.github.io/openface/) (face recognition library)
@@ -30,6 +30,18 @@ The vision system has three main packages and other four helpers.
 - image2kinect
 - image_server
 
+### Helper 3rd Packages
+- [iai_kinect2](https://github.com/butia-bots/iai_kinect2)
+- [libfreenect2](https://github.com/butia-bots/libfreenect2)
+- [yolov5](https://github.com/butia-bots/yolov5)
+
+### Clone
+
+Clone this repository using the follow command:
+```
+git clone --recursive https://github.com/butia-bots/butia_vision.git
+```
+
 ## Instalation
 Before run catkin_make command, is adiviseble to run the follow commands:
 
@@ -40,3 +52,4 @@ Before run catkin_make command, is adiviseble to run the follow commands:
 	```
 	sudo ./install.sh
 	```
+The script will created a folder named "butia_ws" to be the workspace
