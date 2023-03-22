@@ -7,7 +7,7 @@ This is a group of ROS packages responsable for perform computer vision process 
 **Author: [Miguel Martins], migueldossantos@furg.br**
 
 ## Dependencies
-This software is built on the Robotic Operating System ([ROS Noetic]), which needs to be [installed](https://github.com/butia-bots/butia_learning/wiki/Instala%C3%A7%C3%B5es-importantes#ros-robot-operating-system) first. Additionally, the packages depends of a few libraries and frameworks:
+This software is built on the Robotic Operating System (ROS Noetic), which needs to be [installed](https://github.com/butia-bots/butia_learning/wiki/Instala%C3%A7%C3%B5es-importantes#ros-robot-operating-system) first. Additionally, the packages depends of a few libraries and frameworks:
 
 - [OpenCV](http://opencv.org/) (computer vision library);
 - [Openface](https://cmusatyalab.github.io/openface/) (face recognition library);
