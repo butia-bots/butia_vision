@@ -1,7 +1,7 @@
 # butia_vision
 
 ## Overview
-This is a group of ROS packages responsable for perform computer vision process of Butia Bots domestic robot (DoRIS) in Robocup@Home league. 
+This is a group of ROS packages responsable for perform computer vision process of [BUTIÁBots](https://fbot.vercel.app/) domestic robot (DoRIS) in [Robocup@Home](https://athome.robocup.org/) league. 
 
 **Author: [Igor Maurell], igormaurell@furg.br**
 **Author: [Miguel Martins], migueldossantos@furg.br**
