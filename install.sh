@@ -7,14 +7,8 @@ mkdir -p ~/butia_ws/src
 cd ~/butia_ws/src
 
 # Clonando repositórios
-git clone https://github.com/butia-bots/butia_vision.git
-git clone https://github.com/butia-bots/butia_vision_msgs.git
 git clone https://github.com/butia-bots/iai_kinect2.git
 git clone https://github.com/butia-bots/libfreenect2.git
-
-cd ~/butia_ws/src/butia_vision/butia_recognition/include
-
-git clone https://github.com/butia-bots/yolov5.git
 
 cd ~/butia_ws/src/butia_vision
 
