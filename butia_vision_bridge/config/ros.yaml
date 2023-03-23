@@ -3,16 +3,16 @@ subscribers:
   queue_size: 5
 
   image_rgb:
-    topic: /kinect2/qhd/image_color_rect
+    topic: /camera/color/image_raw
 
   image_depth:
-    topic: /kinect2/qhd/image_depth_rect
+    topic: /camera/depth/image_rect_raw
 
   camera_info:
-    topic: /kinect2/qhd/camera_info
+    topic: /camera/color/camera_info
 
   points:
-    topic: /kinect2/qhd/points
+    topic: /camera/depth/color/points
 
 publishers:
   

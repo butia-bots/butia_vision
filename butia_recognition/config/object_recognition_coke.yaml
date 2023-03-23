@@ -1,0 +1,7 @@
+model_file: yolov5m_coke.pt
+threshold: 0.01
+classes_by_category:
+    drink: [Coke,]
+all_classes:
+    #Note: fill this list with the class list from yolov5 dataset.yaml file used to train the model, or attempt to get this list by printing the state dictionary in the model file. The class names should be in the same order.
+    [Coke,]

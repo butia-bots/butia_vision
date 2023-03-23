@@ -39,6 +39,7 @@ def imageCallback(image_msg):
         recognition_publisher.publish(pub_msg)
 
     pub_image_msg = recognizedFaces2ViewImage(image_msg, pub_msg)
+    print(pub_image_msg)
     view_publisher.publish(pub_image_msg)   
     
 def classifierReloadCallback(ros_msg):
@@ -112,7 +113,7 @@ if __name__ == '__main__':
 
     recognition_publisher = rospy.Publisher(face_recognition_topic, Recognitions, queue_size=face_recognition_qs)
 
-    view_publisher = rospy.Publisher(face_recognition_view_topic, Image, queue_size=face_recognition_view_topic)
+    view_publisher = rospy.Publisher(face_recognition_view_topic, Image, queue_size=face_recognition_view_qs)
 
     face_list_updated_publisher = rospy.Publisher(face_list_updated_topic, Header, queue_size=face_list_updated_topic)
 

@@ -5,11 +5,13 @@
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
-  <include file="$(find face_recognition)/launch/face_recognition.launch">
+  <!--include file="$(find face_recognition)/launch/face_recognition.launch">
     <arg name="machine" value="$(arg machine)"/>
     <arg name="use_machine" value="$(arg use_machine)"/>
     <arg name="output" value="$(arg output)"/>
-  </include>
-
+  </include-->
+  <rosparam command="load" ns="face_recognition" file="$(find face_recognition)/config/ros.yaml"/>
+  <rosparam command="load" ns="face_recognition" file="$(find face_recognition)/config/face_recognition.yaml"/>
+  
   <node name="classifier_training_node" pkg="face_recognition" type="classifier_training_node.py" output="$(arg output)" machine="$(arg machine)"/>
 </launch>

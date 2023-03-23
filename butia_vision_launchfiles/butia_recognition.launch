@@ -11,6 +11,7 @@
     <arg name="publish_tf" default="true"/>
     <arg name="config_file" default="object_recognition.yaml"/>
     <arg name="node_name" default="butia_object_recognition_node"/>
+    <arg name="recognition_network" default="yolov5" />
 
     <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
@@ -23,7 +24,7 @@
         <arg name="publish_tf" value="$(arg publish_tf)"/>
     </include>
 
-    <include file="$(find butia_recognition)/launch/yolov5_recognition.launch">
+    <include file="$(find butia_recognition)/launch/$(arg recognition_network)_recognition.launch">
         <arg name="machine" value="$(arg br_machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
         <arg name="node_name" value="$(arg node_name)"/>

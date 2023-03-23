@@ -2,6 +2,9 @@
 import cv2
 import json
 import numpy as np
+import matplotlib.pyplot as plt
+import inspect
+from PIL import Image
 import os
 import openface
 import rospy
@@ -17,6 +20,8 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from butia_vision_msgs.msg import BoundingBox, Description, Description3D, Recognitions, Recognitions3D
 from butia_vision_msgs.srv import FaceClassifierTraining
+
+from sklearn import preprocessing
 
 BRIDGE = CvBridge()
 PACK_DIR = rospkg.RosPack().get_path('face_recognition')
@@ -52,14 +57,14 @@ class FaceRecognitionROS():
         self.verbose = rospy.get_param('/face_recognition/verbose', True)
         self.debug = rospy.get_param('/face_recognition/debug', False)
 
-        self.detector_model_id = rospy.get_param('/face_recognition/detector/model_id', 'opencv_dnn')
+        self.detector_model_id = rospy.get_param('/face_recognition/detector/model_id', 'dlib_hog')
         self.mountDetectorsDict()
 
-        self.aligner_model_id = rospy.get_param('/face_recognition/aligner/model_id', 'dlib')
+        self.aligner_model_id = rospy.get_param('/face_recognition/aligner/model_id', 'openface')
         self.mountAlignersDict()
         
 
-        self.embosser_model_id = rospy.get_param('/face_recognition/embosser/model_id', 'facenet')
+        self.embosser_model_id = rospy.get_param('/face_recognition/embosser/model_id', 'openface')
         self.mountEmbossersDict()
        
 
@@ -344,15 +349,16 @@ class FaceRecognitionROS():
             for rai in rais:
                 if ri.name == rai.name and ri.cls == rai.cls:
                     found = True
-            if not found:        
+            if not found:     
                 images.append(ri)
 
         for image in images:
             rect = self.detectLargestFace(image.getRGB())
-            aligned_face = self.alignFace(image.getRGB(), rect)
-            bgr_image = cv2.cvtColor(aligned_face, cv2.COLOR_RGB2BGR)
-            print(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'))
-            cv2.imwrite(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'), bgr_image)
+            if rect is not None:
+                aligned_face = self.alignFace(image.getRGB(), rect)
+                bgr_image = cv2.cvtColor(aligned_face, cv2.COLOR_RGB2BGR)
+                print(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'))
+                cv2.imwrite(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'), bgr_image)
 
     def extractDatasetFeatures(self):
         raw_aligned_dir = os.path.join(self.dataset_dir, 'raw_aligned')
@@ -366,6 +372,7 @@ class FaceRecognitionROS():
         except (OSError, IOError) as e:
             features_data = {}
 
+        os.makedirs(features_dir, exist_ok=True)
         features_file = open(os.path.join(features_dir, 'features.json'), 'w')
 
         images = []
@@ -393,7 +400,7 @@ class FaceRecognitionROS():
 
     def trainClassifier(self, classifier_type, classifier_name):
         features_dir = os.path.join(self.dataset_dir, 'features')
-        features_file = open(os.path.join(features_dir, 'features.json'), 'rw')
+        features_file = open(os.path.join(features_dir, 'features.json'), 'r+')
         features_data = json.load(features_file)
 
         labels = []
@@ -404,7 +411,7 @@ class FaceRecognitionROS():
 
         embeddings = np.array(embeddings)
 
-        label_encoder = LabelEncoder()
+        label_encoder = preprocessing.LabelEncoder()
         label_encoder.fit(labels)
         labels_num = label_encoder.transform(labels)
         num_classes = len(label_encoder.classes_)
@@ -449,7 +456,7 @@ class FaceRecognitionROS():
 
         classifier.fit(embeddings, labels_num)
         fName = self.models_dir + '/sklearn/' + classifier_name
-        with open(fName, 'w') as f:
+        with open(fName, 'wb') as f:
             pickle.dump((label_encoder, classifier), f)
         return True  
 

@@ -1,0 +1,36 @@
+subscribers:
+  
+  queue_size: 5
+
+  image_rgb:
+    topic: /kinect2/qhd/image_color_rect
+
+  image_depth:
+    topic: /kinect2/qhd/image_depth_rect
+
+  camera_info:
+    topic: /kinect2/qhd/camera_info
+
+  points:
+    topic: /kinect2/qhd/points
+
+publishers:
+  
+  queue_size: 1
+
+  image_rgb:
+    topic: /butia_vision/bvb/image_rgb_raw
+
+  image_depth:
+    topic: /butia_vision/bvb/image_depth_raw
+
+  camera_info:
+    topic: /butia_vision/bvb/camera_info
+
+  points:
+    topic: /butia_vision/bvb/points
+
+servers:
+
+  image_request:
+    service: /butia_vision/bvb/image_request

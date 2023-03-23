@@ -5,3 +5,9 @@
 [submodule "butia_recognition/include/yolov5"]
 	path = butia_recognition/include/yolov5
 	url = https://github.com/ultralytics/yolov5.git
+[submodule "butia_recognition/include/owlvit-large-patch14"]
+	path = butia_recognition/include/owlvit-large-patch14
+	url = https://huggingface.co/google/owlvit-large-patch14
+[submodule "butia_recognition/include/owlvit-base-patch32"]
+	path = butia_recognition/include/owlvit-base-patch32
+	url = https://huggingface.co/google/owlvit-base-patch32

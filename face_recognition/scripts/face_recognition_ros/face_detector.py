@@ -41,6 +41,7 @@ def loadDlibHogModel(models_dir, model = 'default', debug=False):
     dlib_detector = None
     if(model == 'default'):
         dlib_detector = dlib.get_frontal_face_detector()
+        
     return dlib_detector
 
 @load(model_id='Dlib MMOD')
@@ -66,8 +67,8 @@ def detectFacesOpencvCascade(detector, image, scale_factor=1.3, min_neighbors=5,
 
     image_small = cv2.resize(image, (width, height))
     image_gray = cv2.cvtColor(image_small, cv2.COLOR_BGR2GRAY)
-
     faces = detector.detectMultiScale(image_gray)
+    print(faces)
     rects = rectangles()
     for (x, y, width, height) in faces:
         x1 = int(x * scale_width)
@@ -107,6 +108,7 @@ def detectFacesOpencvDnn(detector, image, threshold=0.7, scale_factor=1.0, heigh
 @action(action_name='detection')
 @debug
 def detectFacesDlibHog(detector, image, height=300, verbose=True, debug=False):
+
     image_height = image.shape[0]
     image_width = image.shape[1]
     width = 0
@@ -120,11 +122,11 @@ def detectFacesDlibHog(detector, image, height=300, verbose=True, debug=False):
     scale_width = float(image_width) / width
 
     image_small = cv2.resize(image, (width, height))
-
     image_small = cv2.cvtColor(image_small, cv2.COLOR_BGR2RGB)
     faces_small = detector(image_small, 0)
     faces = rectangles()
     for face in faces_small:
+        
         faces.append(rectangle(int(face.left()*scale_width), int(face.top()*scale_height),
                   int(face.right()*scale_width), int(face.bottom()*scale_height)))
     return faces

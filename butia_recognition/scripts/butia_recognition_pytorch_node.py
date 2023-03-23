@@ -2,7 +2,7 @@
 
 import rospy
 
-from butia_recognition import YoloV5Recognition
+from butia_recognition import YoloV5Recognition, OWLVITRecognition
 
 if __name__ == '__main__':
     rospy.init_node('butia_recognition_pytorch_node', anonymous = True)

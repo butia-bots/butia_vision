@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+
 import pickle
 from face_recognition_ros.decorators import *
 import os
@@ -6,7 +7,7 @@ import numpy as np
 
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.preprocessing import LabelEncoder
+
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from sklearn.mixture import GaussianMixture as GMM
@@ -18,7 +19,7 @@ from sklearn.neighbors import KNeighborsClassifier, RadiusNeighborsClassifier
 @debug
 def loadSklearnModel(models_dir, model='classifier.pkl', debug=False):
     with open(os.path.join(models_dir, 'sklearn', model), 'rb') as model_file:
-        (cl_label, classifier_model) = pickle.load(model_file)
+        (cl_label, classifier_model) = pickle.load(model_file, encoding='latin1')
         return (cl_label, classifier_model)
 
 @action(action_name='classify')
@@ -31,7 +32,7 @@ def classifySklearn(classifier, array, threshold=0.5, verbose=True, debug=False)
     person = cl_label.inverse_transform([maxI])[0]
     confidence = predictions[maxI]
     if confidence > threshold:
-        return (person.decode('utf-8'), confidence)
+        return (person, confidence)
     else:
         return ('unknow', confidence)
 

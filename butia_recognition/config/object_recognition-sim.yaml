@@ -1,13 +1,43 @@
-model_file: larc2021_go_and_get_it.pt
-threshold: 0.3
+model_file: yolov5m_ycb_video.pt
+threshold: 0.1
 classes_by_category:
-    people: [Person]
+    people: [person]
     food: [master_chef_can, cracker_box, sugar_box, tomato_soup_can, mustard_bottle, tuna_fish_can, pudding_box, gelatin_box, potted_meat_can, banana, strawberry, apple, lemon, peach, pear, orange, plum]
     kitchen: [Pitcher base, Srub cleanser bottle, Windex Spray bottle, Bowl, Mug, Scotch brite dobie sponge, Plate, Fork, Spoon, Spatula]
     tools: [Large marker, Clamps]
     shape: [Mini soccer ball, Soft ball, Baseball, Tennis ball, Racquetball, Golf ball, Chain, Foam brick, Dice, Marbles, Cups]
     task: [Colored wood blocks, 9-peg-hole test, Toy airplane, Lego duplo, Rubik’s cube]
-all_classes:
-    #Note: fill this list with the class list from yolov5 dataset.yaml file used to train the model, or attempt to get this list by printing the state dictionary in the model file. The class names should be in the same order.
-    []
-model_file: larc2021_go_and_get_it.pt
+classes_ignore: ['person_standing', 'ycb_002_master_chef_can', 'ycb_003_cracker_box', 'ycb_004_sugar_box', 'ycb_005_tomato_soup_can', 'ycb_006_mustard_bottle', 'ycb_007_tuna_fish_can', 'ycb_008_pudding_box', 'ycb_009_gelatin_box', 'ycb_010_potted_meat_can', 'ycb_011_banana', 'ycb_012_strawberry', 'ycb_013_apple', 'ycb_014_lemon', 'ycb_015_peach', 'ycb_016_pear', 'ycb_017_orange', 'ycb_018_plum', 'ycb_019_pitcher_base', 'ycb_021_bleach_cleanser', 'ycb_022_windex_bottle', 'ycb_024_bowl', 'ycb_025_mug', 'ycb_026_sponge', 'ycb_029_plate', 'ycb_030_fork', 'ycb_031_spoon', 'ycb_033_spatula', 'ycb_040_large_marker', 'ycb_051_large_clamp', 'ycb_053_mini_soccer_ball', 'ycb_054_softball', 'ycb_055_baseball', 'ycb_056_tennis_ball', 'ycb_057_racquetball', 'ycb_058_golf_ball', 'ycb_059_chain', 'ycb_061_foam_brick', 'ycb_062_dice', 'ycb_063-a_marbles', 'ycb_063-b_marbles', 'ycb_065-a_cups', 'ycb_065-b_cups', 'ycb_065-c_cups', 'ycb_065-d_cups', 'ycb_065-e_cups', 'ycb_065-f_cups', 'ycb_065-g_cups', 'ycb_065-h_cups', 'ycb_065-i_cups', 'ycb_065-j_cups', 'ycb_070-a_colored_wood_blocks', 'ycb_070-b_colored_wood_blocks', 'ycb_071_nine_hole_peg_test', 'ycb_072-a_toy_airplane', 'ycb_072-b_toy_airplane', 'ycb_072-c_toy_airplane', 'ycb_072-d_toy_airplane', 'ycb_072-e_toy_airplane', 'ycb_073-a_lego_duplo', 'ycb_073-b_lego_duplo', 'ycb_073-c_lego_duplo', 'ycb_073-d_lego_duplo', 'ycb_073-e_lego_duplo', 'ycb_073-f_lego_duplo', 'ycb_073-g_lego_duplo', 'ycb_077_rubiks_cube']
+model_id: owlvit-base-patch32
+classes_ignore2: ['002_master_chef_can', '011_banana', '019_pitcher_base', '021_bleach_cleanser', '024_bowl', '025_mug', '035_power_drill', '036_wood_block', '037_scissors', '040_large_marker', '051_large_clamp', '003_cracker_box', '052_extra_large_clamp', '061_foam_brick', '004_sugar_box', '005_tomato_soup_can', '006_mustard_bottle', '007_tuna_fish_can', '008_pudding_box', '009_gelatin_box', '010_potted_meat_can']
+classes: [
+    'person', 'furniture', 'household item', 'fruit'
+]
+
+subscribers:
+  
+  queue_size: 1
+  exact_time: false
+  slop: 0.2
+
+  image_rgb: /butia_vision/bvb/image_rgb
+
+  points: /butia_vision/bvb/points
+
+publishers:
+
+  object_detection:
+    topic: /butia_vision/br/object_detection
+    queue_size: 1
+
+
+servers:
+
+  list_classes:
+    service: /butia_vision/br/object_detection/list_classes
+
+  start:
+    service: /butia_vision/br/object_detection/start
+
+  stop:
+    service: /butia_vision/br/object_detection/stop

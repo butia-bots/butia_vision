@@ -65,12 +65,12 @@ def peopleIntroducing(ros_srv):
             n += 1
     
     num_images = ros_srv.num_images
-
+    
     i = 0
     while i<num_images:
         try:
             ros_image = rospy.wait_for_message(image_topic, Image, 1000)
-        except (ROSException, ROSInterruptException) as e:
+        except Exception() as e:
             print(e)
             break
 
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     classifier_reload_topic = rospy.get_param('/face_recognition/publishers/classifier_reload/topic', '/butia_vision/fr/classifier_reload')
     classifier_reload_qs = rospy.get_param('/face_recognition/publishers/classifier_reload/queue_size', 1)
 
-    image_topic = rospy.get_param('/face_recognition/subscribers/camera_reading/topic', '/butia_vision/bvb/image_rgb_raw')
+    image_topic = rospy.get_param('/face_recognition/subscribers/camera_reading/topic', '/usb_cam/image_raw')
     people_introducing_service = rospy.get_param('/face_recognition/servers/people_introducing/service', '/butia_vision/fr/people_introducing')
     classifier_training_service = rospy.get_param('/face_recognition/servers/classifier_training/service','/butia_vision/fr/classifier_training')
 
