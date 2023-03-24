@@ -1,4 +1,5 @@
 *.vscode*
+*__pycache__*
 *.pyc
 *.obj
 *.t7
@@ -9,4 +10,3 @@
 *.caffemodel
 *.pbtxt
 *.prototxt
-*__pycache__*

@@ -1,7 +1,7 @@
 [submodule "butia_vision_msgs"]
 	path = butia_vision_msgs
 	url = https://github.com/butia-bots/butia_vision_msgs
-	branch = points
+
 [submodule "butia_recognition/include/yolov5"]
 	path = butia_recognition/include/yolov5
-	url = https://github.com/ultralytics/yolov5.git
+	url = https://github.com/butia-bots/yolov5
