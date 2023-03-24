@@ -6,7 +6,6 @@
 *.csv
 *.dat
 *.pt
-*.pb
 *.caffemodel
 *.pbtxt
 *.prototxt
