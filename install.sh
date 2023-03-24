@@ -1,7 +1,7 @@
 #!/bin/sh
 
 [ $(which git) ] || sudo apt install git
-pip install -r ./requirements.txt
+pip3 install -r ./requirements.txt
 
 mkdir -p ~/butia_ws/src
 cd ~/butia_ws/src
