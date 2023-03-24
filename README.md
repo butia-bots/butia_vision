@@ -41,7 +41,8 @@ git clone --recursive https://github.com/butia-bots/butia_vision.git
 ```
 
 ## Instalation
-Before run catkin_make command, is adiviseble to run the follow commands:
+
+Run the follow commands:
 
 	```
 	chmod +x install.sh
@@ -51,3 +52,27 @@ Before run catkin_make command, is adiviseble to run the follow commands:
 	sudo ./install.sh
 	```
 The script will created a folder named "butia_ws" to be the workspace
+
+Before run catkin_make command, is adiviseble to run:
+
+To bash users:
+```
+echo "export PYTHONPATH=/usr/local/lib/:$PYTHONPATH" >> ~/.bashrc
+echo "export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH" >> ~/.bashrc
+echo "export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH" >> ~/.bashrc
+source ~/.bashrc
+```
+
+To zsh users:
+```
+echo "export PYTHONPATH=/usr/local/lib/:$PYTHONPATH" >> ~/.zshrc
+echo "export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH" >> ~/.zshrc
+echo "export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH" >> ~/.zshrc
+source ~/.zshrc
+```
+
+Run catkin_make
+
+```
+catkin_make
+```
