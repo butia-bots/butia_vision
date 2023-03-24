@@ -1,6 +1,6 @@
 base
 numpy==1.21.6
-tensorflow==2.6.0
+tensorflow==2.9.3
 numpy==1.21.6
 librosa==0.9.2
 multipledispatch
