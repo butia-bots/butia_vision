@@ -31,6 +31,7 @@ def regressiveCounter(sec):
         
 
 def peopleIntroducing(ros_srv):
+    classifier_name = ros_srv.classifier_name
     name = ros_srv.name
     num_images = ros_srv.num_images
     NAME_DIR = os.path.join(DATASET_DIR, 'raw', name)
@@ -102,7 +103,12 @@ def peopleIntroducing(ros_srv):
 
     classifier_training = FaceClassifierTraining()
     classifier_training.classifier_type = ros_srv.classifier_type
-    classifier_training.classifier_name = 'classifier_' + ros_srv.classifier_type + '_' + name + '.pkl'
+    if classifier_name == '':
+        classifier_name = rospy.get_param('/face_recognition/classifier/model', 'sklearn')
+
+        classifier_training.classifier_name = classifier_name
+    else:
+        classifier_training.classifier_name = classifier_name + '.pkl'
 
     return classifierTraining(classifier_training)
 

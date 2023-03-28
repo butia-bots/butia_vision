@@ -231,6 +231,28 @@ class FaceRecognitionROS():
             }
         }
 
+        vggface_embosser_model = rospy.get_param('/face_recognition/embosser/vggface/model', 'VGG_FACE.t7')
+        vggface_embosser_cuda = rospy.get_param('/face_recognition/embosser/vggface/cuda', True)
+
+        self.embossers_dict['vgg_face'] = {
+            'load' : {
+                'function' : loadVGGFaceModel,
+                'args' : (self.models_dir,),
+                'kwargs' : {
+                    'model' : vggface_embosser_model,
+                    'cuda' : vggface_embosser_cuda,
+                    'debug' : self.debug 
+                }
+            },
+            'action' : {
+                'function' : extractFeaturesVGGFace,
+                'args' : (),
+                'kwargs' : {
+                    'debug' : self.debug,
+                    'verbose' : self.verbose
+                }   
+            }
+        }
 
     def mountClassifiersDict(self):
         sklearn_classifier_model = rospy.get_param('/face_recognition/classifier/sklearn/model', 'classifier.pkl')
@@ -296,7 +318,6 @@ class FaceRecognitionROS():
             self.classifiers_dict[self.classifier_model_id]['load']['kwargs']['model'] = model
         classifier_dict = self.classifiers_dict[self.classifier_model_id]['load']
         self.face_classifier = classifier_dict['function'](*classifier_dict['args'], **classifier_dict['kwargs'])
-        self.face_classifier[0]
 
     def detectFaces(self, bgr_image):
         detector_dict = self.detectors_dict[self.detector_model_id]['action']
@@ -356,9 +377,9 @@ class FaceRecognitionROS():
             rect = self.detectLargestFace(image.getRGB())
             if rect is not None:
                 aligned_face = self.alignFace(image.getRGB(), rect)
-                bgr_image = cv2.cvtColor(aligned_face, cv2.COLOR_RGB2BGR)
+                #bgr_image = cv2.cvtColor(aligned_face, cv2.COLOR_RGB2BGR)
                 print(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'))
-                cv2.imwrite(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'), bgr_image)
+                cv2.imwrite(os.path.join(raw_aligned_dir, image.cls, image.name + '.jpg'), aligned_face )
 
     def extractDatasetFeatures(self):
         raw_aligned_dir = os.path.join(self.dataset_dir, 'raw_aligned')
@@ -431,6 +452,8 @@ class FaceRecognitionROS():
             classifier = GridSearchCV(SVC(C=1, probability=True), param_grid, cv=5)
         elif classifier_type == 'gmm':
             classifier = GMM(n_components=num_classes)
+        elif classifier_type == 'MLP':
+            classifier = MLPClassifier(solver='adam', hidden_layer_sizes=(5, 32),random_state=1, max_iter=10000)
         elif classifier_type == 'dt':
             classifier = DecisionTreeClassifier(max_depth=20)
         elif classifier_type == 'gnb':
@@ -463,36 +486,45 @@ class FaceRecognitionROS():
 
     def recognitionProcess(self, ros_msg):
         rospy.loginfo('Image ID: {}'.format(ros_msg.header.seq))
-        bgr_image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="bgr8")
+        image = BRIDGE.imgmsg_to_cv2(ros_msg, desired_encoding="rgb8")
 
-        self.image_height = bgr_image.shape[0]
-        self.image_width = bgr_image.shape[1]
+        self.image_height = image.shape[0]
+        self.image_width = image.shape[1]
 
-        face_rects = self.detectFaces(bgr_image)
+        face_rects = self.detectFaces(image)
         if len(face_rects) == 0:
             rospy.loginfo("Recognition FPS: {:.2f} Hz.".format((1/(rospy.get_rostime().to_sec() - self.last_recognition))))
             self.last_recognition = rospy.get_rostime().to_sec()
             return None
 
         faces_description = []
+        used_label_class = []
         for face_rect in face_rects:
             face_description = Description()
 
-            aligned_face = self.alignFace(bgr_image, face_rect)
+
+            aligned_face = self.alignFace(image, face_rect)
 
             features_array = self.extractFeatures(aligned_face)
 
             classification = self.classify(features_array)
+            print(classification)
 
             label_class, confidence = classification
-            
+
             bounding_box = self.dlibRectangle2RosBoundingBox(face_rect)
             features = self.numpyArray2RosVector(features_array)
-
-            face_description.label_class = 'people/' + label_class
-            face_description.probability = confidence
-            face_description.bounding_box = bounding_box
-            faces_description.append(face_description)
+            if label_class not in used_label_class:
+                face_description.label_class = 'people/' + label_class
+                face_description.probability = confidence
+                face_description.bounding_box = bounding_box
+                faces_description.append(face_description)
+                used_label_class.append(label_class)
+            else:
+                face_description.label_class = 'people/unkow'
+                face_description.probability = 1
+                face_description.bounding_box = bounding_box
+                faces_description.append(face_description)
 
         recognized_faces = Recognitions()
         recognized_faces.image_header = ros_msg.header

@@ -39,7 +39,6 @@ def imageCallback(image_msg):
         recognition_publisher.publish(pub_msg)
 
     pub_image_msg = recognizedFaces2ViewImage(image_msg, pub_msg)
-    print(pub_image_msg)
     view_publisher.publish(pub_image_msg)   
     
 def classifierReloadCallback(ros_msg):

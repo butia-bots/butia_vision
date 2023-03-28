@@ -28,19 +28,26 @@ detector:
 
 aligner:
   model_id: openface #openface
+
   openface: 
     model: shape_predictor_68_face_landmarks.dat
     image_dimension: 96
 
 embosser:
   model_id: openface #openface
+
   openface:
     model: nn4.small2.v1.t7
     image_dimension: 96
     cuda: False
+  
+  vgg_face:
+    model: VGG_FACE.t7
+    cuda: true
 
 classifier:
   model_id: sklearn #sklearn
+
   sklearn:
-    model: classifier_knn_emilly.pkl
-    threshold: 0.3
+    model: classifier_MLP_emilly.pkl
+    threshold: 0.80
