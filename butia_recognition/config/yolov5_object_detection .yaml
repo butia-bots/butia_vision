@@ -1,0 +1,33 @@
+threshold: 0.5
+classes_by_category:
+    people: [person]
+classes:
+    - person
+model_file: yolov5s.pt
+
+subscribers:
+  
+  queue_size: 1
+  exact_time: false
+  slop: 0.2
+
+  image_rgb: /camera/color/image_raw
+
+  points: /camera/depth/color/points
+
+publishers:
+
+  people_detection:
+    topic: /butia_vision/br/people_detection
+    queue_size: 1
+
+servers:
+
+  list_classes:
+    service: /butia_vision/br/people_detection/list_classes
+
+  start:
+    service: /butia_vision/br/people_detection/start
+
+  stop:
+    service: /butia_vision/br/people_detection/stop
