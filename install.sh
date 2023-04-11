@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 [ $(which git) ] || sudo apt install git
 pip install -r ./requirements.txt
