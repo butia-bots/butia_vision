@@ -64,8 +64,8 @@ class YoloV5Recognition(BaseRecognition):
 
             rospy.loginfo('Image ID: ' + str(img.header.seq))
 
+            #cv_img = np.flip(ros_numpy.numpify(img),2)
             cv_img = ros_numpy.numpify(img)
-
             results = self.model(cv_img)
   
             debug_img = copy(cv_img)
@@ -114,7 +114,7 @@ class YoloV5Recognition(BaseRecognition):
                         if label_class in value:
                             index = j
                         j += 1
-                    description.label = self.classes[index] + '/' + label_class if index is not None else label_class
+                    description.label = self.classes[5] + '/' + label_class if index is not None else label_class
 
                     objects_recognition.descriptions.append(description)
 
@@ -122,7 +122,7 @@ class YoloV5Recognition(BaseRecognition):
                 debug_img = cv2.putText(debug_img, label_class, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=self.colors[label_class])
                 description_header.seq += 1
             
-            self.debug_publisher.publish(ros_numpy.msgify(Image, np.flip(debug_img, 2), 'rgb8'))
+            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
             if len(objects_recognition.descriptions) > 0:
                 self.object_recognition_publisher.publish(objects_recognition)

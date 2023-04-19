@@ -1,26 +1,8 @@
 threshold: 0.5
 classes_by_category:
-    simple: [Apple, Banana, Carrot, Mayonnaise, Ketchup, Soap, Napkin, Toothpaste, Alcohol Bottle, Yeast, Chocolate Powder, Coconut Milk, Soda can, Beer can, Popcorn, Gelatine, Cracker, Chocolate Milk]
-classes:
-  - Apple
-  - Banana
-  - Carrot
-  - Mayonnaise
-  - Ketchup
-  - Soap
-  - Napkin
-  - Toothpaste
-  - Alcohol Bottle
-  - Yeast
-  - Chocolate Powder
-  - Coconut Milk
-  - Soda can
-  - Beer can
-  - Popcorn
-  - Gelatine
-  - Cracker
-  - Chocolate Milk
-model_file: yolov5s.pt
+    simple: ['apple', 'bowl', 'corn flakes', 'fork', 'guarana', 'kiwi', 'knife', 'orange', 'plate', 'pringles', 'sponge', 'tonic']
+classes: ['apple', 'bowl', 'corn flakes', 'fork', 'guarana', 'kiwi', 'knife', 'orange', 'plate', 'pringles', 'sponge', 'tonic']
+model_file: yolov5_objects_lab.pt
 
 subscribers:
   
