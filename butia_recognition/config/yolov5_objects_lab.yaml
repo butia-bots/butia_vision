@@ -1,6 +1,10 @@
 threshold: 0.5
 classes_by_category:
-    simple: ['apple', 'bowl', 'corn flakes', 'fork', 'guarana', 'kiwi', 'knife', 'orange', 'plate', 'pringles', 'sponge', 'tonic']
+    drink: ['guarana', 'tonic']
+    snack: ['corn flakes', 'pringles']
+    fruits: ['apple', 'kiwi', 'orange']
+    cuttelary: ['bowl', 'fork', 'knife', 'plate']
+    misc: ['sponge']
 classes: ['apple', 'bowl', 'corn flakes', 'fork', 'guarana', 'kiwi', 'knife', 'orange', 'plate', 'pringles', 'sponge', 'tonic']
 model_file: yolov5_objects_lab.pt
 

@@ -7,6 +7,9 @@ import rospy
 import open3d as o3d
 import numpy as np
 import math
+import random
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 
 from butia_vision_bridge import VisionBridge
 
@@ -14,6 +17,9 @@ from sensor_msgs.msg import PointCloud2
 from butia_vision_msgs.msg import Description2D, Recognitions2D, Description3D, Recognitions3D
 from visualization_msgs.msg import Marker, MarkerArray
 
+category_colors = {}
+viridis = plt.get_cmap('viridis')
+color_number = 1
 #from tf.transformations (that it is not working on jetson)
 def quaternion_from_matrix(matrix):
     q = np.empty((4, ), dtype=np.float64)
@@ -227,20 +233,33 @@ class Image2World:
         self.publisher.publish(data)
 
     def publishMarkers(self, descriptions3d):
+        
         markers = MarkerArray()
-        color = np.asarray(self.color)/255.0
         for i, det in enumerate(descriptions3d):
             name = det.label
 
-            # cube marker
             marker = Marker()
+            category = name.split('/')
+            global color_number
+
+            if category[0] not in category_colors:
+                color = viridis(1/color_number)[:3]
+                color_number = color_number + 1
+                category_colors[category[0]] = color
+                marker.color.r = color[0]
+                marker.color.g = color[1]
+                marker.color.b = color[2]
+            else:
+                color = category_colors[category[0]]
+                marker.color.r = color[0]
+                marker.color.g = color[1]
+                marker.color.b = color[2]
+
+            # cube marker
             marker.header = det.poses_header
             marker.action = Marker.ADD
             marker.pose = det.bbox.center
-            marker.color.r = color[0]
-            marker.color.g = color[1]
-            marker.color.b = color[2]
-            marker.color.a = 0.4
+            marker.color.a = 0.6
             marker.ns = "bboxes"
             marker.id = i
             marker.type = Marker.CUBE

@@ -85,6 +85,7 @@ class YoloV5Recognition(BaseRecognition):
 
             description_header = img.header
             description_header.seq = 0
+
             for i in range(len(bbs_l)):
                 if int(bbs_l['class'][i]) >= len(self.classes):
                     continue
@@ -109,12 +110,12 @@ class YoloV5Recognition(BaseRecognition):
 
                 elif (label_class in [val for sublist in self.classes for val in sublist] or label_class in self.classes) and bbs_l['confidence'][i] >= self.threshold:
                     index = None
-                    j = 0
-                    for value in self.classes_by_category.values():
-                        if label_class in value:
-                            index = j
-                        j += 1
-                    description.label = self.classes[5] + '/' + label_class if index is not None else label_class
+                    
+                    for value in self.classes_by_category.items():
+                        if label_class in value[1]:
+                            index = value[0]
+
+                    description.label = index + '/' + label_class if index is not None else label_class
 
                     objects_recognition.descriptions.append(description)
 
