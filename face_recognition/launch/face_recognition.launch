@@ -8,5 +8,12 @@
   <rosparam command="load" ns="face_recognition" file="$(find face_recognition)/config/ros.yaml"/>
   <rosparam command="load" ns="face_recognition" file="$(find face_recognition)/config/face_recognition.yaml"/>
 
+  <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_face_recognition_node" machine="$(arg machine)">
+    <remap from="sub/recognitions2d"  to="/butia_vision/br/face_recognition"/>
+    <remap from="pub/recognitions3d"  to="/butia_vision/br/face_recognition3d"/>
+    <remap from="pub/markers" to="/butia_vision/br/markers"/>
+    <rosparam param="color">[0,0,255]</rosparam>
+  </node>
+
   <node name="face_recognition_node" pkg="face_recognition" type="face_recognition_node.py" output="$(arg output)" machine="$(arg machine)"/>
 </launch>

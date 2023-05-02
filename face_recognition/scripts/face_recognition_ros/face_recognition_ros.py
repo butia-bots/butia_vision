@@ -15,7 +15,7 @@ from dlib import rectangle, rectangles
 
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
-from butia_vision_msgs.msg import BoundingBox, Description, Description3D, Recognitions, Recognitions3D
+from butia_vision_msgs.msg import BoundingBox, Description, Description3D, Recognitions, Recognitions3D, Recognitions2D
 from butia_vision_msgs.srv import FaceClassifierTraining
 
 BRIDGE = CvBridge()
@@ -487,7 +487,8 @@ class FaceRecognitionROS():
             face_description.bounding_box = bounding_box
             faces_description.append(face_description)
 
-        recognized_faces = Recognitions()
+        #Add 2D to Recognitions.
+        recognized_faces = Recognitions2D()
         recognized_faces.image_header = ros_msg.header
 
         recognized_faces.header.stamp = rospy.get_rostime()
