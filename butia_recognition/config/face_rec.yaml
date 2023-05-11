@@ -1,15 +1,10 @@
 threshold: 0.5
-classes_by_category:
-    people: [person]
-classes:
-    - person
-model_file: yolov5s.pt
 
 subscribers:
   
-  queue_size: 1
+  queue_size: 100
   exact_time: false
-  slop: 0.2
+  slop: 0.5
 
   image_rgb: /butia_vision/bvb/image_rgb
 
@@ -17,7 +12,7 @@ subscribers:
 
 publishers:
 
-  people_detection:
+  face_recognition:
     topic: /butia_vision/br/face_recognition
     queue_size: 1
 
