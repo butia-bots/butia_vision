@@ -36,20 +36,20 @@ class FaceRecognition(BaseRecognition):
 
     def face_enconder(self):
 
-        image_path = '/home/butiabots/Workspace/butia_ws/src/butia_vision/butia_recognition/include/face_rec_images/'
+        image_path = '/home/andremaurell/butia_ws/src/butia_vision/butia_recognition/include/face_rec_images/'
         
         # Load a sample picture and learn how to recognize it.
-        obama_image = face_recognition.load_image_file(image_path + "barackObama.jpg")
+        obama_image = face_recognition.load_image_file(os.path.join(image_path, "barackObama.jpg"))
         obama_face_encoding = face_recognition.face_encodings(obama_image)[0]
 
         # Load a second sample picture and learn how to recognize it.
-        elon_image = face_recognition.load_image_file(image_path + "elonMusk.jpg")
+        elon_image = face_recognition.load_image_file(os.path.join(image_path, "elonMusk.jpg"))
         elon_face_encoding = face_recognition.face_encodings(elon_image)[0]
 
-        woods_image = face_recognition.load_image_file(image_path + "tigerWoods.jpeg")
+        woods_image = face_recognition.load_image_file(os.path.join(image_path, "tigerWoods.jpeg"))
         woods_face_encoding = face_recognition.face_encodings(woods_image)[0]
 
-        nico_image = face_recognition.load_image_file(image_path + "nicolainielsen.png")
+        nico_image = face_recognition.load_image_file(os.path.join(image_path, "nicolainielsen.png"))
         nico_face_encoding = face_recognition.face_encodings(nico_image)[0]
 
         # Create arrays of known face encodings and their names
@@ -66,10 +66,9 @@ class FaceRecognition(BaseRecognition):
             "Nicolai Nielsen"
         ]
         rospy.loginfo('foi 3')
-
     @ifState
     def callback(self, *args):
-
+        print("callback")
         # Initialize some variables
         face_locations = []
         face_encodings = []
@@ -89,17 +88,21 @@ class FaceRecognition(BaseRecognition):
         cv_img = ros_numpy.numpify(img)
 
         # Resize frame of video to 1/4 size for faster face recognition processing
-        small_frame = cv2.resize(cv_img, (0, 0), fx=0.25, fy=0.25)
+        #small_frame = cv2.resize(cv_img, (0, 0), fx=0.25, fy=0.25)
 
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-        rgb_small_frame = small_frame[:, :, ::-1]
+        #rgb_small_frame = small_frame[:, :, ::-1]
+        cv_img_small_frame = cv_img[:, :, ::-1]
+
 
         # Only process every other frame of video to save time
         if process_this_frame:
+            print("Process??")
             # Find all the faces and face encodings in the current frame of video
-            face_locations = face_recognition.face_locations(rgb_small_frame)
-            face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-
+            face_locations = face_recognition.face_locations(cv_img_small_frame, model = 'yolov8')
+            face_encodings = face_recognition.face_encodings(cv_img_small_frame, face_locations)
+            #print(face_locations)
+            #print(face_encodings)
             face_names = []
             for face_encoding in face_encodings:
                 print("entra no for 1")
@@ -119,12 +122,12 @@ class FaceRecognition(BaseRecognition):
                     print("ve os matchs")
                     name = self.known_face_names[best_match_index]
                     description.label = name
-                face_rec.descriptions.append(description)
+                face_rec.descriptions.append(Description2D)
 
         process_this_frame = not process_this_frame
 
         
-        debug_img = copy(cv_img)
+        debug_img = copy(cv_img_small_frame)
 
         h = Header()
         h.seq = self.seq
@@ -136,16 +139,17 @@ class FaceRecognition(BaseRecognition):
 
         description_header = img.header
         description_header.seq = 0
-
+        #print(face_locations)
+        #print(face_names)
         # Display the results
-        for (top, right, bottom, left), name in zip(face_locations, face_names):
+        for (top, right, bottom, left), name in zip(face_locations, face_encodings):
             print("reescala")
             # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-            top *= 4
-            right *= 4
-            bottom *= 4
-            left *= 4
-            
+            #top *= 4
+            #right *= 4
+            #bottom *= 4
+            #left *= 4
+              
             description = Description2D()
             description.header = copy(description_header)
             description.type = Description2D.DETECTION
@@ -157,10 +161,11 @@ class FaceRecognition(BaseRecognition):
             description.bbox.size_x = right-left
             description.bbox.size_y = top-bottom
 
-            cv2.rectangle(cv_img, (left, top), (right, bottom), (0, 255, 0), 2)
+            cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
 
             # Draw a label with a name below the faceface_recognition_node
-            cv2.putText(cv_img, name, (left + 4, bottom - 4), font, 1, (0,0,255), 2)
+            font = cv2.FONT_HERSHEY_DUPLEX
+            #cv2.putText(debug_img, str(name), (left + 4, bottom - 4), font, 1.0, (0,0,255), 2)
             description_header.seq += 1
         
         self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
