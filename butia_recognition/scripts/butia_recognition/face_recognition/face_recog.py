@@ -36,7 +36,7 @@ class FaceRecognition(BaseRecognition):
 
     def face_enconder(self):
 
-        image_path = '/home/andremaurell/butia_ws/src/butia_vision/butia_recognition/include/face_rec_images/'
+        image_path = '/home/butiabots/Workspace/butia_ws/src/butia_vision/butia_recognition/include/face_rec_images/'
         
         # Load a sample picture and learn how to recognize it.
         obama_image = face_recognition.load_image_file(os.path.join(image_path, "barackObama.jpg"))
@@ -68,14 +68,15 @@ class FaceRecognition(BaseRecognition):
         rospy.loginfo('foi 3')
     @ifState
     def callback(self, *args):
-        print("callback")
+
         # Initialize some variables
+        # face_names = []
         face_locations = []
         face_encodings = []
-        face_names = []
         process_this_frame = True
 
         face_rec = Recognitions2D()
+        description = Description2D()
         img = None
         points = None
         if len(args):
@@ -97,15 +98,15 @@ class FaceRecognition(BaseRecognition):
 
         # Only process every other frame of video to save time
         if process_this_frame:
-            print("Process??")
+
             # Find all the faces and face encodings in the current frame of video
-            face_locations = face_recognition.face_locations(cv_img_small_frame, model = 'yolov8')
+            face_locations = face_recognition.face_locations(cv_img_small_frame, model = 'cnn')
             face_encodings = face_recognition.face_encodings(cv_img_small_frame, face_locations)
             #print(face_locations)
             #print(face_encodings)
             face_names = []
             for face_encoding in face_encodings:
-                print("entra no for 1")
+
                 # See if the face is a match for the known face(s)
                 matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
                 name = "Unknown"
@@ -118,11 +119,13 @@ class FaceRecognition(BaseRecognition):
                 # Or instead, use the known face with the smallest distance to the new face
                 face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
                 best_match_index = np.argmin(face_distances)
+
                 if matches[best_match_index]:
-                    print("ve os matchs")
                     name = self.known_face_names[best_match_index]
-                    description.label = name
-                face_rec.descriptions.append(Description2D)
+
+                description.label = name
+
+                face_rec.descriptions.append(description)
 
         process_this_frame = not process_this_frame
 
@@ -133,24 +136,20 @@ class FaceRecognition(BaseRecognition):
         h.seq = self.seq
         self.seq += 1
         h.stamp = rospy.Time.now()
-        face_rec.header = h
-        face_rec.image_rgb = copy(img)
-        face_rec.points = copy(points)
 
-        description_header = img.header
-        description_header.seq = 0
+
         #print(face_locations)
         #print(face_names)
         # Display the results
         for (top, right, bottom, left), name in zip(face_locations, face_encodings):
-            print("reescala")
+
             # Scale back up face locations since the frame we detected in was scaled to 1/4 size
             #top *= 4
             #right *= 4
             #bottom *= 4
             #left *= 4
-              
-            description = Description2D()
+            description_header = img.header
+            description_header.seq = 0
             description.header = copy(description_header)
             description.type = Description2D.DETECTION
             description.id = description.header.seq
@@ -171,7 +170,7 @@ class FaceRecognition(BaseRecognition):
         self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
         if len(face_rec.descriptions) > 0:
-            print("existe o description")
+            print('vou publicar ein')
             self.face_recognition_publisher.publish(face_rec)
 
     def readParameters(self):
