@@ -16,6 +16,7 @@ import face_recognition
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from butia_vision_msgs.msg import Description2D, Recognitions2D
+from butia_vision_msgs.srv import PersonIntroducing
 
 torch.set_num_threads(1)
 
@@ -31,12 +32,17 @@ class FaceRecognition(BaseRecognition):
     def initRosComm(self):
         self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
         self.face_recognition_publisher = rospy.Publisher(self.face_recognition_topic, Recognitions2D, queue_size=self.face_recognition_qs)
+        self.introduct_person_service = rospy.Service(self.introduct_person_servername, PersonIntroducing, )
         super().initRosComm(callbacks_obj=self)
         rospy.loginfo('foi 2')
 
+
+    def PersonIntroducing(self):
+        
+
     def face_enconder(self):
 
-        image_path = '/home/butiabots/Workspace/butia_ws/src/butia_vision/butia_recognition/include/face_rec_images/'
+        image_path = '/home/butia_ws/src/butia_vision/butia_recognition/include/face_rec_images/'
         
         # Load a sample picture and learn how to recognize it.
         obama_image = face_recognition.load_image_file(os.path.join(image_path, "barackObama.jpg"))
@@ -100,7 +106,7 @@ class FaceRecognition(BaseRecognition):
         if process_this_frame:
 
             # Find all the faces and face encodings in the current frame of video
-            face_locations = face_recognition.face_locations(cv_img_small_frame, model = 'cnn')
+            face_locations = face_recognition.face_locations(cv_img_small_frame, model = 'yolov8')
             face_encodings = face_recognition.face_encodings(cv_img_small_frame, face_locations)
             #print(face_locations)
             #print(face_encodings)
@@ -179,6 +185,8 @@ class FaceRecognition(BaseRecognition):
 
         self.face_recognition_topic = rospy.get_param("~publishers/face_recognition/topic", "/butia_vision/br/face_recognition")
         self.face_recognition_qs = rospy.get_param("~publishers/face_recognition/queue_size", 1)
+        
+        self.introduct_person_servername = rospy.get_param("~servers/introduct_person/servername", "/butia_vision/br/introduct_person")
 
         super().readParameters()
         rospy.loginfo('foi 1')
