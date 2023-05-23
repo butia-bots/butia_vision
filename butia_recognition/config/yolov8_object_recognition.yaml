@@ -1,0 +1,98 @@
+threshold: 0.3
+classes_by_category:
+    drink: ['guarana', 'tonic', 'Guarana', 'IceTea',]
+    snack: ['corn flakes', 'pringles']
+    fruits: ['apple', 'Apple', 'kiwi', 'Kiwi', 'orange', 'Banana', 'Orange']
+    cuttelary: ['bowl', 'fork', 'knife', 'plate']
+    misc: ['sponge']
+    tableware: []
+    cutlery: []
+    trash_bags: []
+    bags: []
+    disks_or_books: []
+    coat_rack: []
+    trays: []
+    
+
+classes: [
+  'Alcohol Bottle', 
+  'Apple',
+  'Bag',
+  'Banana',
+  'Beer can',
+  'Bowl',
+  'Carrot',
+  'Chocolate Milk',
+  'Chocolate Powder',
+  'Cleaner',
+  'Cloth',
+  'Coconut Milk',
+  'CoconutWater',
+  'Coke',
+  'Cookies',
+  'CornFlakes',
+  'Cracker',
+  'EnglishSauce',
+  'Gelatine',
+  'Guarana',
+  'IceTea',
+  'Ketchup',
+  'Kiwi',
+  'Mayonnaise',
+  'Mug',
+  'Mustard',
+  'Napkin',
+  'Orange',
+  'Plate',
+  'Popcorn',
+  'Pringles',
+  'Soap',
+  'Soda can',
+  'Sponge',
+  'TomatoSauce',
+  'Tonic',
+  'Toothpaste',
+  'TunaCan',
+  'Water',
+  'Yeast',
+  'apple',
+  'bowl',
+  'corn flakes',
+  'fork',
+  'guarana',
+  'kiwi',
+  'knife',
+  'orange',
+  'plate',
+  'pringles',
+  'sponge',
+  'tonic'
+  ]
+model_file: yolov8_lab_objects.pt
+
+subscribers:
+  
+  queue_size: 1
+  exact_time: false
+  slop: 0.2
+
+  image_rgb: /butia_vision/bvb/image_rgb
+
+  points: /butia_vision/bvb/points
+
+publishers:
+
+  object_recognition:
+    topic: /butia_vision/br/object_recognition
+    queue_size: 1
+
+servers:
+
+  list_classes:
+    service: /butia_vision/br/object_recognition/list_classes
+
+  start:
+    service: /butia_vision/br/object_recognition/start
+
+  stop:
+    service: /butia_vision/br/object_recognition/stop
