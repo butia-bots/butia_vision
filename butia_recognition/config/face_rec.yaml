@@ -6,9 +6,9 @@ subscribers:
   exact_time: false
   slop: 0.5
 
-  image_rgb: /butia_vision/bvb/image_rgb
+  image_rgb: /usb_cam/image_raw
 
-  points: /butia_vision/bvb/points
+  #points: /butia_vision/bvb/points
 
 publishers:
 
@@ -26,3 +26,6 @@ servers:
 
   stop:
     service: /butia_vision/br/people_detection/stop
+
+names:
+    starting: features
