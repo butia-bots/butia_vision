@@ -46,7 +46,7 @@ class YoloV8Recognition(BaseRecognition):
 
     def loadModel(self): 
         self.model = YOLO("//butia_recognition/config/yolov8_network_config/weightsv8/wheightsv8_lab_objects.pt")
-        self.model.val()###
+        self.model.val()
         self.model.conf = self.threshold
         print('Done loading model!')
 
@@ -56,10 +56,10 @@ class YoloV8Recognition(BaseRecognition):
     @ifState
     def callback(self, *args):
         img = None
-        points = None
+        #points = None
         if len(args):
             img = args[0]
-            points = args[1]
+            #points = args[1]
 
         with torch.no_grad():
 
@@ -80,7 +80,7 @@ class YoloV8Recognition(BaseRecognition):
             h.stamp = rospy.Time.now()
             objects_recognition.header = h
             objects_recognition.image_rgb = copy(img)
-            objects_recognition.points = copy(points)
+            #objects_recognition.points = copy(points)
 
             people_recognition = copy(objects_recognition)
 
@@ -143,8 +143,8 @@ class YoloV8Recognition(BaseRecognition):
 
         self.threshold = rospy.get_param("~threshold", 0.3)
 
-        self.all_classes = list(rospy.get_param("/object_recognition/all_classes"))
-        #self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
+        #self.all_classes = list(rospy.get_param("/object_recognition/all_classes"))
+        self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
         self.model_file = rospy.get_param("~model_file", "wheightsv8_lab_objects.pt")
 
         super().readParameters()
