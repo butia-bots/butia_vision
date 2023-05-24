@@ -1,14 +1,63 @@
 threshold: 0.3
 classes_by_category:
-    classes_by_category:
-    drink: ['guarana', 'Guarana', 'IceTea', 'tonic','Tonic', 'Coke', 'Beer can', 'CoconutWater', 'Water', Soda can']
+    drink: ['guarana', 'Guarana', 'IceTea', 'tonic', Tonic', 'Coke', 'Beer can', 'CoconutWater', 'Water', Soda can']
     snack: ['corn flakes', 'CornFlakes', 'pringles', 'Pringles', 'Popcorn', 'Cookies', 'Cracker', 'Chocolate Milk', 'TunaCan']
     fruits: ['apple', 'Apple', 'kiwi', 'Kiwi', 'orange', 'Banana', 'Orange']
     cutlelary: ['bowl', 'Bowl', 'fork', 'knife', 'plate', 'Plate', 'Cleaner', 'Napkin', 'Cloth', 'EnglishSauce', 'TomatoSauce']
     misc: ['sponge', 'Sponge', 'Bag', 'Alcohol Bottle', 'Soap', 'Mug', 'Carrot', 'Yeast', 'Coconut Milk', 'Chocolate Powder', 'Ketchup', 'Mayonnaise', 'Mustard', 'Toothpaste', 'Gelatine']
-    
-
-classes: ['Alcohol Bottle', 'Apple','Bag','Banana','Beer can','Bowl','Carrot','Chocolate Milk','Chocolate Powder','Cleaner','Cloth','Coconut Milk','CoconutWater','Coke','Cookies','CornFlakes','Cracker','EnglishSauce','Gelatine','Guarana','IceTea','Ketchup','Kiwi','Mayonnaise','Mug','Mustard','Napkin','Orange','Plate','Popcorn','Pringles','Soap','Soda can','Sponge','TomatoSauce','Tonic','Toothpaste','TunaCan','Water','Yeast','apple','bowl','corn flakes','fork','guarana','kiwi','knife','orange','plate','pringles','sponge','tonic']
+classes: 
+    - Alcohol Bottle
+    - Apple
+    - Bag
+    - Banana
+    - Beer can
+    - Bowl
+    - Carrot
+    - Chocolate Milk
+    - Chocolate Powder
+    - Cleaner
+    - Cloth
+    - Coconut Milk
+    - CoconutWater
+    - Coke
+    - Cookies
+    - CornFlakes
+    - Cracker
+    - EnglishSauce
+    - Gelatine
+    - Guarana
+    - IceTea
+    - Ketchup
+    - Kiwi
+    - Mayonnaise
+    - Mug
+    - Mustard
+    - Napkin
+    - Orange
+    - Plate
+    - Popcorn
+    - Pringles
+    - Soap
+    - Soda can
+    - Sponge
+    - TomatoSauce
+    - Tonic
+    - Toothpaste
+    - TunaCan
+    - Water
+    - Yeast
+    - apple
+    - bowl
+    - corn flakes
+    - fork
+    - guarana
+    - kiwi
+    - knife
+    - orange
+    - plate
+    - pringles
+    - sponge
+    - tonic
 model_file: yolov8_lab_objects.pt
 
 subscribers:
@@ -17,10 +66,7 @@ subscribers:
   exact_time: false
   slop: 0.2
 
-  #image_rgb: /butia_vision/bvb/image_rgb
   image_rgb: /usb_cam/image_raw
-
-  #points: /butia_vision/bvb/points
 
 publishers:
 
