@@ -1,0 +1,13 @@
+<launch>
+  <arg name="machine" default="localhost"/>
+  <arg name="use_machine" default="true"/>
+  <arg name="output" default="screen"/>
+  <arg name="node_name" default="butia_object_recognition"/>
+  <arg name="config_file" default="yolov8_object_recognition.yaml"/>
+
+  <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+
+  <node pkg="butia_recognition" type="yolov8_recognition.py" output="$(arg output)" name="$(arg node_name)" machine="$(arg machine)">
+    <rosparam command="load" file="$(find butia_recognition)/config/$(arg config_file)"/>
+  </node>
+</launch>
