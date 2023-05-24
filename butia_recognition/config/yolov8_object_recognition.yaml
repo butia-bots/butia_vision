@@ -1,17 +1,16 @@
 threshold: 0.3
 classes_by_category:
-    drink: ['guarana', 'tonic', 'Guarana', 'IceTea',]
-    snack: ['corn flakes', 'pringles']
+    classes_by_category:
+    drink: ['guarana', 'Guarana', 'IceTea', 'tonic','Tonic', 'Coke', 'Beer can',
+            'CoconutWater', 'Water', Soda can']
+    snack: ['corn flakes', 'CornFlakes', 'pringles', 'Pringles', 'Popcorn',
+            'Cookies', 'Cracker', 'Chocolate Milk', 'TunaCan']
     fruits: ['apple', 'Apple', 'kiwi', 'Kiwi', 'orange', 'Banana', 'Orange']
-    cuttelary: ['bowl', 'fork', 'knife', 'plate']
-    misc: ['sponge']
-    tableware: []
-    cutlery: []
-    trash_bags: []
-    bags: []
-    disks_or_books: []
-    coat_rack: []
-    trays: []
+    cutlelary: ['bowl', 'Bowl', 'fork', 'knife', 'plate', 'Plate', 'Cleaner',
+                'Napkin', 'Cloth', 'EnglishSauce', 'TomatoSauce']
+    misc: ['sponge', 'Sponge', 'Bag', 'Alcohol Bottle', 'Soap', 'Mug', 'Carrot',
+          'Yeast', 'Coconut Milk', 'Chocolate Powder', 'Ketchup', 'Mayonnaise',
+          'Mustard', 'Toothpaste', 'Gelatine']
     
 
 classes: [
@@ -76,9 +75,10 @@ subscribers:
   exact_time: false
   slop: 0.2
 
-  image_rgb: /butia_vision/bvb/image_rgb
+  #image_rgb: /butia_vision/bvb/image_rgb
+  image_rgb: /usb_cam/image_raw
 
-  points: /butia_vision/bvb/points
+  #points: /butia_vision/bvb/points
 
 publishers:
 

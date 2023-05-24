@@ -45,8 +45,8 @@ class YoloV8Recognition(BaseRecognition):
         return super().serverStop(req)
 
     def loadModel(self): 
-        self.model = YOLO("\\butia_recognition\config\yolov8_network_config\weightsv8\wheightsv8_lab_objects.pt") # MUDEI AQUI
-        self.model.eval()
+        self.model = YOLO("//butia_recognition/config/yolov8_network_config/weightsv8/wheightsv8_lab_objects.pt")
+        self.model.val()###
         self.model.conf = self.threshold
         print('Done loading model!')
 
@@ -145,14 +145,12 @@ class YoloV8Recognition(BaseRecognition):
 
         self.all_classes = list(rospy.get_param("/object_recognition/all_classes"))
         #self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
-        #TODO: ver onde colocar o modelo
-        self.model_file = rospy.get_param("~model_file", "larc2021_go_and_get_it.pt")
+        self.model_file = rospy.get_param("~model_file", "wheightsv8_lab_objects.pt")
 
         super().readParameters()
 
 if __name__ == '__main__':
-    # TODO: perguntar o que e como mudar essa parte do nó
-    rospy.init_node('yolov5_recognition_node', anonymous = True)
+    rospy.init_node('yolov8_recognition_node', anonymous = True)
 
     yolo = YoloV8Recognition()
 
