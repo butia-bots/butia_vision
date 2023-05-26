@@ -6,7 +6,6 @@ import ros_numpy
 
 from butia_recognition import BaseRecognition, ifState
 
-import torch
 import numpy as np
 import os
 from copy import copy
@@ -17,7 +16,6 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 
-torch.set_num_threads(1)
 
 class YoloV8Recognition(BaseRecognition):
     def __init__(self, state=True):
@@ -65,15 +63,19 @@ class YoloV8Recognition(BaseRecognition):
         cv_img = ros_numpy.numpify(img)
 
         results = self.model.predict(cv_img) # MUDEI AQUI
-
+        bbs_l = None
         debug_img = copy(cv_img)
-        print()
+        print("-----------------------------------------------------------------------------")
         for elemento in results:
-            print(elemento)
-
+            bbs_l = elemento.boxes
+            debug_img = elemento.plot()
+            print(len(bbs_l.xyxy))
+            print(bbs_l)
+        print("-----------------------------------------------------------------------------")
         print(type(results))
         
-        bbs_l = results.pandas().xyxy[0]
+        bbs_l = bbs_l.xyxy
+        #bbs_l = results.boxes
 
         objects_recognition = Recognitions2D()
         h = Header()
@@ -86,44 +88,46 @@ class YoloV8Recognition(BaseRecognition):
 
         people_recognition = copy(objects_recognition)
 
-        description_header = img.header
-        description_header.seq = 0
-        for i in range(len(bbs_l)):
-            if int(bbs_l['class'][i]) >= len(self.classes):
-                continue
+        # description_header = img.header
+        # description_header.seq = 0
+        # for i in range(len(bbs_l)):
+        #     if int(bbs_l['class'][i]) >= len(self.classes):
+        #         continue
 
-            label_class = self.classes[int(bbs_l['class'][i])]
+        #     label_class = self.classes[int(bbs_l['class'][i])]
 
-            description = Description2D()
-            description.header = copy(description_header)
-            description.type = Description2D.DETECTION
-            description.id = description.header.seq
-            description.score = bbs_l['confidence'][i]
-            size = int(bbs_l['xmax'][i] - bbs_l['xmin'][i]), int(bbs_l['ymax'][i] - bbs_l['ymin'][i])
-            description.bbox.center.x = int(bbs_l['xmin'][i]) + int(size[0]/2)
-            description.bbox.center.y = int(bbs_l['ymin'][i]) + int(size[1]/2)
-            description.bbox.size_x = size[0]
-            description.bbox.size_y = size[1]
+        #     description = Description2D()
+        #     description.header = copy(description_header)
+        #     description.type = Description2D.DETECTION
+        #     description.id = description.header.seq
+        #     description.score = bbs_l['confidence'][i]
+        #     size = int(bbs_l['xmax'][i] - bbs_l['xmin'][i]), int(bbs_l['ymax'][i] - bbs_l['ymin'][i])
+        #     description.bbox.center.x = int(bbs_l['xmin'][i]) + int(size[0]/2)
+        #     description.bbox.center.y = int(bbs_l['ymin'][i]) + int(size[1]/2)
+        #     description.bbox.size_x = size[0]
+        #     description.bbox.size_y = size[1]
+        #     print(f"-----------------------------------------------------------------------------{size}")
 
-            if ('people' in self.classes and label_class in self.classes_by_category['people'] or 'people' in self.classes and label_class == 'people') and bbs_l['confidence'][i] >= self.threshold:
+        #     if ('people' in self.classes and label_class in self.classes_by_category['people'] or 'people' in self.classes and label_class == 'people') and bbs_l['confidence'][i] >= self.threshold:
 
-                description.label = 'people' + '/' + label_class
-                people_recognition.descriptions.append(description)
+        #         description.label = 'people' + '/' + label_class
+        #         people_recognition.descriptions.append(description)
 
-            elif (label_class in [val for sublist in self.classes for val in sublist] or label_class in self.classes) and bbs_l['confidence'][i] >= self.threshold:
-                index = None
-                j = 0
-                for value in self.classes_by_category.values():
-                    if label_class in value:
-                        index = j
-                    j += 1
-                description.label = self.classes[index] + '/' + label_class if index is not None else label_class
+        #     elif (label_class in [val for sublist in self.classes for val in sublist] or label_class in self.classes) and bbs_l['confidence'][i] >= self.threshold:
+        #         print(f"-----------------------------------------------------------------------------{label_class}aaaaaaaaaaaaaaaa")
+        #         index = None
+        #         j = 0
+        #         for value in self.classes_by_category.values():
+        #             if label_class in value:
+        #                 index = j
+        #             j += 1
+        #         description.label = self.classes[index] + '/' + label_class if index is not None else label_class
 
-                objects_recognition.descriptions.append(description)
+        #         objects_recognition.descriptions.append(description)
 
-            debug_img = cv2.rectangle(debug_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), self.colors[label_class])
-            debug_img = cv2.putText(debug_img, label_class, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=self.colors[label_class])
-            description_header.seq += 1
+        #     debug_img = cv2.rectangle(debug_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), self.colors[label_class])
+        #     debug_img = cv2.putText(debug_img, label_class, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=self.colors[label_class])
+        #     description_header.seq += 1
         
         self.debug_publisher.publish(ros_numpy.msgify(Image, np.flip(debug_img, 2), 'rgb8'))
 
@@ -143,7 +147,7 @@ class YoloV8Recognition(BaseRecognition):
         self.people_detection_topic = rospy.get_param("~publishers/people_detection/topic", "/butia_vision/br/people_detection")
         self.people_detection_qs = rospy.get_param("~publishers/people_detection/queue_size", 1)
 
-        self.threshold = rospy.get_param("~threshold", 0.3)
+        self.threshold = rospy.get_param("~threshold", 0.5)
 
         #self.all_classes = list(rospy.get_param("/object_recognition/all_classes"))
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
