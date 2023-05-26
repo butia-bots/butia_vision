@@ -6,14 +6,12 @@ import ros_numpy
 
 from butia_recognition import BaseRecognition, ifState
 
-import torch
 import numpy as np
 import os
 from copy import copy
 import cv2
 import face_recognition
 import time
-from openface import helper
 import rospkg
 
 import pickle
@@ -190,30 +188,23 @@ class FaceRecognition(BaseRecognition):
 
     @ifState
     def callback(self, *args):
-
+        thold = 0.6
         face_rec = Recognitions2D()
-        description = Description2D()
         img = None
         if len(args):
             img = args[0]
 
         rospy.loginfo('Image ID: ' + str(img.header.seq))
 
-        #ros_img = np.flip(ros_numpy.numpify(img),2)
         ros_img_small_frame = ros_numpy.numpify(img)
-
-        # Resize frame of video to 1/4 size for faster face recognition processing
-        #ros_img_small_frame = cv2.resize(ros_img_small_frame, (0, 0), fx=0.3, fy=0.3)
-
-        # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-        #ros_img_small_frame = ros_img[:, :, ::-1]
 
         current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'cnn')
         current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
 
-        thold = 0.6
+        
         
         for current_encoding in current_faces_encodings:
+            description = Description2D()
             name = 'unknown'
             if(len(self.know_faces[0])>0):
                 face_distances = np.linalg.norm(self.know_faces[1] - current_encoding, axis = 1)
@@ -225,7 +216,7 @@ class FaceRecognition(BaseRecognition):
             description.label = name
 
             face_rec.descriptions.append(description)
-        
+
         debug_img = copy(ros_img_small_frame)
 
         h = Header()
@@ -235,12 +226,6 @@ class FaceRecognition(BaseRecognition):
 
         # Display the results
         for idx, (top, right, bottom, left) in enumerate(current_faces):
-
-            # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-            # top *= 2
-            # right *= 2
-            # bottom *= 2
-            # left *= 2
             description_header = img.header
             description_header.seq = 0
             description.header = copy(description_header)
@@ -263,7 +248,6 @@ class FaceRecognition(BaseRecognition):
         self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
         if len(face_rec.descriptions) > 0:
-            print('vou publicar ein')
             self.face_recognition_publisher.publish(face_rec)
 
     def readParameters(self):

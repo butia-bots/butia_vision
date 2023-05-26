@@ -16,8 +16,6 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 
-torch.set_num_threads(1)
-
 class YoloV5Recognition(BaseRecognition):
     def __init__(self, state=True):
         super().__init__(state=state)
