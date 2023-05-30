@@ -72,38 +72,49 @@ class FaceRecognition(BaseRecognition):
 
         encodings = []
         names = []
-        encoded_face = {}
-
+        try:
+            encoded_face = self.loadVar('features')
+        except:
+            encoded_face = {}
         train_dir = os.listdir(self.dataset_dir)
 
         for person in train_dir:
-            pix = os.listdir(self.dataset_dir + person)
+            if person in self.know_faces[0]:   
+                pix = os.listdir(self.dataset_dir + person)
 
-            # Loop through each training image for the current person
-            for person_img in pix:
-                # Get the face encodings for the face in each image file
-                face = face_recognition.load_image_file(self.dataset_dir + person + "/" + person_img)
-                face_bounding_boxes = face_recognition.face_locations(face, model = 'cnn')
-                print(person, person_img, face_bounding_boxes)
+                # Loop through each training image for the current person
+                for person_img in pix:
+                    # Get the face encodings for the face in each image file
+                    face = face_recognition.load_image_file(self.dataset_dir + person + "/" + person_img)
+                    face_bounding_boxes = face_recognition.face_locations(face, model = 'cnn')
+                    print(person, person_img, face_bounding_boxes)
 
-                #If training image contains exactly one face
-                if len(face_bounding_boxes) > 0:
-                    face_enc = face_recognition.face_encodings(face, known_face_locations= face_bounding_boxes)[0]
-                    # Add face encoding for current image with corresponding label (name) to the training data
-                    encodings.append(face_enc)
-                    #print (encodings)
-                    if person not in names:
-                        names.append(person)
-                        encoded_face[person] = []
-                        encoded_face[person].append(face_enc)
+                    #If training image contains exactly one face
+                    if len(face_bounding_boxes) > 0:
+                        face_enc = face_recognition.face_encodings(face, known_face_locations= face_bounding_boxes)[0]
+                        # Add face encoding for current image with corresponding label (name) to the training data
+                        encodings.append(face_enc)
+                        #print (encodings)
+                        if person not in names:
+                            names.append(person)
+                            encoded_face[person] = []
+                            encoded_face[person].append(face_enc)
+                        else:
+                            encoded_face[person].append(face_enc)
                     else:
-                        encoded_face[person].append(face_enc)
-                else:
-                    print(person + "/" + person_img + " was skipped and can't be used for training")
-        
+                        print(person + "/" + person_img + " was skipped and can't be used for training")
+            else:
+                pass
 
         self.saveVar(encoded_face, 'features')
     
+    #def moreProxFace(self):
+        #faceMP = face_recognition.face_locations()
+        #facesMP = 
+        #if faceMP != None and len(facesMP) > 1:
+            #for self.face in faces:
+
+                
 
     def PeopleIntroducing(self, ros_srv):
 
@@ -158,7 +169,13 @@ class FaceRecognition(BaseRecognition):
             ros_image = np.flip(ros_image)
             ros_image = np.flipud(ros_image)
             face = face_recognition.face_locations(ros_image, model='cnn')
-            if len(face) > 0:
+            if len(face) > 1:
+                for idx, (top, right, bottom, left) in enumerate(face):
+                    area = (right-left) * (top-bottom)
+                    if area > prevArea:
+                        prevArea = area
+                
+            if len(face) > 0 and len(face) < 1:
                 print("detectei o rosto")
                 s_rgb_image = ros_image.copy() 
                 #if face != None:
@@ -167,12 +184,12 @@ class FaceRecognition(BaseRecognition):
                 #     cv2.rectangle(s_rgb_image, (left, top), (right, bottom), (0, 0, 255), 2)
 
                 #cv2.imshow("Person", s_rgb_image)
-
-                if face != None:
-                    print('TEM FACE')
-                    rospy.logwarn('Picture ' + add_image_labels[i] + ' was  saved.')
-                    cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), ros_image)
-                    i+= 1
+                print('TEM FACE')
+                rospy.logwarn('Picture ' + add_image_labels[i] + ' was  saved.')
+                (top, right, bottom, left) = face[idx]
+                cropped_image = idx[top:bottom , left:right]
+                cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), cropped_image)
+                i+= 1
             else:
                 rospy.logerr("The face was not detected.")
 
@@ -198,7 +215,7 @@ class FaceRecognition(BaseRecognition):
 
         ros_img_small_frame = ros_numpy.numpify(img)
 
-        current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'cnn')
+        current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'yolov8')
         current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
 
         
