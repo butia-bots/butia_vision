@@ -56,12 +56,14 @@ class YoloV8Recognition(BaseRecognition):
         #points = None
         if len(args):
             img = args[0]
+            print(img)
+            
             #points = args[1]
 
         rospy.loginfo('Image ID: ' + str(img.header.seq))
 
         cv_img = ros_numpy.numpify(img)
-
+        print(cv_img[0])
         results = self.model.predict(cv_img) # MUDEI AQUI
         bbs_l = None
         debug_img = copy(cv_img)
