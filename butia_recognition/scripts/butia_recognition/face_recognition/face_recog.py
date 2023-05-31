@@ -79,7 +79,7 @@ class FaceRecognition(BaseRecognition):
         train_dir = os.listdir(self.dataset_dir)
 
         for person in train_dir:
-            if person in self.know_faces[0]:   
+            if person not in self.know_faces[0]:   
                 pix = os.listdir(self.dataset_dir + person)
 
                 # Loop through each training image for the current person
@@ -169,15 +169,17 @@ class FaceRecognition(BaseRecognition):
             ros_image = np.flip(ros_image)
             ros_image = np.flipud(ros_image)
             face = face_recognition.face_locations(ros_image, model='cnn')
+            image_idx = 0
             if len(face) > 1:
                 for idx, (top, right, bottom, left) in enumerate(face):
                     area = (right-left) * (top-bottom)
                     if area > prevArea:
                         prevArea = area
+                        image_idx = idx
                 
-            if len(face) > 0 and len(face) < 1:
+            if len(face) > 0:
                 print("detectei o rosto")
-                s_rgb_image = ros_image.copy() 
+                biggest_face = face[image_idx] 
                 #if face != None:
                 #   if len(face):
                 #      top, right, bottom, left = face[0]
@@ -185,10 +187,8 @@ class FaceRecognition(BaseRecognition):
 
                 #cv2.imshow("Person", s_rgb_image)
                 print('TEM FACE')
+                cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), ros_image)
                 rospy.logwarn('Picture ' + add_image_labels[i] + ' was  saved.')
-                (top, right, bottom, left) = face[idx]
-                cropped_image = idx[top:bottom , left:right]
-                cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), cropped_image)
                 i+= 1
             else:
                 rospy.logerr("The face was not detected.")
