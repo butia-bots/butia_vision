@@ -232,15 +232,20 @@ class Image2World:
             vertices_3d[:, :2] = self.lut_table[limits[:, 1], limits[:, 0], :]*center_depth
             vertices_3d[:, 2] = center_depth
 
-            vertices_3d = np.concatenate((vertices_3d - np.array([0, 0, 0.03]), vertices_3d + np.array([0, 0, 0.3])))
+            vertices_3d = np.concatenate((vertices_3d - np.array([0, 0, self.depth_mean_error]),
+                                          vertices_3d + np.array([0, 0, 0.3])))
 
             min_bound = np.min(vertices_3d, axis=0)
             max_bound = np.max(vertices_3d, axis=0)
 
             box = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
 
-            #box = o3d.geometry.OrientedBoundingBox()
-            #box.create_from_axis_aligned_bounding_box(aabox)
+            #TODO:
+            '''
+                - mount local point cloud using self.lut_table (from min_bound to max_bound)
+                - put this local point cloud inside the description3D (may be useful to gerate gripper poses in manipulation)
+                - generate a new bounding box using the points of the point cloud
+            '''
 
             mean_color = np.array([0, 0, 0])
 
@@ -364,6 +369,7 @@ class Image2World:
         self.publish_debug = rospy.get_param('~publish_debug', False)
         self.publish_markers = rospy.get_param('~publish_markers', True)
         self.color = rospy.get_param('~color', [255, 0, 0])
+        self.depth_mean_error = rospy.get_param('~depth_mean_error', 0.017)
 
 if __name__ == '__main__':
     rospy.init_node('image2world_node', anonymous = True)
