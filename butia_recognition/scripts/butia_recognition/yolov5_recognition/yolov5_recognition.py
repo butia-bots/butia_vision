@@ -54,11 +54,13 @@ class YoloV5Recognition(BaseRecognition):
 
     @ifState
     def callback(self, *args):
-        img = None
-        points = None
-        if len(args):
-            img = args[0]
-            points = args[1]
+        source_data = self.sourceDataFromArgs(args)
+
+        if 'image_rgb' not in source_data:
+            rospy.logwarn('Souce data has no image_rgb.')
+            return None
+        
+        img = source_data['image_rgb']
 
         with torch.no_grad():
 
@@ -78,8 +80,9 @@ class YoloV5Recognition(BaseRecognition):
             self.seq += 1
             h.stamp = rospy.Time.now()
             objects_recognition.header = h
-            objects_recognition.image_rgb = copy(img)
-            objects_recognition.points = copy(points)
+
+            #adding source data
+            objects_recognition = BaseRecognition.addSourceData2Recognitions2D(source_data, objects_recognition)
 
             people_recognition = copy(objects_recognition)
 
