@@ -55,6 +55,8 @@ class Image2World:
 
         self.current_camera_info = None
         self.lut_table = None
+
+        self.default_depth = 0.5
     
     def __mountDescription3D(self, description2d, box, mean_color, header):
         description3d = Description3D()
@@ -227,13 +229,35 @@ class Image2World:
 
             limits = np.asarray([(bbox_limits[0], bbox_limits[2]), (bbox_limits[1], bbox_limits[3])])
 
+
             vertices_3d = np.zeros((len(limits), 3))
 
             vertices_3d[:, :2] = self.lut_table[limits[:, 1], limits[:, 0], :]*center_depth
             vertices_3d[:, 2] = center_depth
 
+            ms_msg = description2d.max_size
+            max_size = np.array([ms_msg.x, ms_msg.y, ms_msg.z])
+            desc_depth = self.default_depth
+            if np.any(max_size == np.zeros(3)):
+                rospy.logwarn('Description2D has no max_size, using generic parameters.')
+            else:
+                size_x, size_y = vertices_3d[1, :2] - vertices_3d[0, :2]
+                
+                diff_e1 = (np.abs(max_size - size_x)).tolist()
+                diff_id_1 = sorted(zip(diff_e1, range(3)))
+                diff_e2 = (np.abs(max_size - size_y)).tolist()
+                diff_id_2 = sorted(zip(diff_e2, range(3)))
+
+                if diff_id_1[0][1] == diff_id_2[0][1]:
+                    if diff_id_1[0][0] < diff_id_2[0][0]:
+                        diff_id_2[0] = diff_id_2[1]
+                    else:
+                        diff_id_1[0] = diff_id_1[1]
+                desc_depth_id = list(set(range(3)) - set([diff_id_1[0][1], diff_id_2[0][1]]))[0]
+                desc_depth = max_size[desc_depth_id]
+
             vertices_3d = np.concatenate((vertices_3d - np.array([0, 0, self.depth_mean_error]),
-                                          vertices_3d + np.array([0, 0, 0.3])))
+                                          vertices_3d + np.array([0, 0, desc_depth])))
 
             min_bound = np.min(vertices_3d, axis=0)
             max_bound = np.max(vertices_3d, axis=0)
