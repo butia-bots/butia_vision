@@ -6,7 +6,7 @@ import ros_numpy
 
 import numpy as np
 import cv2
-import open3d as o3d
+#import open3d as o3d
 
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2
 
@@ -62,11 +62,11 @@ class VisionBridge:
             xyz = xyz.reshape(-1, 3)
         if len(rgb.shape) == 3:
             rgb = rgb.reshape(-1, 3)
-        pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(xyz)
-        pcd.colors = o3d.utility.Vector3dVector(rgb)
-        pcd.remove_non_finite_points()
-        return pcd
+        #pcd = o3d.geometry.PointCloud()
+        #pcd.points = o3d.utility.Vector3dVector(xyz)
+        #pcd.colors = o3d.utility.Vector3dVector(rgb)
+        #pcd.remove_non_finite_points()
+        return None
 
     def pointCloud2XYZRGBtoOpen3D(data: PointCloud2):
         xyz, rgb = VisionBridge.pointCloud2XYZRGBtoArrays(data)

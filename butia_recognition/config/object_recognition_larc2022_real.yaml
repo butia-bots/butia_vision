@@ -1,10 +1,10 @@
-threshold: 0.3
+threshold: 0.6
 classes_by_category:
     drinks: ['CoconutWater', 'Coke', 'Guarana', 'IceTea', 'Tonic', 'Water']
     cleaning_supplies: ['Cleaner', 'Cloth', 'Sponge']
     pantry_items: ['CornFlakes', 'EnglishSauce', 'Mustard', 'TomatoSauce', 'TunaCan']
     fruits: ['Apple', 'Banana', 'Orange', 'Kiwi']
-    snacks: ['Cookie', 'Pringles']
+    snacks: ['Cookies', 'Pringles']
 classes:
     - Apple
     - Banana
@@ -36,11 +36,9 @@ subscribers:
 
   image_rgb: /butia_vision/bvb/image_rgb
 
-  points: /butia_vision/bvb/points
-
 publishers:
 
-  people_detection:
+  object_recognition:
     topic: /butia_vision/br/object_recognition
     queue_size: 1
 

@@ -58,7 +58,7 @@ class YoloV5Recognition(BaseRecognition):
         points = None
         if len(args):
             img = args[0]
-            points = args[1]
+            points = None
 
         with torch.no_grad():
 
@@ -102,6 +102,7 @@ class YoloV5Recognition(BaseRecognition):
                 description.bbox.size_x = size[0]
                 description.bbox.size_y = size[1]
 
+                index = None
                 if ('people' in self.classes and label_class in self.classes_by_category['people'] or 'people' in self.classes and label_class == 'people') and bbs_l['confidence'][i] >= self.threshold:
 
                     description.label = 'people' + '/' + label_class
@@ -118,8 +119,16 @@ class YoloV5Recognition(BaseRecognition):
 
                     objects_recognition.descriptions.append(description)
 
+                category = ''
+                for cat, class_list in self.classes_by_category.items():
+                    for c in class_list:
+                        if c == label_class:
+                            category = cat
+                            break
+
+
                 debug_img = cv2.rectangle(debug_img, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), (int(bbs_l['xmax'][i]), int(bbs_l['ymax'][i])), self.colors[label_class])
-                debug_img = cv2.putText(debug_img, label_class, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=self.colors[label_class])
+                debug_img = cv2.putText(debug_img, category+'/'+label_class, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color=self.colors[label_class])
                 description_header.seq += 1
             
             self.debug_publisher.publish(ros_numpy.msgify(Image, np.flip(debug_img, 2), 'rgb8'))
