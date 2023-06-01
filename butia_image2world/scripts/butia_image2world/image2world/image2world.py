@@ -113,7 +113,7 @@ class Image2World:
         bbox_limits = (int(center_x - bbox_size_x/2), int(center_x + bbox_size_x/2), int(center_y - bbox_size_y/2), int(center_y + bbox_size_y/2))
         desc_point_cloud = array_point_cloud[bbox_limits[2]:bbox_limits[3], bbox_limits[0]:bbox_limits[1], :]
         pcd = VisionBridge.pointCloudArraystoOpen3D(desc_point_cloud[:, :, :3], desc_point_cloud[:, :, 3:])
-
+        print(pcd)
         kernel_scale = self.kernel_scale
         bbox_center = np.array([np.nan, np.nan, np.nan])
         while np.isnan(bbox_center).any() and kernel_scale <= 1.0:

@@ -57,14 +57,14 @@ class FaceRecognition(BaseRecognition):
         if os.path.exists(file_path):
             with open(file_path, 'rb') as file:
                 variable = pickle.load(file)
-                print(variable)
+                #print(variable)
             return variable
         return {}
 
     def flatten(self, l):
         values_list = [item for sublist in l.values() for item in sublist]
         keys_list = [item for name in l.keys() for item in [name]*len(l[name])]
-        print(keys_list)
+        #print(keys_list)
         return keys_list, values_list
 
 
@@ -87,7 +87,7 @@ class FaceRecognition(BaseRecognition):
                     # Get the face encodings for the face in each image file
                     face = face_recognition.load_image_file(self.dataset_dir + person + "/" + person_img)
                     face_bounding_boxes = face_recognition.face_locations(face, model = 'cnn')
-                    print(person, person_img, face_bounding_boxes)
+                    #print(person, person_img, face_bounding_boxes)
 
                     #If training image contains exactly one face
                     if len(face_bounding_boxes) > 0:
@@ -156,14 +156,14 @@ class FaceRecognition(BaseRecognition):
         i = 0
         while i<num_images:
             self.regressiveCounter(ros_srv.interval)
-            print("vo entra em")
+            #print("vo entra em")
             try:
-                print("Entrei")
+                #print("Entrei")
 
                 ros_image_aux = rospy.wait_for_message(self.subscribers_dict['image_rgb'], Image, 1000)
             except (ROSException, ROSInterruptException) as e:
-                print(e)
-                print("pq eu to aq")
+                #print(e)
+                #print("pq eu to aq")
                 break
             ros_image = ros_numpy.numpify(ros_image_aux)
             ros_image = np.flip(ros_image)
@@ -178,7 +178,7 @@ class FaceRecognition(BaseRecognition):
                         image_idx = idx
                 
             if len(face) > 0:
-                print("detectei o rosto")
+                #("detectei o rosto")
                 biggest_face = face[image_idx] 
                 #if face != None:
                 #   if len(face):
@@ -186,7 +186,7 @@ class FaceRecognition(BaseRecognition):
                 #     cv2.rectangle(s_rgb_image, (left, top), (right, bottom), (0, 0, 255), 2)
 
                 #cv2.imshow("Person", s_rgb_image)
-                print('TEM FACE')
+                #print('TEM FACE')
                 cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), ros_image)
                 rospy.logwarn('Picture ' + add_image_labels[i] + ' was  saved.')
                 i+= 1
@@ -210,6 +210,16 @@ class FaceRecognition(BaseRecognition):
         img = None
         if len(args):
             img = args[0]
+            points = args[1]
+            face_rec.image_rgb = copy(img)
+            face_rec.points = copy(points)
+
+            h = Header()
+            h.seq = self.seq
+            self.seq += 1
+            h.stamp = rospy.Time.now()
+
+            face_rec.header = h
 
         rospy.loginfo('Image ID: ' + str(img.header.seq))
 
@@ -236,24 +246,20 @@ class FaceRecognition(BaseRecognition):
 
         debug_img = copy(ros_img_small_frame)
 
-        h = Header()
-        h.seq = self.seq
-        self.seq += 1
-        h.stamp = rospy.Time.now()
-
         # Display the results
         for idx, (top, right, bottom, left) in enumerate(current_faces):
+            print(top, right, bottom, left)
             description_header = img.header
             description_header.seq = 0
             description.header = copy(description_header)
             description.type = Description2D.DETECTION
             description.id = description.header.seq
             description.score = 1
-            size = int(right-left), int(top-bottom)
-            description.bbox.center.x = int(bottom) + int(size[0]/2)
+            size = int(right-left), int(bottom-top)
+            description.bbox.center.x = int(top) + int(size[0]/2)
             description.bbox.center.y = int(left) + int(size[1]/2)
             description.bbox.size_x = right-left
-            description.bbox.size_y = top-bottom
+            description.bbox.size_y = bottom-top
 
             cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
 
