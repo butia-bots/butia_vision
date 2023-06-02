@@ -6,9 +6,9 @@ subscribers:
   exact_time: false
   slop: 0.5
 
-  image_rgb: usb_cam/image_raw
+  image_rgb: kinect2/qhd/image_color_rect
 
-  #points: kinect2/qhd/points
+  points: kinect2/qhd/points
 
 publishers:
 

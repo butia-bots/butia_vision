@@ -207,20 +207,22 @@ class FaceRecognition(BaseRecognition):
     def callback(self, *args):
         thold = 0.6
         face_rec = Recognitions2D()
-        img = None
-        if len(args):
-            img = args[0]
-            points = args[1]
-            face_rec.image_rgb = copy(img)
-            face_rec.points = copy(points)
+        source_data = self.sourceDataFromArgs(args)
 
-            h = Header()
-            h.seq = self.seq
-            self.seq += 1
-            h.stamp = rospy.Time.now()
+        if 'image_rgb' not in source_data:
+            rospy.logwarn('Souce data has no image_rgb.')
+            return None
+        
+        img = source_data['image_rgb']
 
-            face_rec.header = h
+        h = Header()
+        h.seq = self.seq
+        self.seq += 1
+        h.stamp = rospy.Time.now()
 
+        face_rec.header = h
+        face_rec = BaseRecognition.addSourceData2Recognitions2D(source_data, face_rec)
+        
         rospy.loginfo('Image ID: ' + str(img.header.seq))
 
         ros_img_small_frame = ros_numpy.numpify(img)
