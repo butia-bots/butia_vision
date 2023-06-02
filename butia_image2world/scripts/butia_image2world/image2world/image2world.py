@@ -235,6 +235,10 @@ class Image2World:
             vertices_3d[:, :2] = self.lut_table[limits[:, 1], limits[:, 0], :]*center_depth
             vertices_3d[:, 2] = center_depth
 
+            #TODO:
+            '''
+                - we can using max_size information to limit the bounding box size, this function is not doing this yet
+            '''
             ms_msg = description2d.max_size
             max_size = np.array([ms_msg.x, ms_msg.y, ms_msg.z])
             desc_depth = self.default_depth
