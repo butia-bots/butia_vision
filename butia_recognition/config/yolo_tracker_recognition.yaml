@@ -3,7 +3,7 @@ classes_by_category:
     people: [person]
 classes:
     - person
-model_file: yolov5s-pose.pt
+model_file: yolov8s-pose.pt
 
 subscribers:
   
@@ -11,9 +11,9 @@ subscribers:
   exact_time: false
   slop: 0.2
 
-  image_rgb: /butia_vision/bvb/image_rgb
+  image_rgb: /kinect2/qhd/image_color_rect
 
-  points: /butia_vision/bvb/points
+  points: /kinect2/qhd/points
 
 publishers:
 
