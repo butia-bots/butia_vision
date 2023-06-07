@@ -9,6 +9,7 @@ import ros_numpy
 from pathlib import Path
 
 from ultralytics import YOLO
+from boxmot import DeepOCSORT
 
 from sensor_msgs.msg import Image
 
@@ -22,7 +23,7 @@ class YoloTrackerRecognition(BaseRecognition):
         self.readParameters()
         self.loadModel()
         self.initRosComm()
-        rospy.logwarn("Finished starting")
+        rospy.loginfo("Yolo Tracker Recognition started")
 
     def initRosComm(self):
         self.debugPub = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
@@ -42,10 +43,17 @@ class YoloTrackerRecognition(BaseRecognition):
 
     def loadModel(self):
         self.model = YOLO(self.model_file)
+        self.tracker = DeepOCSORT(
+            model_weights=Path(self.reid_model_file),
+            device="cuda:0",
+            fp16=True,
+            det_thresh=self.reid_threshold
+        )
         
     
     def unLoadModel(self):
         del self.model
+        del self.reid_threshold
     
     @ifState
     def callback(self, *args):
@@ -77,27 +85,34 @@ class YoloTrackerRecognition(BaseRecognition):
         # print(debug_img == img)     
         results = self.model(img)
 
-        for box in results[0].boxes.data.cpu().numpy():
+        tracked_results  = self.tracker.update(results[0].boxes.data.cpu(), img)
+
+        people_ids = []
+        for box in tracked_results:
             description = Description2D()
             description.header = points.header
 
-            cls = int(box[5])
+            cls = int(box[6])
             description.bbox.center.x = (box[0]+box[2])/2
             description.bbox.center.y = (box[1]+box[3])/2
             description.bbox.size_x = box[2]-box[0]
             description.bbox.size_y = box[3]-box[1]
             description.type = Description2D.DETECTION
             description.label = self.model.names[cls]
+            description.global_id = int(box[4])
             if self.model.names[cls] == "person":
                 peopleDetection.descriptions.append(description)
+                people_ids.append(box[4])
             else:
                 objRecognition.descriptions.append(description)
             cv.rectangle(debug_img,(int(box[0]),int(box[1])), (int(box[2]),int(box[3])),(0,0,255),thickness=2)
-            cv.putText(debug_img,f"{self.model.names[int(box[5])]}:{box[4]:.2f}", (int(box[0]), int(box[1])), cv.FONT_HERSHEY_SIMPLEX,0.75,(0,0,255),thickness=2)
+            cv.putText(debug_img,f"ID:{box[4]},{self.model.names[cls]}:{box[5]:.2f}", (int(box[0]), int(box[1])), cv.FONT_HERSHEY_SIMPLEX,0.75,(0,0,255),thickness=2)
         
-        for pose in results[0].keypoints.cpu().numpy():
+        for id, pose in zip(people_ids, results[0].keypoints.cpu().numpy()):
             description = Description2D()
             description.header = points.header
+            description.header = Description2D.POSE
+            description.global_id = id
             for idx, kpt in enumerate(pose):
                 keypoint = KeyPoint()
                 keypoint.x = kpt[0]
@@ -133,28 +148,14 @@ class YoloTrackerRecognition(BaseRecognition):
         self.pose_recognition_qs = rospy.get_param("~publishers/pose_recognition/queue_size",1)
 
         self.threshold = rospy.get_param("~threshold", 0.5)
+        self.reid_threshold = rospy.get_param("~reid_threshold", 0.5)
 
         self.model_file = rospy.get_param("~model_file","yolov8n-pose")
-
-        # self.config_path = rospy.get_param("~tracker_config_path", "")
+        self.reid_model_file = rospy.get_param("reid_model_file","osnet_x0_25_msmt17.pt")
 
         super().readParameters()
     
-    # def on_predict_start(self, predictor):
-    #     predictor.trackers = []
-    #     predictor.tracker_outputs = [None] * predictor.dataset.bs
-    #     predictor.args.tracking_config = self.config_path
-    #     for i  in range(predictor.dataset.bs):
-    #         tracker = create_tracker(
-    #             predictor.args.tracking_method,
-    #             predictor.args.tracking_config,
-    #             predictor.args.reid_model,
-    #             predictor.device,
-    #             predictor.args.half
-    #         )
-    #         predictor.trackers.append(tracker)
-
-
+   
 if __name__ == "__main__":
     rospy.init_node("yolo_tracjer_recognition_node", anonymous = True)
     yolo = YoloTrackerRecognition()

@@ -1,9 +1,12 @@
-threshold: 0.5 
+threshold: 0.5
+reid_threshold: 0.5
 classes_by_category:
     people: [person]
 classes:
     - person
+    
 model_file: yolov8s-pose.pt
+reid_model_file: osnet_x0_25_msmt17.pt
 
 subscribers:
   
