@@ -1,15 +1,5 @@
 #!/bin/bash
 
-[ $(which git) ] || sudo apt install git
-pip3 install -r ./requirements.txt
-
-mkdir -p ~/butia_ws/src
-cd ~/butia_ws/src
-
-# Clonando repositórios
-git clone https://github.com/butia-bots/iai_kinect2.git
-git clone https://github.com/butia-bots/libfreenect2.git
-
 cd ~/butia_ws/src/butia_vision
 
 SHELL_TYPE=$(echo $SHELL | grep -oE '[^/]+/?$' | tr -d '/')
