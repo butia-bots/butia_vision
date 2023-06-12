@@ -48,7 +48,6 @@ class YoloV8Recognition(BaseRecognition):
 
     @ifState
     def callback(self, *args):
-
         source_data = self.sourceDataFromArgs(args)
 
         if 'image_rgb' not in source_data:
