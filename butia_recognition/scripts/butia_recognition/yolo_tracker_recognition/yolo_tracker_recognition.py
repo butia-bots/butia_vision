@@ -85,7 +85,7 @@ class YoloTrackerRecognition(BaseRecognition):
         # print(debug_img == img)     
         results = self.model(img)
 
-        tracked_results  = self.tracker.update(results[0].boxes.data.cpu(), img)
+        tracked_results  = self.tracker.update(results[0].boxes.data.cpu().numpy(), img)
 
         people_ids = []
         for box in tracked_results:
@@ -106,13 +106,15 @@ class YoloTrackerRecognition(BaseRecognition):
             else:
                 objRecognition.descriptions.append(description)
             cv.rectangle(debug_img,(int(box[0]),int(box[1])), (int(box[2]),int(box[3])),(0,0,255),thickness=2)
-            cv.putText(debug_img,f"ID:{box[4]},{self.model.names[cls]}:{box[5]:.2f}", (int(box[0]), int(box[1])), cv.FONT_HERSHEY_SIMPLEX,0.75,(0,0,255),thickness=2)
+            cv.putText(debug_img,f"ID:{int(box[4])},{self.model.names[cls]}:{box[5]:.2f}", (int(box[0]), int(box[1])), cv.FONT_HERSHEY_SIMPLEX,0.75,(0,0,255),thickness=2)
         
-        for id, pose in zip(people_ids, results[0].keypoints.cpu().numpy()):
+        poses = results[0].keypoints.data.cpu().numpy()
+        for id, pose in zip(people_ids, poses):
             description = Description2D()
             description.header = points.header
             description.header = Description2D.POSE
             description.global_id = id
+            rospy.logwarn(pose)
             for idx, kpt in enumerate(pose):
                 keypoint = KeyPoint()
                 keypoint.x = kpt[0]
@@ -121,7 +123,7 @@ class YoloTrackerRecognition(BaseRecognition):
                 keypoint.score = kpt[2]
                 description.pose.append(keypoint)
                 if kpt[2] >= self.threshold:
-                    cv.circle(debug_img, (int(kpt[0]), int(kpt[1])),5,(0,255,0),thickness=-1)
+                    cv.circle(debug_img, (int(kpt[0]), int(kpt[1])),3,(0,255,0),thickness=-1)
             poseRecognition.descriptions.append(description)
 
         debug_msg = ros_numpy.msgify(Image, debug_img, encoding='bgr8')
