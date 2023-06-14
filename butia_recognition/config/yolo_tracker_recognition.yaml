@@ -1,5 +1,5 @@
-threshold: 0.5
-reid_threshold: 0.3
+debug_kpt_threshold: 0.5
+
 classes_by_category:
     people: [person]
 classes:
@@ -23,14 +23,42 @@ publishers:
   pose_recognition:
     topic: /butia_vision/br/pose_recognition
     queue_size: 1
+  
+  object_recognition:
+    topic: /butia_vision/br/object_recognition
+    queue_size: 1
+
+  people_tracking:
+    topic: /butia_vision/br/people_detection
+    queue_size: 1
+  
+  debug:
+    topic: /butia_vision/br/debug
+    queue_size: 1
+  
+  tracker:
+    topic: /butia_vision/pt/people_tracking
+    queue_size: 1
 
 servers:
 
   list_classes:
-    service: /butia_vision/br/pose_recognition/list_classes
+    service: /butia_vision/br/yolo_tracking/list_classes
 
   start:
-    service: /butia_vision/br/pose_recognition/start
+    service: /butia_vision/br/yolo_tracking/start
 
   stop:
-    service: /butia_vision/br/pose_recognition/stop
+    service: /butia_vision/br/yolo_tracking/stop
+
+services:
+  tracking:
+    start: /butia_vision/pt/start
+    stop: /butia_vision/pt/stop
+
+tracking:
+  start_on_init: true
+  thresholds:
+    reid_threshold: 0.5
+    iou_threshold: 0.5
+    max_age: 5

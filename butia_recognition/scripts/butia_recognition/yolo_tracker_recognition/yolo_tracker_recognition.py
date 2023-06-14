@@ -4,17 +4,21 @@ from butia_recognition import BaseRecognition, ifState
 
 import rospy
 import cv2 as cv
+import numpy as np
 import ros_numpy
 
 from pathlib import Path
+from time import perf_counter
 
 from ultralytics import YOLO
 from boxmot import DeepOCSORT
 
 from sensor_msgs.msg import Image
+from std_srvs.srv import EmptyResponse, Empty
 
 from butia_vision_msgs.msg import Recognitions2D, Description2D, KeyPoint
 from copy import deepcopy
+
 
 
 class YoloTrackerRecognition(BaseRecognition):
@@ -23,6 +27,8 @@ class YoloTrackerRecognition(BaseRecognition):
         self.readParameters()
         self.loadModel()
         self.initRosComm()
+        if self.tracking_on_init:
+            self.startTracking(None)
         rospy.loginfo("Yolo Tracker Recognition started")
 
     def initRosComm(self):
@@ -30,30 +36,46 @@ class YoloTrackerRecognition(BaseRecognition):
         self.objRecognitionPub = rospy.Publisher(self.object_recognition_topic, Recognitions2D, queue_size=self.object_recognition_qs)
         self.peopleDetectionPub = rospy.Publisher(self.people_detection_topic, Recognitions2D, queue_size=self.people_detection_qs)
         self.poseRecognitionPub = rospy.Publisher(self.pose_recognition_topic, Recognitions2D, queue_size=self.pose_recognition_qs)
+        self.trackingPub = rospy.Publisher(self.tracking_topic,Recognitions2D, queue_size=self.tracking_qs)
+
+        self.trackingStartService = rospy.Service(self.start_tracking_topic, Empty, self.startTracking)
+        self.trackingStopService = rospy.Service(self.stop_tracking_topic, Empty, self.stopTracking)
         super().initRosComm(callbacks_obj=self)
 
     
     def serverStart(self, req):
         self.loadModel()
+        
         return super().serverStart(req)
     
     def serverStop(self, req):
         self.unLoadModel()
         return super().serverStop(req)
-
+    
+    def startTracking(self, req):
+        self.tracking = True
+        self.trackID = -1
+        self.lastTrack = 0
+        return
+    
+    def stopTracking(self, req):
+        self.tracking = False
+        return
+    
     def loadModel(self):
         self.model = YOLO(self.model_file)
         self.tracker = DeepOCSORT(
             model_weights=Path(self.reid_model_file),
             device="cuda:0",
             fp16=True,
-            det_thresh=self.reid_threshold
+            det_thresh=self.reid_threshold,
+            max_age=self.max_age,
+            iou_threshold=self.iou_threshold
         )
-        
     
     def unLoadModel(self):
         del self.model
-        del self.reid_threshold
+        del self.tracker
     
     @ifState
     def callback(self, *args):
@@ -61,8 +83,10 @@ class YoloTrackerRecognition(BaseRecognition):
         points = None
         if len(args):
             img = args[0]
-            print(img.encoding)
             points = args[1]
+        
+        IMG_HEIGHT = img.height
+        IMG_WIDTH  = img.width
         
         objRecognition = Recognitions2D()
         objRecognition.image_rgb = img
@@ -78,6 +102,11 @@ class YoloTrackerRecognition(BaseRecognition):
         poseRecognition.image_rgb = img
         poseRecognition.points = points
         poseRecognition.header = points.header
+
+        trackRecognition = Recognitions2D()
+        trackRecognition.image_rgb = img
+        trackRecognition.points = points
+        trackRecognition.header = points.header
        
         img = ros_numpy.numpify(img)        
 
@@ -85,28 +114,64 @@ class YoloTrackerRecognition(BaseRecognition):
         # print(debug_img == img)     
         results = self.model(img)
 
-        tracked_results  = self.tracker.update(results[0].boxes.data.cpu().numpy(), img)
-
+        bboxs = results[0].boxes.data.cpu().numpy()
+        if self.tracking:
+            bboxs  = self.tracker.update(bboxs, img)
         people_ids = []
-        for box in tracked_results:
+
+        tracked_box = None
+        now = perf_counter()
+        for box in bboxs:
             description = Description2D()
             description.header = points.header
 
-            cls = int(box[6])
-            description.bbox.center.x = (box[0]+box[2])/2
-            description.bbox.center.y = (box[1]+box[3])/2
-            description.bbox.size_x = box[2]-box[0]
-            description.bbox.size_y = box[3]-box[1]
+            X1,Y1,X2,Y2 = box[:4]
+            ID = int(box[4]) if self.tracking else None
+            score = box[5] if self.tracking else box[4]
+            clss = int(box[6] if self.tracking else box[5])
+
+            description.bbox.center.x = (X1+X2)/2
+            description.bbox.center.y = (Y1+Y2)/2
+            description.bbox.size_x = X2-X1
+            description.bbox.size_y = Y2-Y1
             description.type = Description2D.DETECTION
-            description.label = self.model.names[cls]
-            description.global_id = int(box[4])
-            if self.model.names[cls] == "person":
+            description.label = self.model.names[clss]
+
+            if self.model.names[clss] == "person":
                 peopleDetection.descriptions.append(description)
-                people_ids.append(box[4])
+                if self.tracking:
+                    people_ids.append(ID)
             else:
                 objRecognition.descriptions.append(description)
-            cv.rectangle(debug_img,(int(box[0]),int(box[1])), (int(box[2]),int(box[3])),(0,0,255),thickness=2)
-            cv.putText(debug_img,f"ID:{int(box[4])},{self.model.names[cls]}:{box[5]:.2f}", (int(box[0]), int(box[1])), cv.FONT_HERSHEY_SIMPLEX,0.75,(0,0,255),thickness=2)
+            
+            box_label = ""
+            previus_dist = float("inf")
+            center = (IMG_WIDTH/2,IMG_HEIGHT/2)
+            if self.tracking:
+                description.global_id = ID
+                box_label = f"ID:{ID} "
+                # Esse IF ta todo errado
+                dist = np.sqrt(np.power(description.bbox.center.x-center[0],2)+np.power(description.bbox.center.y-center[1],2))
+                if ID == self.trackID or \
+                    self.trackID == -1 or \
+                    (perf_counter() - self.lastTrack >= self.max_age and \
+                    (tracked_box == None or\
+                    dist < previus_dist)):
+
+                    self.trackID = ID
+                    previus_dist = dist
+                    tracked_box = description
+                    
+            cv.rectangle(debug_img,(int(X1),int(Y1)), (int(X2),int(Y2)),(0,0,255),thickness=2)
+            cv.putText(debug_img,f"{box_label}{self.model.names[clss]}:{score:.2f}", (int(X1), int(Y1)), cv.FONT_HERSHEY_SIMPLEX,0.75,(0,0,255),thickness=2)
+        if tracked_box != None:
+            trackRecognition.descriptions.append(tracked_box)
+            self.lastTrack = now
+            cv.rectangle(debug_img,(int(tracked_box.bbox.center.x-tracked_box.bbox.size_x/2),\
+                                    int(tracked_box.bbox.center.y-tracked_box.bbox.size_y/2)),\
+                                    (int(tracked_box.bbox.center.x+tracked_box.bbox.size_x/2),\
+                                    int(tracked_box.bbox.center.y+tracked_box.bbox.size_y/2)),(255,0,0),thickness=2)
+            
         
         poses = results[0].keypoints.data.cpu().numpy()
         for id, pose in zip(people_ids, poses):
@@ -114,7 +179,7 @@ class YoloTrackerRecognition(BaseRecognition):
             description.header = points.header
             description.header = Description2D.POSE
             description.global_id = id
-            rospy.logwarn(pose)
+            # rospy.logwarn(pose)
             for idx, kpt in enumerate(pose):
                 keypoint = KeyPoint()
                 keypoint.x = kpt[0]
@@ -135,6 +200,8 @@ class YoloTrackerRecognition(BaseRecognition):
             self.objRecognitionPub.publish(objRecognition)
         if len(poseRecognition.descriptions) != 0:
             self.poseRecognitionPub.publish(poseRecognition)
+        if len(trackRecognition.descriptions) != 0:
+            self.trackingPub.publish(trackRecognition)
 
     def readParameters(self):
         self.debug_topic = rospy.get_param("~publishers/debug/topic","/butia_vision/br/debug")
@@ -149,11 +216,22 @@ class YoloTrackerRecognition(BaseRecognition):
         self.pose_recognition_topic = rospy.get_param("~publishers/pose_recognition/topic","/butia_vision/br/pose_detection")
         self.pose_recognition_qs = rospy.get_param("~publishers/pose_recognition/queue_size",1)
 
-        self.threshold = rospy.get_param("~threshold", 0.5)
-        self.reid_threshold = rospy.get_param("~reid_threshold", 0.5)
+        self.tracking_topic = rospy.get_param("~publishers/track/topic","/butia_vision/pt/people_tracking")
+        self.tracking_qs = rospy.get_param("~publishers/track/queue_size",1)
+
+        self.start_tracking_topic = rospy.get_param("~services/tracking/start","/butia_vision/pt/start")
+        self.stop_tracking_topic = rospy.get_param("~services/tracking/stop","/butia_vision/pt/stop")
+
+        self.threshold = rospy.get_param("~debug_kpt_threshold", 0.5)
 
         self.model_file = rospy.get_param("~model_file","yolov8n-pose")
-        self.reid_model_file = rospy.get_param("reid_model_file","osnet_x0_25_msmt17.pt")
+        self.reid_model_file = rospy.get_param("~reid_model_file","osnet_x0_25_msmt17.pt")
+
+
+        self.reid_threshold = rospy.get_param("~tracking/thresholds/reid_threshold", 0.5)
+        self.iou_threshold = rospy.get_param('~tracking/thresholds/iou_threshold',0.5)
+        self.max_age = rospy.get_param("~tracking/thresholds/max_age",60)
+        self.tracking_on_init = rospy.get_param("~tracking/start_on_init", False)
 
         super().readParameters()
     
