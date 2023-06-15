@@ -1,29 +1,39 @@
 <launch>
-  <arg name="machine"         default="localhost"/>
-  <arg name="use_machine"     default="true"/>
-  <arg name="output"          default="screen"/>
-  <arg name="use_kinect"      default="true"/>
+  <arg name="machine"                     default="localhost"/>
+  <arg name="use_machine"                 default="true"/>
+  <arg name="output"                      default="screen"/>
+
+  <arg name="pub/image_rgb"               default="/butia_vision/bvb/image_rgb"/>
+  <arg name="pub/camera_info"             default="/butia_vision/bvb/camera_info"/>
+  <arg name="pub/image_depth"             default="/butia_vision/bvb/image_depth"/>
+  <arg name="pub/points"                  default="/butia_vision/bvb/points"/>
+  
+  <!-- kinect or realsense -->
+  <arg name="camera"                      default="kinect" />
+
   <arg name="qhd_downsampling_scale"      default="3"/>
-  <arg name="use_bridge"      default="false"/>
-  <arg name="publish_tf"      default="true"/>
-  <arg name="sub/image_rgb"   default="kinect2/qhd/image_color_rect"/>
-  <arg name="sub/camera_info" default="kinect2/qhd/camera_info"/>
-  <arg name="sub/image_depth" default="kinect2/qhd/image_depth_rect"/>
-  <arg name="sub/points"      default="kinect2/qhd/points"/>
-  <arg name="pub/image_rgb"   default="butia_vision/bvb/image_rgb"/>
-  <arg name="pub/camera_info" default="butia_vision/bvb/camera_info"/>
-  <arg name="pub/image_depth" default="butia_vision/bvb/image_depth"/>
-  <arg name="pub/points"      default="butia_vision/bvb/points"/>
-  <arg name="queue_size"      default="5"/>
-  <arg name="size"            default="[640,480]"/>
+  <arg name="kinect/sub/image_rgb"        default="kinect2/qhd/image_color_rect"/>
+  <arg name="kinect/sub/camera_info"      default="kinect2/qhd/camera_info"/>
+  <arg name="kinect/sub/image_depth"      default="kinect2/qhd/image_depth_rect"/>
+  <arg name="kinect/sub/points"           default="kinect2/qhd/points"/>
+  
+  <arg name="realsense/sub/image_rgb"     default="/camera/color/image_raw"/>
+  <arg name="realsense/sub/camera_info"   default="/camera/color/camera_info"/>
+  <arg name="realsense/sub/image_depth"   default="/camera/aligned_depth_to_color/image_raw"/>
+  <arg name="realsense/sub/points"        default="/camera/depth/color/points"/>
+  
+  <arg name="use_bridge"                  default="false"/>
+  <arg name="publish_tf"                  default="true"/>
+  <arg name="queue_size"                  default="5"/>
+  <arg name="size"                        default="[640,480]"/>
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
-  <group if="$(arg use_kinect)">
-    <remap unless="$(arg use_bridge)" from="$(arg sub/image_rgb)"  to="$(arg pub/image_rgb)"/>
-    <remap unless="$(arg use_bridge)" from="$(arg sub/camera_info)"  to="$(arg pub/camera_info)"/>
-    <remap unless="$(arg use_bridge)" from="$(arg sub/image_depth)"  to="$(arg pub/image_depth)"/>
-    <remap unless="$(arg use_bridge)"  from="$(arg sub/points)"  to="$(arg pub/points)"/>
+  <group if="$(eval camera == 'kinect')">
+    <remap unless="$(arg use_bridge)" from="$(arg kinect/sub/image_rgb)"  to="$(arg pub/image_rgb)"/>
+    <remap unless="$(arg use_bridge)" from="$(arg kinect/sub/camera_info)"  to="$(arg pub/camera_info)"/>
+    <remap unless="$(arg use_bridge)" from="$(arg kinect/sub/image_depth)"  to="$(arg pub/image_depth)"/>
+    <remap unless="$(arg use_bridge)"  from="$(arg kinect/sub/points)"  to="$(arg pub/points)"/>
     <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
       <arg name="machine" value="$(arg machine)" />
       <arg name="use_machine" value="$(arg use_machine)"/>
@@ -31,6 +41,22 @@
       <arg name="queue_size" value="$(arg queue_size)"/>
       <arg name="publish_tf" value="$(arg publish_tf)"/>
       <arg name="qhd_downsampling_scale" value="$(arg qhd_downsampling_scale)"/>
+    </include>
+  </group>
+
+  <group if="$(eval camera == 'realsense')">
+    <remap unless="$(arg use_bridge)" from="$(arg realsense/sub/image_rgb)"  to="$(arg pub/image_rgb)"/>
+    <remap unless="$(arg use_bridge)" from="$(arg realsense/sub/camera_info)"  to="$(arg pub/camera_info)"/>
+    <remap unless="$(arg use_bridge)" from="$(arg realsense/sub/image_depth)"  to="$(arg pub/image_depth)"/>
+    <remap unless="$(arg use_bridge)"  from="$(arg realsense/sub/points)"  to="$(arg pub/points)"/>
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+      <arg name="machine" value="$(arg machine)" />
+      <arg name="use_machine" value="$(arg use_machine)"/>
+      <arg name="output" value="$(arg output)"/>
+      <arg name="publish_tf" value="$(arg publish_tf)"/>
+      <arg name="align_depth" value="true"/>
+      <arg name="enable_pointcloud" value="true"/>
+      <arg name="ordered_pc" value="true"/>
     </include>
   </group>
 
