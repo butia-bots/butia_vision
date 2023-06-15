@@ -6,7 +6,7 @@ subscribers:
   exact_time: false
   slop: 0.5
 
-  image_rgb: /usb_cam/image_raw
+  image_rgb: /butia_vision/bvb/image_rgb
 
   #points: /butia_vision/bvb/points
 

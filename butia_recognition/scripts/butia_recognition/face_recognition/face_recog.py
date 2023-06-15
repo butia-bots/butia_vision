@@ -68,12 +68,25 @@ class FaceRecognition(BaseRecognition):
         return keys_list, values_list
 
 
+    ##Falta teste
+    def add_person_encoding(self):
+        startNames = self.startNames
+        features = self.loadVar('features')
+        for name in startNames:
+            if name in features.keys():
+                self.encoded_faces[name] = features[name]
+            else:
+                print(f"O nome '{name}' não foi encontrado no arquivo 'features.pkl'.")
+        return self.encoded_faces
+
     def encode_faces(self):
 
         encodings = []
         names = []
         try:
-            encoded_face = self.loadVar('features')
+            encoded_face = self.add_person_encoding()
+            if encoded_face == None:
+                encoded_face = self.loadVar('features')
         except:
             encoded_face = {}
         train_dir = os.listdir(self.dataset_dir)
@@ -86,7 +99,7 @@ class FaceRecognition(BaseRecognition):
                 for person_img in pix:
                     # Get the face encodings for the face in each image file
                     face = face_recognition.load_image_file(self.dataset_dir + person + "/" + person_img)
-                    face_bounding_boxes = face_recognition.face_locations(face, model = 'cnn')
+                    face_bounding_boxes = face_recognition.face_locations(face, model = 'yolov8')
                     print(person, person_img, face_bounding_boxes)
 
                     #If training image contains exactly one face
@@ -119,6 +132,8 @@ class FaceRecognition(BaseRecognition):
     def PeopleIntroducing(self, ros_srv):
 
         name = ros_srv.name
+        if name in self.loadVar('features').keys():
+            print("O nome ja escolhido já esta sendo utilizado, por favor escolha outro ou Nome+sobrenome.") ## achar uma forma de passar isso para o ROS
         num_images = ros_srv.num_images
         NAME_DIR = os.path.join(self.dataset_dir, name)
         os.makedirs(NAME_DIR, exist_ok=True)
@@ -168,7 +183,7 @@ class FaceRecognition(BaseRecognition):
             ros_image = ros_numpy.numpify(ros_image_aux)
             ros_image = np.flip(ros_image)
             ros_image = np.flipud(ros_image)
-            face = face_recognition.face_locations(ros_image, model='cnn')
+            face = face_recognition.face_locations(ros_image, model='yolov8')
             if len(face) > 1:
                 for idx, (top, right, bottom, left) in enumerate(face):
                     area = (right-left) * (top-bottom)
@@ -205,6 +220,7 @@ class FaceRecognition(BaseRecognition):
 
     @ifState
     def callback(self, *args):
+        print('aiaiai')
         thold = 0.6
         face_rec = Recognitions2D()
         img = None
@@ -230,8 +246,9 @@ class FaceRecognition(BaseRecognition):
                 if min_distance < thold:
                     name = (self.know_faces[0][min_distance_idx])
 
-            description.label = name
+                            
 
+            description.label = name
             face_rec.descriptions.append(description)
 
         debug_img = copy(ros_img_small_frame)
@@ -270,6 +287,8 @@ class FaceRecognition(BaseRecognition):
     def readParameters(self):
         self.debug_topic = rospy.get_param("~publishers/debug/topic", "/butia_vision/br/debug")
         self.debug_qs = rospy.get_param("~publishers/debug/queue_size", 1)
+
+        self.startNames = rospy.get_param("~startNames", None)
 
         self.face_recognition_topic = rospy.get_param("~publishers/face_recognition/topic", "/butia_vision/br/face_recognition")
 
