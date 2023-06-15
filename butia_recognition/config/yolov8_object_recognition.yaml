@@ -66,7 +66,11 @@ subscribers:
   exact_time: false
   slop: 0.2
 
-  image_rgb: /usb_cam/image_raw
+  #image_rgb: /usb_cam/image_raw
+  image_rgb: /butia_vision/bvb/image_rgb
+  camera_info: /butia_vision/bvb/camera_info
+  image_depth: /butia_vision/bvb/image_depth
+  #points: /butia_vision/bvb/points
 
 publishers:
 

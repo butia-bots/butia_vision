@@ -55,8 +55,8 @@ class YoloV8Recognition(BaseRecognition):
             return None
         
         img_rgb = source_data['image_rgb']
-        img_depth = source_data['image_depth']
-        points = source_data['points']
+        # img_depth = source_data['image_depth']
+        # points = source_data['points']
 
         cv_img = ros_numpy.numpify(img_rgb)
         rospy.loginfo('Image ID: ' + str(img_rgb.header.seq))
@@ -67,8 +67,8 @@ class YoloV8Recognition(BaseRecognition):
         self.seq += 1 #prox id
         h.stamp = rospy.Time.now()
 
-        objects_recognition.image_rgb = copy(img_rgb)
-        objects_recognition.points = copy(points)
+        # objects_recognition.image_rgb = copy(img_rgb)
+        # objects_recognition.points = copy(points)
         objects_recognition.header = h
         objects_recognition = BaseRecognition.addSourceData2Recognitions2D(source_data, objects_recognition)
         people_recognition = copy(objects_recognition)
