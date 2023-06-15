@@ -122,7 +122,7 @@ class Image2World:
     def __detectionDescriptionProcessing(self, data, description2d, header):
         center_x, center_y = description2d.bbox.center.x, description2d.bbox.center.y
         bbox_size_x, bbox_size_y = description2d.bbox.size_x, description2d.bbox.size_y
-
+        print(bbox_size_x, bbox_size_y)
         if bbox_size_x == 0 or bbox_size_y == 0:
             rospy.logwarn('BBox with zero size.')
             return None
