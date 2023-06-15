@@ -14,6 +14,7 @@ import cv2
 
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
+from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 
 torch.set_num_threads(1)
@@ -54,11 +55,13 @@ class YoloV5Recognition(BaseRecognition):
 
     @ifState
     def callback(self, *args):
-        img = None
-        points = None
-        if len(args):
-            img = args[0]
-            points = args[1]
+        source_data = self.sourceDataFromArgs(args)
+
+        if 'image_rgb' not in source_data:
+            rospy.logwarn('Souce data has no image_rgb.')
+            return None
+        
+        img = source_data['image_rgb']
 
         with torch.no_grad():
 
@@ -78,24 +81,32 @@ class YoloV5Recognition(BaseRecognition):
             self.seq += 1
             h.stamp = rospy.Time.now()
             objects_recognition.header = h
-            objects_recognition.image_rgb = copy(img)
-            objects_recognition.points = copy(points)
+
+            #adding source data
+            objects_recognition = BaseRecognition.addSourceData2Recognitions2D(source_data, objects_recognition)
 
             people_recognition = copy(objects_recognition)
 
             description_header = img.header
             description_header.seq = 0
             for i in range(len(bbs_l)):
-                if int(bbs_l['class'][i]) >= len(self.classes):
+                class_id = int(bbs_l['class'][i])
+
+                if class_id >= len(self.classes):
                     continue
 
-                label_class = self.classes[int(bbs_l['class'][i])]
+                label_class = self.classes[class_id]
+
+                max_size = [0., 0., 0.]
+                if class_id < len(self.max_sizes):
+                    max_size = self.max_sizes[class_id]
 
                 description = Description2D()
                 description.header = copy(description_header)
                 description.type = Description2D.DETECTION
                 description.id = description.header.seq
                 description.score = bbs_l['confidence'][i]
+                description.max_size = Vector3(*max_size)
                 size = int(bbs_l['xmax'][i] - bbs_l['xmin'][i]), int(bbs_l['ymax'][i] - bbs_l['ymin'][i])
                 description.bbox.center.x = int(bbs_l['xmin'][i]) + int(size[0]/2)
                 description.bbox.center.y = int(bbs_l['ymin'][i]) + int(size[1]/2)
@@ -143,6 +154,8 @@ class YoloV5Recognition(BaseRecognition):
         self.threshold = rospy.get_param("~threshold", 0.5)
 
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
+
+        self.max_sizes = list((rospy.get_param("~max_sizes", [])))
 
         self.model_file = rospy.get_param("~model_file", "larc2021_go_and_get_it.pt")
 
