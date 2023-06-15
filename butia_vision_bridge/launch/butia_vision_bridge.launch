@@ -17,10 +17,10 @@
   <arg name="kinect/sub/image_depth"      default="kinect2/qhd/image_depth_rect"/>
   <arg name="kinect/sub/points"           default="kinect2/qhd/points"/>
   
-  <arg name="realsense/sub/image_rgb"     default="/camera/color/image_raw"/>
-  <arg name="realsense/sub/camera_info"   default="/camera/color/camera_info"/>
-  <arg name="realsense/sub/image_depth"   default="/camera/aligned_depth_to_color/image_raw"/>
-  <arg name="realsense/sub/points"        default="/camera/depth/color/points"/>
+  <arg name="realsense/sub/image_rgb"     default="color/image_raw"/>
+  <arg name="realsense/sub/camera_info"   default="color/camera_info"/>
+  <arg name="realsense/sub/image_depth"   default="aligned_depth_to_color/image_raw"/>
+  <arg name="realsense/sub/points"        default="depth/color/points"/>
   
   <arg name="use_bridge"                  default="false"/>
   <arg name="publish_tf"                  default="true"/>
