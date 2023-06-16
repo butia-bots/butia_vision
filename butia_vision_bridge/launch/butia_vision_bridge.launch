@@ -55,7 +55,14 @@
       <arg name="output" value="$(arg output)"/>
       <arg name="publish_tf" value="$(arg publish_tf)"/>
       <arg name="align_depth" value="true"/>
-      <arg name="enable_pointcloud" value="true"/>
+      <!-- <arg name="enable_pointcloud" value="true"/> -->
+      <arg name="color_fps" value="15"/>
+      <arg name="depth_fps" value="15"/>
+      <arg name="filters" value="pointcloud"/>
+      <arg name="depth_width" value="640"/>
+      <arg name="depth_height" value="480"/>
+      <arg name="color_width" value="640"/>
+      <arg name="color_height" value="480"/>
       <arg name="ordered_pc" value="true"/>
     </include>
   </group>
