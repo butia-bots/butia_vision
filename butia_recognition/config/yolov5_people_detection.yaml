@@ -3,6 +3,8 @@ classes_by_category:
     people: [person]
 classes:
     - person
+max_sizes:
+    - [0.5, 0.5, 0.5]
 model_file: yolov5s.pt
 
 subscribers:
@@ -13,7 +15,11 @@ subscribers:
 
   image_rgb: /butia_vision/bvb/image_rgb
 
-  points: /butia_vision/bvb/points
+  #points: /butia_vision/bvb/points
+  
+  image_depth: /butia_vision/bvb/image_depth
+
+  camera_info: /butia_vision/bvb/camera_info
 
 publishers:
 

@@ -44,6 +44,7 @@ class FaceRecognition(BaseRecognition):
         rospy.loginfo('foi 2')
 
     def regressiveCounter(self, sec):
+        sec = int(sec)
         for i  in range(0, sec):
             print(str(sec-i) + '...')
             time.sleep(1)
@@ -57,7 +58,6 @@ class FaceRecognition(BaseRecognition):
         if os.path.exists(file_path):
             with open(file_path, 'rb') as file:
                 variable = pickle.load(file)
-                print(variable)
             return variable
         return {}
 
@@ -91,22 +91,16 @@ class FaceRecognition(BaseRecognition):
         train_dir = os.listdir(self.dataset_dir)
 
         for person in train_dir:
-            if person in self.know_faces[0]:   
+            if person not in self.know_faces[0]:   
                 pix = os.listdir(self.dataset_dir + person)
 
-                # Loop through each training image for the current person
                 for person_img in pix:
-                    # Get the face encodings for the face in each image file
                     face = face_recognition.load_image_file(self.dataset_dir + person + "/" + person_img)
                     face_bounding_boxes = face_recognition.face_locations(face, model = 'yolov8')
-                    print(person, person_img, face_bounding_boxes)
-
-                    #If training image contains exactly one face
                     if len(face_bounding_boxes) > 0:
                         face_enc = face_recognition.face_encodings(face, known_face_locations= face_bounding_boxes)[0]
-                        # Add face encoding for current image with corresponding label (name) to the training data
                         encodings.append(face_enc)
-                        #print (encodings)
+
                         if person not in names:
                             names.append(person)
                             encoded_face[person] = []
@@ -117,14 +111,14 @@ class FaceRecognition(BaseRecognition):
                         print(person + "/" + person_img + " was skipped and can't be used for training")
             else:
                 pass
-
         self.saveVar(encoded_face, 'features')             
 
     def PeopleIntroducing(self, ros_srv):
 
         name = ros_srv.name
-        if name in self.loadVar('features').keys():
-            print("O nome ja escolhido já esta sendo utilizado, por favor escolha outro ou Nome+sobrenome.") ## achar uma forma de passar isso para o ROS
+        while name in self.loadVar('features').keys():
+            print("O nome ja escolhido já esta sendo utilizado, por favor escolha outro ou Nome+sobrenome.")
+            name = ros_srv.name ## achar uma forma de passar isso para o ROS
         num_images = ros_srv.num_images
         NAME_DIR = os.path.join(self.dataset_dir, name)
         os.makedirs(NAME_DIR, exist_ok=True)
@@ -182,10 +176,10 @@ class FaceRecognition(BaseRecognition):
                 print("detectei o rosto")
                 s_rgb_image = ros_image.copy() 
                 print('TEM FACE')
+            if len(face) > 0:
+                ros_image = cv2.cvtColor(ros_image, cv2.COLOR_BGR2RGB)
+                cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), ros_image)
                 rospy.logwarn('Picture ' + add_image_labels[i] + ' was  saved.')
-                (top, right, bottom, left) = face[idx]
-                cropped_image = idx[top:bottom , left:right]
-                cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), cropped_image)
                 i+= 1
             else:
                 rospy.logerr("The face was not detected.")
@@ -202,25 +196,23 @@ class FaceRecognition(BaseRecognition):
 
     @ifState
     def callback(self, *args):
-        print('aiaiai')
-        thold = 0.6
+        thold = 0.5
         face_rec = Recognitions2D()
         source_data = self.sourceDataFromArgs(args)
-        
+
         if 'image_rgb' not in source_data:
-            rospy.logwarn('source data has no image_rgb.')
+            rospy.logwarn('Souce data has no image_rgb.')
             return None
         
         img = source_data['image_rgb']
-
         h = Header()
         h.seq = self.seq
-        self.seq+=1
+        self.seq += 1
         h.stamp = rospy.Time.now()
 
         face_rec.header = h
-        face_rec = BaseRecognition.addSourceData2Recognition2D(source_data, face_rec)
-
+        face_rec = BaseRecognition.addSourceData2Recognitions2D(source_data, face_rec)
+        
         rospy.loginfo('Image ID: ' + str(img.header.seq))
 
         ros_img_small_frame = ros_numpy.numpify(img)
@@ -235,7 +227,7 @@ class FaceRecognition(BaseRecognition):
             top, right, bottom, left = current_faces[idx]
             description = Description2D()
             name = 'unknown'
-            if(len(self.know_faces[0])>0):
+            if(len(self.know_faces[0]) > 0):
                 face_distances = np.linalg.norm(self.know_faces[1] - current_encoding, axis = 1)
                 min_distance_idx = np.argmin(face_distances)
                 min_distance = face_distances[min_distance_idx]
@@ -245,7 +237,7 @@ class FaceRecognition(BaseRecognition):
                             
 
             description.label = name
-            
+
             description_header = img.header
             description_header.seq = 0
             description.header = copy(description_header)
@@ -258,21 +250,13 @@ class FaceRecognition(BaseRecognition):
             description.bbox.size_x = bottom-top
             description.bbox.size_y = right-left
 
-        debug_img = copy(ros_img_small_frame)
-
-        h = Header()
-        h.seq = self.seq
-        self.seq += 1
-        h.stamp = rospy.Time.now()
-
-        cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
+            cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
             
-        font = cv2.FONT_HERSHEY_DUPLEX
-        cv2.putText(debug_img, name, (left + 4, bottom - 4), font, 0.5, (0,0,255), 2)
-        description_header.seq += 1
+            font = cv2.FONT_HERSHEY_DUPLEX
+            cv2.putText(debug_img, name, (left + 4, bottom - 4), font, 0.5, (0,0,255), 2)
+            description_header.seq += 1
 
-        face_rec.descriptions.append(description)
-
+            face_rec.descriptions.append(description)
             
         self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'bgr8'))
 

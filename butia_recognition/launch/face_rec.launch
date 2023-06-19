@@ -17,4 +17,8 @@
     <remap from="pub/markers" to="/butia_vision/br/markers"/>
     <rosparam param="color">[255,0,0]</rosparam>
  </node>
+<<<<<<< HEAD
+=======
+ 
+>>>>>>> 935b8140c9ed9a3a6e420b5ff3864b7f92a889b2
 </launch>
