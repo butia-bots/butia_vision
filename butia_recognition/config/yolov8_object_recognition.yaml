@@ -5,7 +5,7 @@ classes_by_category:
     fruits: ['apple', 'Apple', 'kiwi', 'Kiwi', 'orange', 'Banana', 'Orange']
     cutlelary: ['bowl', 'Bowl', 'fork', 'knife', 'plate', 'Plate', 'Cleaner', 'Napkin', 'Cloth', 'EnglishSauce', 'TomatoSauce']
     misc: ['sponge', 'Sponge', 'Bag', 'Alcohol Bottle', 'Soap', 'Mug', 'Carrot', 'Yeast', 'Coconut Milk', 'Chocolate Powder', 'Ketchup', 'Mayonnaise', 'Mustard', 'Toothpaste', 'Gelatine']
-classes: 
+all_classes: 
     - Alcohol Bottle
     - Apple
     - Bag
@@ -66,7 +66,13 @@ subscribers:
   exact_time: false
   slop: 0.2
 
-  image_rgb: /usb_cam/image_raw
+  #image_rgb: /usb_cam/image_raw
+  image_rgb: /camera/color/image_raw
+#/butia_vision/bvb/image_rgb
+  camera_info: /camera/aligned_depth_to_color/camera_info
+ #/butia_vision/bvb/camera_info
+  image_depth: /camera/depth/color/points #/butia_vision/bvb/image_depth
+  #points: /butia_vision/bvb/points
 
 publishers:
 
