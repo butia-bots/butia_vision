@@ -55,7 +55,7 @@ class YoloV8Recognition(BaseRecognition):
             return None
         
         img_rgb = source_data['image_rgb']
-        
+
         cv_img = ros_numpy.numpify(img_rgb)
         rospy.loginfo('Image ID: ' + str(img_rgb.header.seq))
         
