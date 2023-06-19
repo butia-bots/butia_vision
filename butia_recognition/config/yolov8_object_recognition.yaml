@@ -1,4 +1,4 @@
-threshold: 0.5
+threshold: 0.8
 classes_by_category:
     drink: ['guarana', 'Guarana', 'IceTea', 'tonic', Tonic', 'Coke', 'Beer can', 'CoconutWater', 'Water', Soda can']
     snack: ['corn flakes', 'CornFlakes', 'pringles', 'Pringles', 'Popcorn', 'Cookies', 'Cracker', 'Chocolate Milk', 'TunaCan']
@@ -69,9 +69,9 @@ subscribers:
   #image_rgb: /usb_cam/image_raw
   image_rgb: /camera/color/image_raw
 #/butia_vision/bvb/image_rgb
-  camera_info: /camera/aligned_depth_to_color/camera_info
+  camera_info: /camera/color/camera_info
  #/butia_vision/bvb/camera_info
-  image_depth: /camera/depth/color/points #/butia_vision/bvb/image_depth
+  image_depth: /camera/aligned_depth_to_color/image_raw   #/butia_vision/bvb/image_depth
   #points: /butia_vision/bvb/points
 
 publishers:

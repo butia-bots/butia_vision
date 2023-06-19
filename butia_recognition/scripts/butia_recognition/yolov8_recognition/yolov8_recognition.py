@@ -48,7 +48,6 @@ class YoloV8Recognition(BaseRecognition):
 
     @ifState
     def callback(self, *args):
-        print('oi')
         source_data = self.sourceDataFromArgs(args)
 
         if 'image_rgb' not in source_data:
@@ -56,9 +55,7 @@ class YoloV8Recognition(BaseRecognition):
             return None
         
         img_rgb = source_data['image_rgb']
-        # img_depth = source_data['image_depth']
-        # points = source_data['points']
-
+        
         cv_img = ros_numpy.numpify(img_rgb)
         rospy.loginfo('Image ID: ' + str(img_rgb.header.seq))
         
@@ -68,8 +65,6 @@ class YoloV8Recognition(BaseRecognition):
         self.seq += 1 #prox id
         h.stamp = rospy.Time.now()
 
-        objects_recognition.image_rgb = copy(img_rgb)
-        #objects_recognition.points = copy(points)
         objects_recognition.header = h
         objects_recognition = BaseRecognition.addSourceData2Recognitions2D(source_data, objects_recognition)
         people_recognition = copy(objects_recognition)
@@ -78,48 +73,52 @@ class YoloV8Recognition(BaseRecognition):
 
         results = self.model.predict(cv_img)
         boxes_ = results[0].boxes.cpu().numpy()
+        print(len(results[0].boxes))
+        if len(results[0].boxes):
+            for i in range(len(results[0].boxes)):
+                box = results[0].boxes[i]
+                xyxy_box = list(boxes_[i].xyxy.astype(int)[0])
+                
+                if int(box.cls) >= len(self.all_classes):
+                    continue
 
-        for i in range(len(results[0].boxes)):
-            box = results[0].boxes[i]
-            xyxy_box = list(boxes_[i].xyxy.astype(int)[0])
+                label_class = self.all_classes[int(box.cls)]
+                print(label_class)
+                description = Description2D()
+                description.header = copy(description_header)
+                description.type = Description2D.DETECTION
+                description.id = description.header.seq
+                description.score = float(box.conf)
+                size = int(xyxy_box[2] - xyxy_box[0]), int(xyxy_box[3] - xyxy_box[1])
+                description.bbox.center.x = int(xyxy_box[0]) + int(size[0]/2)
+                description.bbox.center.y = int(xyxy_box[1]) + int(size[1]/2)
+                description.bbox.size_x = size[0]
+                description.bbox.size_y = size[1]
+                print(f"-----------------------------------------------------------------------------{size}")
+
+                if ('people' in self.all_classes and label_class in self.classes_by_category['people'] or 'people' in self.all_classes and label_class == 'people') and box.conf >= self.threshold:
+
+                    description.label = 'people' + '/' + label_class
+                    people_recognition.descriptions.append(description)
+
+                elif (label_class in [val for sublist in self.all_classes for val in sublist] or label_class in self.all_classes) and box.conf >= self.threshold:
+                    index = None
+                    j = 0
+                    for value in self.classes_by_category.values():
+                        if label_class in value:
+                            index = j
+                        j += 1
+                    description.label = self.all_classes[index] + '/' + label_class if index is not None else label_class
+
+                    objects_recognition.descriptions.append(description)
+
+                debug_img = results[0].plot()
+                description_header.seq += 1
             
-            if int(box.cls) >= len(self.all_classes):
-                continue
-
-            label_class = self.all_classes[int(box.cls)]
-            print(label_class)
-            description = Description2D()
-            description.header = copy(description_header)
-            description.type = Description2D.DETECTION
-            description.id = description.header.seq
-            description.score = float(box.conf)
-            size = int(xyxy_box[2] - xyxy_box[0]), int(xyxy_box[3] - xyxy_box[1])
-            description.bbox.center.x = int(xyxy_box[0]) + int(size[0]/2)
-            description.bbox.center.y = int(xyxy_box[1]) + int(size[1]/2)
-            description.bbox.size_x = size[0]
-            description.bbox.size_y = size[1]
-            print(f"-----------------------------------------------------------------------------{size}")
-
-            if ('people' in self.all_classes and label_class in self.classes_by_category['people'] or 'people' in self.all_classes and label_class == 'people') and box.conf >= self.threshold:
-
-                description.label = 'people' + '/' + label_class
-                people_recognition.descriptions.append(description)
-
-            elif (label_class in [val for sublist in self.all_classes for val in sublist] or label_class in self.all_classes) and box.conf >= self.threshold:
-                index = None
-                j = 0
-                for value in self.classes_by_category.values():
-                    if label_class in value:
-                        index = j
-                    j += 1
-                description.label = self.all_classes[index] + '/' + label_class if index is not None else label_class
-
-                objects_recognition.descriptions.append(description)
-
+            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
+        else:
             debug_img = results[0].plot()
-            description_header.seq += 1
-        
-        self.debug_publisher.publish(ros_numpy.msgify(Image, np.flip(debug_img, 2), 'rgb8'))
+            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
         if len(objects_recognition.descriptions) > 0:
             self.object_recognition_publisher.publish(objects_recognition)
