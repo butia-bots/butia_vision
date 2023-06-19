@@ -77,54 +77,55 @@ class YoloV8Recognition(BaseRecognition):
 
         results = self.model.predict(cv_img)
         boxes_ = results[0].boxes.cpu().numpy()
+        if len(results[0].boxes):
+            for i in range(len(results[0].boxes)):
+                box = results[0].boxes[i]
+                xyxy_box = list(boxes_[i].xyxy.astype(int)[0])
+                
+                if int(box.cls) >= len(self.all_classes):
+                    continue
 
-        for i in range(len(results[0].boxes)):
-            box = results[0].boxes[i]
-            xyxy_box = list(boxes_[i].xyxy.astype(int)[0])
+                label_class = self.all_classes[int(box.cls)]
+
+                description = Description2D()
+                description.header = copy(description_header)
+                description.type = Description2D.DETECTION
+                description.id = description.header.seq
+                description.score = float(box.conf)
+                size = int(xyxy_box[2] - xyxy_box[0]), int(xyxy_box[3] - xyxy_box[1])
+                description.bbox.center.x = int(xyxy_box[0]) + int(size[0]/2)
+                description.bbox.center.y = int(xyxy_box[1]) + int(size[1]/2)
+                description.bbox.size_x = size[0]
+                description.bbox.size_y = size[1]
+
+                if ('people' in self.all_classes and label_class in self.classes_by_category['people'] or 'people' in self.all_classes and label_class == 'people') and box.conf >= self.threshold:
+
+                    description.label = 'people' + '/' + label_class
+                    people_recognition.descriptions.append(description)
+
+                elif (label_class in [val for sublist in self.all_classes for val in sublist] or label_class in self.all_classes) and box.conf >= self.threshold:
+                    index = None
+                    j = 0
+                    for value in self.classes_by_category.values():
+                        if label_class in value:
+                            index = j
+                        j += 1
+                    description.label = self.all_classes[index] + '/' + label_class if index is not None else label_class
+                    objects_recognition.descriptions.append(description)
+
+                debug_img = results[0].plot()
+                description_header.seq += 1
             
-            if int(box.cls) >= len(self.all_classes):
-                continue
+            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
-            label_class = self.all_classes[int(box.cls)]
+            if len(objects_recognition.descriptions) > 0:
+                self.object_recognition_publisher.publish(objects_recognition)
 
-            description = Description2D()
-            description.header = copy(description_header)
-            description.type = Description2D.DETECTION
-            description.id = description.header.seq
-            description.score = float(box.conf)
-            size = int(xyxy_box[2] - xyxy_box[0]), int(xyxy_box[3] - xyxy_box[1])
-            description.bbox.center.x = int(xyxy_box[0]) + int(size[0]/2)
-            description.bbox.center.y = int(xyxy_box[1]) + int(size[1]/2)
-            description.bbox.size_x = size[0]
-            description.bbox.size_y = size[1]
-            print(f"-----------------------------------------------------------------------------{size}")
-
-            if ('people' in self.all_classes and label_class in self.classes_by_category['people'] or 'people' in self.all_classes and label_class == 'people') and box.conf >= self.threshold:
-
-                description.label = 'people' + '/' + label_class
-                people_recognition.descriptions.append(description)
-
-            elif (label_class in [val for sublist in self.all_classes for val in sublist] or label_class in self.all_classes) and box.conf >= self.threshold:
-                index = None
-                j = 0
-                for value in self.classes_by_category.values():
-                    if label_class in value:
-                        index = j
-                    j += 1
-                description.label = self.all_classes[index] + '/' + label_class if index is not None else label_class
-
-                objects_recognition.descriptions.append(description)
-
-            debug_img = results[0].plot()
-            description_header.seq += 1
-        
-        self.debug_publisher.publish(ros_numpy.msgify(Image, np.flip(debug_img, 2), 'rgb8'))
-
-        if len(objects_recognition.descriptions) > 0:
-            self.object_recognition_publisher.publish(objects_recognition)
-
-        if len(people_recognition.descriptions) > 0:
-            self.people_detection_publisher.publish(people_recognition)
+            if len(people_recognition.descriptions) > 0:
+                self.people_detection_publisher.publish(people_recognition)       
+        else:
+            debug_img = results[0].plot()            
+            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
     def readParameters(self):
         self.debug_topic = rospy.get_param("~publishers/debug/topic", "/butia_vision/br/debug")
