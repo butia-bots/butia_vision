@@ -12,32 +12,23 @@ subscribers:
   
   queue_size: 1
   exact_time: false
-  slop: 0.2
+  slop: 0.5
 
-  image_rgb: /kinect2/qhd/image_color_rect
+  image_rgb: /butia_vision/bvb/image_rgb
 
-  points: /kinect2/qhd/points
+  image_depth: /butia_vision/bvb/image_depth
+
+  camera_info: /butia_vision/bvb/camera_info
+
 
 publishers:
 
-  pose_recognition:
-    topic: /butia_vision/br/pose_recognition
+  recognition:
+    topic: /butia_vision/br/recognition
     queue_size: 1
-  
-  object_recognition:
-    topic: /butia_vision/br/object_recognition
-    queue_size: 1
-
-  people_tracking:
-    topic: /butia_vision/br/people_detection
-    queue_size: 1
-  
+    
   debug:
     topic: /butia_vision/br/debug
-    queue_size: 1
-  
-  tracker:
-    topic: /butia_vision/pt/people_tracking
     queue_size: 1
 
 servers:
@@ -57,8 +48,8 @@ services:
     stop: /butia_vision/pt/stop
 
 tracking:
-  start_on_init: true
+  start_on_init: false
   thresholds:
-    reid_threshold: 0.5
-    iou_threshold: 0.5
+    reid_threshold: 0.3
+    iou_threshold: 0.15
     max_age: 5
