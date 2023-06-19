@@ -10,6 +10,7 @@ import cv2
 from ultralytics import YOLO
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
+from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 
 
@@ -83,11 +84,13 @@ class YoloV8Recognition(BaseRecognition):
 
                 label_class = self.all_classes[int(box.cls)]
 
+
                 description = Description2D()
                 description.header = copy(description_header)
                 description.type = Description2D.DETECTION
                 description.id = description.header.seq
                 description.score = float(box.conf)
+                description.max_size = Vector3(*[0.5, 0.5, 0.5])
                 size = int(xyxy_box[2] - xyxy_box[0]), int(xyxy_box[3] - xyxy_box[1])
                 description.bbox.center.x = int(xyxy_box[0]) + int(size[0]/2)
                 description.bbox.center.y = int(xyxy_box[1]) + int(size[1]/2)
@@ -136,7 +139,7 @@ class YoloV8Recognition(BaseRecognition):
         self.threshold = rospy.get_param("~threshold", 0.5)
 
 
-        self.all_classes = list(rospy.get_param("/object_recognition/all_classes"))
+        self.all_classes = list(rospy.get_param("~all_classes", []))
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
         self.model_file = rospy.get_param("~model_file", "yolov8_lab_objects.pt")
 

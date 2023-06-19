@@ -1,4 +1,4 @@
-threshold: 0.8
+threshold: 0.5
 classes_by_category:
     drink: ['guarana', 'Guarana', 'IceTea', 'tonic', Tonic', 'Coke', 'Beer can', 'CoconutWater', 'Water', Soda can']
     snack: ['corn flakes', 'CornFlakes', 'pringles', 'Pringles', 'Popcorn', 'Cookies', 'Cracker', 'Chocolate Milk', 'TunaCan']
