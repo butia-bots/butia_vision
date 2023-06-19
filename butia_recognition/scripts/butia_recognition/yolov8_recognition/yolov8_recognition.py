@@ -55,7 +55,6 @@ class YoloV8Recognition(BaseRecognition):
             return None
         
         img_rgb = source_data['image_rgb']
-
         cv_img = ros_numpy.numpify(img_rgb)
         rospy.loginfo('Image ID: ' + str(img_rgb.header.seq))
         
@@ -73,7 +72,7 @@ class YoloV8Recognition(BaseRecognition):
 
         results = self.model.predict(cv_img)
         boxes_ = results[0].boxes.cpu().numpy()
-        print(len(results[0].boxes))
+
         if len(results[0].boxes):
             for i in range(len(results[0].boxes)):
                 box = results[0].boxes[i]
@@ -83,7 +82,7 @@ class YoloV8Recognition(BaseRecognition):
                     continue
 
                 label_class = self.all_classes[int(box.cls)]
-                print(label_class)
+
                 description = Description2D()
                 description.header = copy(description_header)
                 description.type = Description2D.DETECTION
@@ -94,7 +93,6 @@ class YoloV8Recognition(BaseRecognition):
                 description.bbox.center.y = int(xyxy_box[1]) + int(size[1]/2)
                 description.bbox.size_x = size[0]
                 description.bbox.size_y = size[1]
-                print(f"-----------------------------------------------------------------------------{size}")
 
                 if ('people' in self.all_classes and label_class in self.classes_by_category['people'] or 'people' in self.all_classes and label_class == 'people') and box.conf >= self.threshold:
 
@@ -109,22 +107,21 @@ class YoloV8Recognition(BaseRecognition):
                             index = j
                         j += 1
                     description.label = self.all_classes[index] + '/' + label_class if index is not None else label_class
-
                     objects_recognition.descriptions.append(description)
 
                 debug_img = results[0].plot()
                 description_header.seq += 1
             
             self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
+
+            if len(objects_recognition.descriptions) > 0:
+                self.object_recognition_publisher.publish(objects_recognition)
+
+            if len(people_recognition.descriptions) > 0:
+                self.people_detection_publisher.publish(people_recognition)       
         else:
-            debug_img = results[0].plot()
+            debug_img = results[0].plot()            
             self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
-
-        if len(objects_recognition.descriptions) > 0:
-            self.object_recognition_publisher.publish(objects_recognition)
-
-        if len(people_recognition.descriptions) > 0:
-            self.people_detection_publisher.publish(people_recognition)
 
     def readParameters(self):
         self.debug_topic = rospy.get_param("~publishers/debug/topic", "/butia_vision/br/debug")
@@ -138,7 +135,8 @@ class YoloV8Recognition(BaseRecognition):
 
         self.threshold = rospy.get_param("~threshold", 0.5)
 
-        self.all_classes = list(rospy.get_param("~all_classes", []))
+
+        self.all_classes = list(rospy.get_param("/object_recognition/all_classes"))
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
         self.model_file = rospy.get_param("~model_file", "yolov8_lab_objects.pt")
 
