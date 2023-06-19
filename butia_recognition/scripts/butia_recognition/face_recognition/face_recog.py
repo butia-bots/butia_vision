@@ -64,7 +64,6 @@ class FaceRecognition(BaseRecognition):
     def flatten(self, l):
         values_list = [item for sublist in l.values() for item in sublist]
         keys_list = [item for name in l.keys() for item in [name]*len(l[name])]
-        print(keys_list)
         return keys_list, values_list
 
 
@@ -119,15 +118,7 @@ class FaceRecognition(BaseRecognition):
             else:
                 pass
 
-        self.saveVar(encoded_face, 'features')
-    
-    #def moreProxFace(self):
-        #faceMP = face_recognition.face_locations()
-        #facesMP = 
-        #if faceMP != None and len(facesMP) > 1:
-            #for self.face in faces:
-
-                
+        self.saveVar(encoded_face, 'features')             
 
     def PeopleIntroducing(self, ros_srv):
 
@@ -171,34 +162,25 @@ class FaceRecognition(BaseRecognition):
         i = 0
         while i<num_images:
             self.regressiveCounter(ros_srv.interval)
-            print("vo entra em")
             try:
-                print("Entrei")
-
                 ros_image_aux = rospy.wait_for_message(self.subscribers_dict['image_rgb'], Image, 1000)
             except (ROSException, ROSInterruptException) as e:
-                print(e)
-                print("pq eu to aq")
                 break
             ros_image = ros_numpy.numpify(ros_image_aux)
             ros_image = np.flip(ros_image)
             ros_image = np.flipud(ros_image)
             face = face_recognition.face_locations(ros_image, model='yolov8')
+            image_idx = 0
             if len(face) > 1:
                 for idx, (top, right, bottom, left) in enumerate(face):
                     area = (right-left) * (top-bottom)
                     if area > prevArea:
                         prevArea = area
+                        image_idx = idx
                 
             if len(face) > 0 and len(face) < 1:
                 print("detectei o rosto")
                 s_rgb_image = ros_image.copy() 
-                #if face != None:
-                #   if len(face):
-                #      top, right, bottom, left = face[0]
-                #     cv2.rectangle(s_rgb_image, (left, top), (right, bottom), (0, 0, 255), 2)
-
-                #cv2.imshow("Person", s_rgb_image)
                 print('TEM FACE')
                 rospy.logwarn('Picture ' + add_image_labels[i] + ' was  saved.')
                 (top, right, bottom, left) = face[idx]
@@ -223,9 +205,21 @@ class FaceRecognition(BaseRecognition):
         print('aiaiai')
         thold = 0.6
         face_rec = Recognitions2D()
-        img = None
-        if len(args):
-            img = args[0]
+        source_data = self.sourceDataFromArgs(args)
+        
+        if 'image_rgb' not in source_data:
+            rospy.logwarn('source data has no image_rgb.')
+            return None
+        
+        img = source_data['image_rgb']
+
+        h = Header()
+        h.seq = self.seq
+        self.seq+=1
+        h.stamp = rospy.Time.now()
+
+        face_rec.header = h
+        face_rec = BaseRecognition.addSourceData2Recognition2D(source_data, face_rec)
 
         rospy.loginfo('Image ID: ' + str(img.header.seq))
 
@@ -234,9 +228,11 @@ class FaceRecognition(BaseRecognition):
         current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'yolov8')
         current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
 
+        debug_img = copy(ros_img_small_frame)
         
-        
-        for current_encoding in current_faces_encodings:
+        for idx in range(len(current_faces_encodings)):
+            current_encoding = current_faces_encodings[idx]
+            top, right, bottom, left = current_faces[idx]
             description = Description2D()
             name = 'unknown'
             if(len(self.know_faces[0])>0):
@@ -249,7 +245,18 @@ class FaceRecognition(BaseRecognition):
                             
 
             description.label = name
-            face_rec.descriptions.append(description)
+            
+            description_header = img.header
+            description_header.seq = 0
+            description.header = copy(description_header)
+            description.type = Description2D.DETECTION
+            description.id = description.header.seq
+            description.score = 1
+            size = int(right-left), int(bottom-top)
+            description.bbox.center.x = int(left) + int(size[1]/2)
+            description.bbox.center.y = int(top) + int(size[0]/2)
+            description.bbox.size_x = bottom-top
+            description.bbox.size_y = right-left
 
         debug_img = copy(ros_img_small_frame)
 
@@ -258,28 +265,16 @@ class FaceRecognition(BaseRecognition):
         self.seq += 1
         h.stamp = rospy.Time.now()
 
-        # Display the results
-        for idx, (top, right, bottom, left) in enumerate(current_faces):
-            description_header = img.header
-            description_header.seq = 0
-            description.header = copy(description_header)
-            description.type = Description2D.DETECTION
-            description.id = description.header.seq
-            description.score = 1
-            size = int(right-left), int(top-bottom)
-            description.bbox.center.x = int(bottom) + int(size[0]/2)
-            description.bbox.center.y = int(left) + int(size[1]/2)
-            description.bbox.size_x = right-left
-            description.bbox.size_y = top-bottom
+        cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
+            
+        font = cv2.FONT_HERSHEY_DUPLEX
+        cv2.putText(debug_img, name, (left + 4, bottom - 4), font, 0.5, (0,0,255), 2)
+        description_header.seq += 1
 
-            cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
+        face_rec.descriptions.append(description)
 
-            # Draw a label with a name below the faceface_recognition_node
-            font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(debug_img, str(face_rec.descriptions[idx].label), (left + 4, bottom - 4), font, 0.5, (0,0,255), 2)
-            description_header.seq += 1
-        
-        self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
+            
+        self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'bgr8'))
 
         if len(face_rec.descriptions) > 0:
             self.face_recognition_publisher.publish(face_rec)

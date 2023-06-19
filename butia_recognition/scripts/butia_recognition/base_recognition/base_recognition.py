@@ -22,6 +22,12 @@ class BaseRecognition:
         self.state = state
         self.pkg_path = rospkg.RosPack().get_path(package_name)
         self.seq = 0
+
+    @staticmethod
+    def addSourceData2Recognitions2D(source_data, recognitions2d):
+        for key, value in source_data.items():
+            setattr(recognitions2d, key, value)
+        return recognitions2d
     
     def initRosComm(self, callbacks_obj=None):
         if callbacks_obj is None:
@@ -30,6 +36,15 @@ class BaseRecognition:
         self.list_classes_server = rospy.Service(self.list_classes_service, ListClasses, callbacks_obj.serverListClasses)
         self.start_server = rospy.Service(self.start_service, Empty, callbacks_obj.serverStart)
         self.stop_server = rospy.Service(self.stop_service, Empty, callbacks_obj.serverStop)
+
+    def sourceDataFromArgs(self, args):
+        data = {}
+        index = 0
+        for source in VisionSynchronizer.POSSIBLE_SOURCES:
+            if source in self.subscribers_dict:
+                data[source] = args[index]
+                index+= 1
+        return data
 
     def serverListClasses(self, req):
         return ListClassesResponse(self.classes)

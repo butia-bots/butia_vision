@@ -7,8 +7,6 @@ subscribers:
   slop: 0.5
 
   image_rgb: /butia_vision/bvb/image_rgb
-  camera_info: /butia_vision/bvb/camera_info
-  image_depth: /butia_vision/bvb/image_depth
 
   #points: /butia_vision/bvb/points
 

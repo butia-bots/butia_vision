@@ -6,11 +6,10 @@ subscribers:
   exact_time: false
   slop: 0.5
 
+  #points: kinect2/qhd/points
   image_rgb: /butia_vision/bvb/image_rgb
   camera_info: /butia_vision/bvb/camera_info
   image_depth: /butia_vision/bvb/image_depth
-
-  #points: /butia_vision/bvb/points
 
 publishers:
 
