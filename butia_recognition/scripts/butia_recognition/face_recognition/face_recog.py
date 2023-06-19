@@ -67,16 +67,17 @@ class FaceRecognition(BaseRecognition):
         return keys_list, values_list
 
 
-    ##Falta teste
     def add_person_encoding(self):
         startNames = self.startNames
         features = self.loadVar('features')
         for name in startNames:
             if name in features.keys():
-                self.encoded_faces[name] = features[name]
+                starter_face = features.items()
+                setattr(starter_face, 'names', features.keys())
+                setattr(starter_face, 'encodings', features.values())
             else:
                 print(f"O nome '{name}' não foi encontrado no arquivo 'features.pkl'.")
-        return self.encoded_faces
+        return starter_face
 
     def encode_faces(self):
 
@@ -84,8 +85,7 @@ class FaceRecognition(BaseRecognition):
         names = []
         try:
             encoded_face = self.add_person_encoding()
-            if encoded_face == None:
-                encoded_face = self.loadVar('features')
+            print('opaopa', encoded_face.keys())
         except:
             encoded_face = {}
         train_dir = os.listdir(self.dataset_dir)
@@ -96,7 +96,7 @@ class FaceRecognition(BaseRecognition):
 
                 for person_img in pix:
                     face = face_recognition.load_image_file(self.dataset_dir + person + "/" + person_img)
-                    face_bounding_boxes = face_recognition.face_locations(face, model = 'yolov8')
+                    face_bounding_boxes = face_recognition.face_locations(face, model = 'cnn')
                     if len(face_bounding_boxes) > 0:
                         face_enc = face_recognition.face_encodings(face, known_face_locations= face_bounding_boxes)[0]
                         encodings.append(face_enc)
@@ -111,14 +111,21 @@ class FaceRecognition(BaseRecognition):
                         print(person + "/" + person_img + " was skipped and can't be used for training")
             else:
                 pass
+        print(encoded_face)
         self.saveVar(encoded_face, 'features')             
 
     def PeopleIntroducing(self, ros_srv):
 
         name = ros_srv.name
+        counter = 2
         while name in self.loadVar('features').keys():
-            print("O nome ja escolhido já esta sendo utilizado, por favor escolha outro ou Nome+sobrenome.")
-            name = ros_srv.name ## achar uma forma de passar isso para o ROS
+            try:
+                os.path.join(self.dataset_dir + name)
+                name = ros_srv.name + '_' + str(counter)
+                counter +=1
+            except:
+                pass
+
         num_images = ros_srv.num_images
         NAME_DIR = os.path.join(self.dataset_dir, name)
         os.makedirs(NAME_DIR, exist_ok=True)
@@ -163,7 +170,7 @@ class FaceRecognition(BaseRecognition):
             ros_image = ros_numpy.numpify(ros_image_aux)
             ros_image = np.flip(ros_image)
             ros_image = np.flipud(ros_image)
-            face = face_recognition.face_locations(ros_image, model='yolov8')
+            face = face_recognition.face_locations(ros_image, model='cnn')
             image_idx = 0
             if len(face) > 1:
                 for idx, (top, right, bottom, left) in enumerate(face):
@@ -217,7 +224,7 @@ class FaceRecognition(BaseRecognition):
 
         ros_img_small_frame = ros_numpy.numpify(img)
 
-        current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'yolov8')
+        current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'cnn')
         current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
 
         debug_img = copy(ros_img_small_frame)
@@ -253,6 +260,11 @@ class FaceRecognition(BaseRecognition):
             cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
             
             font = cv2.FONT_HERSHEY_DUPLEX
+            #if '_' in name:
+                #representName = name.split('_')[0]
+                #cv2.putText(debug_img, representName, (left + 4, bottom - 4), font, 0.5, (0,0,255), 2)
+                #description_header.seq += 1
+            #else:
             cv2.putText(debug_img, name, (left + 4, bottom - 4), font, 0.5, (0,0,255), 2)
             description_header.seq += 1
 
@@ -267,7 +279,7 @@ class FaceRecognition(BaseRecognition):
         self.debug_topic = rospy.get_param("~publishers/debug/topic", "/butia_vision/br/debug")
         self.debug_qs = rospy.get_param("~publishers/debug/queue_size", 1)
 
-        self.startNames = rospy.get_param("~startNames", None)
+        self.startNames = rospy.get_param("startNames", [])
 
         self.face_recognition_topic = rospy.get_param("~publishers/face_recognition/topic", "/butia_vision/br/face_recognition")
 
