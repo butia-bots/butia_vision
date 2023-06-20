@@ -219,6 +219,10 @@ class FaceRecognition(BaseRecognition):
 
             description.label = name
 
+#  distancesTuple = ()
+# setattr(distancesTuple, 'names', name())
+# setattr(distancesTuple, 'distance', face_distances())
+
             description_header = img.header
             description_header.seq = 0
             description.header = copy(description_header)
