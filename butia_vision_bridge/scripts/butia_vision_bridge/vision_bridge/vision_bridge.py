@@ -11,7 +11,7 @@ import open3d as o3d
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2
 
 from multipledispatch import dispatch
-from collections import Iterable
+from collections.abc import Iterable
 
 class VisionBridge:
     SOURCES_TYPES = {

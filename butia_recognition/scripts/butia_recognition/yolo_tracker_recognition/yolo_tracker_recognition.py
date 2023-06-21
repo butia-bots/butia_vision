@@ -16,7 +16,7 @@ from boxmot import DeepOCSORT
 from sensor_msgs.msg import Image
 from std_srvs.srv import EmptyResponse, Empty
 
-from butia_vision_msgs.msg import Recognitions2D, Description2D, KeyPoint
+from butia_vision_msgs.msg import Recognitions2D, Description2D, KeyPoint2D
 from copy import deepcopy
 
 
@@ -35,6 +35,7 @@ class YoloTrackerRecognition(BaseRecognition):
     def initRosComm(self):
         self.debugPub = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
         self.recognitionPub = rospy.Publisher(self.recognition_topic, Recognitions2D, queue_size=self.recognition_qs)
+        self.trackingPub = rospy.Publisher(self.tracking_topic, Description2D, queue_size=self.tracking_qs)
         
         self.trackingStartService = rospy.Service(self.start_tracking_topic, Empty, self.startTracking)
         self.trackingStopService = rospy.Service(self.stop_tracking_topic, Empty, self.stopTracking)
@@ -89,9 +90,7 @@ class YoloTrackerRecognition(BaseRecognition):
     
     @ifState
     def callback(self, *args):
-        img = None
-        points = None
-        
+                
         data = self.sourceDataFromArgs(args)
         
         img = data["image_rgb"]
@@ -105,7 +104,6 @@ class YoloTrackerRecognition(BaseRecognition):
 
         recognition = Recognitions2D()
         recognition.image_rgb = img
-        recognition.points = points
         recognition.image_depth = img_depth
         recognition.camera_info = camera_info
         recognition.header = HEADER
@@ -177,7 +175,8 @@ class YoloTrackerRecognition(BaseRecognition):
         if tracked_box != None:
             tracked_description = deepcopy(tracked_box)
             tracked_description.type = Description2D.TRACKING
-            recognition.descriptions.append(tracked_box)
+            # recognition.descriptions.append(tracked_box)
+            self.trackingPub.publish(tracked_description)
             self.lastTrack = now
             cv.rectangle(debug_img,(int(tracked_box.bbox.center.x-tracked_box.bbox.size_x/2),\
                                     int(tracked_box.bbox.center.y-tracked_box.bbox.size_y/2)),\
@@ -186,14 +185,17 @@ class YoloTrackerRecognition(BaseRecognition):
             
         
         poses = results[0].keypoints.data.cpu().numpy()
-        for id, pose in zip(people_ids, poses):
+
+        
+        for i, pose in enumerate( poses):
             description = Description2D()
             description.header = HEADER
             description.type = Description2D.POSE
-            description.global_id = id
-            # rospy.logwarn(pose)
+            if self.tracking and len(poses) == len(people_ids):
+                description.global_id = people_ids[i]
+            rospy.logwarn(pose)
             for idx, kpt in enumerate(pose):
-                keypoint = KeyPoint()
+                keypoint = KeyPoint2D()
                 keypoint.x = kpt[0]
                 keypoint.y = kpt[1]
                 keypoint.id = idx
@@ -221,6 +223,9 @@ class YoloTrackerRecognition(BaseRecognition):
 
         self.start_tracking_topic = rospy.get_param("~services/tracking/start","/butia_vision/pt/start")
         self.stop_tracking_topic = rospy.get_param("~services/tracking/stop","/butia_vision/pt/stop")
+        
+        self.tracking_topic = rospy.get_param("~publishers/tracking/topic", "pub/tracking2d")
+        self.tracking_qs = rospy.get_param("~publishers/tracking/queue_size", 1)
 
         self.threshold = rospy.get_param("~debug_kpt_threshold", 0.5)
 
@@ -238,6 +243,6 @@ class YoloTrackerRecognition(BaseRecognition):
     
    
 if __name__ == "__main__":
-    rospy.init_node("yolo_tracjer_recognition_node", anonymous = True)
+    rospy.init_node("yolo_tracker_recognition_node", anonymous = True)
     yolo = YoloTrackerRecognition()
     rospy.spin()
