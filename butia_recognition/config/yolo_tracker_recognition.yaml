@@ -24,7 +24,7 @@ subscribers:
 publishers:
 
   recognition:
-    topic: /sub/recognitions2d
+    topic: /butia_vision/br/recognitions2d
     queue_size: 1
     
   debug:
@@ -32,7 +32,7 @@ publishers:
     queue_size: 1
 
   tracking: 
-    topic: /pub/tracking2d
+    topic: /butia_vision/pt/tracking2d
     queue_size: 1
 
 servers:

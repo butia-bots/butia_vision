@@ -35,7 +35,7 @@ class YoloTrackerRecognition(BaseRecognition):
     def initRosComm(self):
         self.debugPub = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
         self.recognitionPub = rospy.Publisher(self.recognition_topic, Recognitions2D, queue_size=self.recognition_qs)
-        self.trackingPub = rospy.Publisher(self.tracking_topic, Description2D, queue_size=self.tracking_qs)
+        self.trackingPub = rospy.Publisher(self.tracking_topic, Recognitions2D, queue_size=self.tracking_qs)
         
         self.trackingStartService = rospy.Service(self.start_tracking_topic, Empty, self.startTracking)
         self.trackingStopService = rospy.Service(self.stop_tracking_topic, Empty, self.stopTracking)
@@ -173,10 +173,17 @@ class YoloTrackerRecognition(BaseRecognition):
             cv.putText(debug_img,f"{box_label}{self.model.names[clss]}:{score:.2f}", (int(X1), int(Y1)), cv.FONT_HERSHEY_SIMPLEX,0.75,(0,0,255),thickness=2)
         
         if tracked_box != None:
+            track_recognition = Recognitions2D()
+            track_recognition.header = recognition.header
+            track_recognition.image_rgb = recognition.image_rgb
+            track_recognition.image_depth = recognition.image_depth
+            track_recognition.camera_info = recognition.camera_info
+
             tracked_description = deepcopy(tracked_box)
-            tracked_description.type = Description2D.TRACKING
+            tracked_description.type = Description2D.DETECTION
             # recognition.descriptions.append(tracked_box)
-            self.trackingPub.publish(tracked_description)
+            track_recognition.descriptions.append(tracked_description)
+            self.trackingPub.publish(track_recognition)
             self.lastTrack = now
             cv.rectangle(debug_img,(int(tracked_box.bbox.center.x-tracked_box.bbox.size_x/2),\
                                     int(tracked_box.bbox.center.y-tracked_box.bbox.size_y/2)),\
