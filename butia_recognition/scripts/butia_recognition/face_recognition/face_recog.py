@@ -13,13 +13,15 @@ import cv2
 import face_recognition
 import time
 import rospkg
-
+from collections import Counter
 import pickle
 
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 from butia_vision_msgs.srv import PeopleIntroducing, PeopleIntroducingResponse
+
+
 
 PACK_DIR = rospkg.RosPack().get_path('butia_recognition')
 class FaceRecognition(BaseRecognition):
@@ -167,7 +169,6 @@ class FaceRecognition(BaseRecognition):
             
             if len(face) > 0 and len(face) < 1:
                 print("detectei o rosto")
-                s_rgb_image = ros_image.copy() 
                 print('TEM FACE')
             if len(face) > 0:
                 ros_image = cv2.cvtColor(ros_image, cv2.COLOR_BGR2RGB)
@@ -206,7 +207,7 @@ class FaceRecognition(BaseRecognition):
         face_rec.header = h
         face_rec = BaseRecognition.addSourceData2Recognitions2D(source_data, face_rec)
         
-        rospy.loginfo('Image ID: ' + str(img.header.seq))
+        #rospy.loginfo('Image ID: ' + str(img.header.seq))
 
         ros_img_small_frame = ros_numpy.numpify(img)
 
@@ -214,7 +215,8 @@ class FaceRecognition(BaseRecognition):
         current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
 
         debug_img = copy(ros_img_small_frame)
-        
+        names = []
+        name_distance=[]
         for idx in range(len(current_faces_encodings)):
             current_encoding = current_faces_encodings[idx]
             top, right, bottom, left = current_faces[idx]
@@ -226,10 +228,26 @@ class FaceRecognition(BaseRecognition):
                 min_distance = face_distances[min_distance_idx]
                 if min_distance < thold:
                     name = (self.know_faces[0][min_distance_idx])
-
-                            
-
+            
+            name_distance.append((name,min_distance))
             description.label = name
+
+            names.append(name)
+
+            repeated_values = [value for value, count in (Counter(names)).items() if count > 1]
+            print(repeated_values)
+            if repeated_values:
+                for x in name_distance:
+                    if x[0] != 'unknown':
+                        if x[0] in repeated_values:
+                            print('repete')
+                                
+
+
+
+#  distancesTuple = ()
+# setattr(distancesTuple, 'names', name())
+# setattr(distancesTuple, 'distance', face_distances())
 
             description_header = img.header
             description_header.seq = 0
@@ -252,7 +270,6 @@ class FaceRecognition(BaseRecognition):
             face_rec.descriptions.append(description)
             
         self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'bgr8'))
-
         if len(face_rec.descriptions) > 0:
             self.face_recognition_publisher.publish(face_rec)
 
