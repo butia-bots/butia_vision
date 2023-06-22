@@ -139,7 +139,8 @@ class YoloTrackerRecognition(BaseRecognition):
             results = self.model.track(img, persist=True,
                                         conf=self.reid_threshold,
                                         iou=self.iou_threshold,
-                                        device="cuda:0")
+                                        device="cuda:0",
+                                        tracker=self.tracker_cfg_file)
             bboxs = results[0].boxes.data.cpu().numpy()
         else:
             results = self.model(img)
@@ -279,6 +280,12 @@ class YoloTrackerRecognition(BaseRecognition):
         self.max_age = rospy.get_param("~tracking/thresholds/max_age",5)
         self.tracking_on_init = rospy.get_param("~tracking/start_on_init", False)
         self.use_boxmot = rospy.get_param("~tracking/use_boxmot", False)
+
+        import rospkg
+        rospack = rospkg.RosPack()
+        rospack.list()
+
+        self.tracker_cfg_file = rospack.get_path("butia_recognition") + "/" + rospy.get_param("~tracker-file","")
 
         self.tracking = False
 
