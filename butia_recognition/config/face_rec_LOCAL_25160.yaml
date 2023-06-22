@@ -1,0 +1,31 @@
+threshold: 0.5
+
+subscribers:
+  
+  queue_size: 100
+  exact_time: false
+  slop: 0.5
+
+  image_rgb: /butia_vision/bvb/image_rgb
+
+  #points: /butia_vision/bvb/points
+
+publishers:
+
+  face_recognition:
+    topic: /butia_vision/br/face_recognition
+    queue_size: 1
+
+servers:
+
+  list_classes:
+    service: /butia_vision/br/people_detection/list_classes
+
+  start:
+    service: /butia_vision/br/people_detection/start
+
+  stop:
+    service: /butia_vision/br/people_detection/stop
+
+names:
+    starting: features

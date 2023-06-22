@@ -1,0 +1,22 @@
+<launch>
+    <arg name="machine" default="localhost"/>
+    <arg name="bvb_machine" default="$(arg machine)"/>
+    <arg name="br_machine" default="$(arg machine)"/>
+    <arg name="i2w_machine" default="$(arg machine)"/>
+    <arg name="use_machine" default="true"/>
+    <arg name="output" default="screen"/>
+    <arg name="use_kinect" default="true"/>
+    <arg name="use_bridge" default="false"/>
+    <arg name="use_image2world" default="true"/>
+    <arg name="publish_tf" default="true"/>
+    <arg name="camera" default="kinect"/>
+
+    <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+
+    <include file="$(find butia_recognition)/launch/face_rec.launch">
+        <arg name="machine" value="$(arg br_machine)" />
+        <arg name="use_machine" value="$(arg use_machine)"/>
+        <arg name="output" value="$(arg output)"/>
+    </include>
+
+</launch>
