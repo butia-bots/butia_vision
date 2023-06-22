@@ -21,6 +21,8 @@ from sensor_msgs.msg import Image
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 from butia_vision_msgs.srv import PeopleIntroducing, PeopleIntroducingResponse
 
+
+
 PACK_DIR = rospkg.RosPack().get_path('butia_recognition')
 class FaceRecognition(BaseRecognition):
     def __init__(self, state=True):
@@ -245,6 +247,8 @@ class FaceRecognition(BaseRecognition):
                     if x[0] != 'unknown':
                         if x[0] in repeated_values:
                             print('repete')
+                                
+
 
 
 #  distancesTuple = ()

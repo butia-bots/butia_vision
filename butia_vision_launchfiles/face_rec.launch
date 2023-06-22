@@ -9,6 +9,7 @@
     <arg name="use_bridge" default="false"/>
     <arg name="use_image2world" default="true"/>
     <arg name="publish_tf" default="true"/>
+    <arg name="camera" default="kinect"/>
 
     <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
