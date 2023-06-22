@@ -58,6 +58,10 @@ all_classes:
     - pringles
     - sponge
     - tonic
+  
+max_sizes:
+    - [0.5, 2.5, 0.5]
+
 model_file: yolov8_lab_objects.pt
 
 subscribers:
