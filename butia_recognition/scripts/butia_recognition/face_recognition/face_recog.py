@@ -164,14 +164,7 @@ class FaceRecognition(BaseRecognition):
             ros_image = np.flip(ros_image)
             ros_image = np.flipud(ros_image)
             face = face_recognition.face_locations(ros_image, model='yolov8')
-            image_idx = 0
-            if len(face) > 1:
-                for idx, (top, right, bottom, left) in enumerate(face):
-                    area = (right-left) * (top-bottom)
-                    if area > prevArea:
-                        prevArea = area
-                        image_idx = idx
-                
+            
             if len(face) > 0 and len(face) < 1:
                 print("detectei o rosto")
                 s_rgb_image = ros_image.copy() 

@@ -9,13 +9,30 @@
     <arg name="use_bridge" default="false"/>
     <arg name="use_image2world" default="true"/>
     <arg name="publish_tf" default="true"/>
+    <arg name="camera" default="kinect"/>
 
     <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+    
+    <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch">
+        <arg name="machine" value="$(arg bvb_machine)" />
+        <arg name="use_machine" value="$(arg use_machine)"/>
+        <arg name="output" value="$(arg output)"/>
+        <arg name="use_bridge" value="$(arg use_bridge)"/>
+        <arg name="publish_tf" value="$(arg publish_tf)"/>
+        <arg name="camera" value="$(arg camera)"/>
+    </include>
 
     <include file="$(find butia_recognition)/launch/face_rec.launch">
         <arg name="machine" value="$(arg br_machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
         <arg name="output" value="$(arg output)"/>
     </include>
+
+    <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_face_recognition_node" machine="$(arg machine)">
+        <remap from="sub/recognitions2d"  to="/butia_vision/br/face_recognition"/>
+        <remap from="pub/recognitions3d"  to="/butia_vision/br/face_recognition3d"/>
+        <remap from="pub/markers" to="/butia_vision/br/markers"/>
+        <rosparam param="color">[255,0,0]</rosparam>
+    </node>
 
 </launch>

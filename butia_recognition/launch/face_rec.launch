@@ -11,10 +11,4 @@
     <param name="startNames" value="$(arg starters)" />
   </node>
 
-  <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_face_recognition_node" machine="$(arg machine)">
-    <remap from="sub/recognitions2d"  to="/butia_vision/br/face_recognition"/>
-    <remap from="pub/recognitions3d"  to="/butia_vision/br/face_recognition3d"/>
-    <remap from="pub/markers" to="/butia_vision/br/markers"/>
-    <rosparam param="color">[255,0,0]</rosparam>
- </node>
 </launch>
