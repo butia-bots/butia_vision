@@ -173,23 +173,24 @@ class YoloTrackerRecognition(BaseRecognition):
             description.type = Description2D.DETECTION
 
             box_label = ""
-            previus_dist = float("inf")
-            center = (IMG_WIDTH/2,IMG_HEIGHT/2)
+            previus_size = float("-inf")
+            # center = (IMG_WIDTH/2,IMG_HEIGHT/2)
             if tracking:
                 description.global_id = ID
                 if description.label == "person":
                     people_ids.append(ID)                 
                 
                 box_label = f"ID:{ID} "
-                dist = np.sqrt(np.power(description.bbox.center.x-center[0],2)+np.power(description.bbox.center.y-center[1],2))
+                # dist = np.sqrt(np.power(description.bbox.center.x-center[0],2)+np.power(description.bbox.center.y-center[1],2))
+                size = description.bbox.size_x * description.bbox.size_y
                 if ID == self.trackID or \
                     self.trackID == -1 or \
                     (perf_counter() - self.lastTrack >= self.max_time and \
                     (tracked_box == None or\
-                    dist < previus_dist)):
+                    size > previus_size)):
 
                     self.trackID = ID
-                    previus_dist = dist
+                    previus_size = size
                     tracked_box = description
             recognition.descriptions.append(description)
                     
@@ -215,11 +216,12 @@ class YoloTrackerRecognition(BaseRecognition):
         
         poses = results[0].keypoints.data.cpu().numpy()
         counter = 0
-        if len(people_ids) == len(poses):
+        if not tracking or len(people_ids) == len(poses):
+            rospy.logerr("OI"*10000)
             desc : Description2D
             for desc in recognition.descriptions:
                 if desc.label == "person":
-                    desc.type = Description2D.POSE
+                    desc.type = Description2D.DETECTION
                     for idx, kpt in enumerate(poses[counter]):
                         keypoint = KeyPoint2D()
                         keypoint.x = kpt[0]
@@ -229,7 +231,8 @@ class YoloTrackerRecognition(BaseRecognition):
                         desc.pose.append(keypoint)
                         if kpt[2] >= self.threshold:
                             cv.circle(debug_img, (int(kpt[0]), int(kpt[1])),3,(0,255,0),thickness=-1)
-                        desc.global_id = people_ids[counter]
+                        if tracking:
+                            desc.global_id = people_ids[counter]
                     if tracked_box != None and tracked_description.global_id == desc.global_id:
                         desc.header = HEADER
                         tracked_description = desc

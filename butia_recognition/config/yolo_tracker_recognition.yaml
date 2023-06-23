@@ -58,4 +58,4 @@ tracking:
     reid_threshold: 0.3
     iou_threshold: 0.15
     max_age: 10
-    max_time: 5
+    max_time: 10
