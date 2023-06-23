@@ -68,26 +68,12 @@ class FaceRecognition(BaseRecognition):
         keys_list = [item for name in l.keys() for item in [name]*len(l[name])]
         return keys_list, values_list
 
-
-    ##Falta teste
-    def add_person_encoding(self):
-        startNames = self.startNames
-        features = self.loadVar('features')
-        for name in startNames:
-            if name in features.keys():
-                self.encoded_faces[name] = features[name]
-            else:
-                print(f"O nome '{name}' não foi encontrado no arquivo 'features.pkl'.")
-        return self.encoded_faces
-
     def encode_faces(self):
 
         encodings = []
         names = []
         try:
-            encoded_face = self.add_person_encoding()
-            if encoded_face == None:
-                encoded_face = self.loadVar('features')
+            encoded_face = self.loadVar('features')
         except:
             encoded_face = {}
         train_dir = os.listdir(self.dataset_dir)
@@ -118,9 +104,6 @@ class FaceRecognition(BaseRecognition):
     def PeopleIntroducing(self, ros_srv):
 
         name = ros_srv.name
-        while name in self.loadVar('features').keys():
-            print("O nome ja escolhido já esta sendo utilizado, por favor escolha outro ou Nome+sobrenome.")
-            name = ros_srv.name ## achar uma forma de passar isso para o ROS
         num_images = ros_srv.num_images
         NAME_DIR = os.path.join(self.dataset_dir, name)
         os.makedirs(NAME_DIR, exist_ok=True)
@@ -282,8 +265,6 @@ class FaceRecognition(BaseRecognition):
     def readParameters(self):
         self.debug_topic = rospy.get_param("~publishers/debug/topic", "/butia_vision/br/debug")
         self.debug_qs = rospy.get_param("~publishers/debug/queue_size", 1)
-
-        self.startNames = rospy.get_param("~startNames", None)
 
         self.face_recognition_topic = rospy.get_param("~publishers/face_recognition/topic", "/butia_vision/br/face_recognition")
 
