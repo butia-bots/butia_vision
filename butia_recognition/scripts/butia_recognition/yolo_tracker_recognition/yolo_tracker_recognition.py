@@ -170,6 +170,7 @@ class YoloTrackerRecognition(BaseRecognition):
             description.bbox.size_x = X2-X1
             description.bbox.size_y = Y2-Y1
             description.label = self.model.names[clss]
+            description.type = Description2D.DETECTION
 
             box_label = ""
             previus_dist = float("inf")
@@ -177,10 +178,7 @@ class YoloTrackerRecognition(BaseRecognition):
             if tracking:
                 description.global_id = ID
                 if description.label == "person":
-                    people_ids.append(ID)
-                    description.type = Description2D.POSE
-                else:
-                    description.type = Description2D.DETECTION
+                    people_ids.append(ID)                 
                 
                 box_label = f"ID:{ID} "
                 dist = np.sqrt(np.power(description.bbox.center.x-center[0],2)+np.power(description.bbox.center.y-center[1],2))
@@ -221,7 +219,7 @@ class YoloTrackerRecognition(BaseRecognition):
             desc : Description2D
             for desc in recognition.descriptions:
                 if desc.label == "person":
-                    # desc.type = Description2D.POSE
+                    desc.type = Description2D.POSE
                     for idx, kpt in enumerate(poses[counter]):
                         keypoint = KeyPoint2D()
                         keypoint.x = kpt[0]
