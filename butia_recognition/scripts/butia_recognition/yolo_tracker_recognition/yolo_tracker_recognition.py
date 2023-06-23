@@ -217,7 +217,7 @@ class YoloTrackerRecognition(BaseRecognition):
         poses = results[0].keypoints.data.cpu().numpy()
         counter = 0
         if not tracking or len(people_ids) == len(poses):
-            rospy.logerr("OI"*10000)
+            # rospy.logerr("OI"*10000)
             desc : Description2D
             for desc in recognition.descriptions:
                 if desc.label == "person":
