@@ -217,21 +217,9 @@ class FaceRecognition(BaseRecognition):
                 min_distance = face_distances[min_distance_idx]
                 if min_distance < thold:
                     name = (self.know_faces[0][min_distance_idx])
-            
-            name_distance.append((name,min_distance))
             description.label = name
 
             names.append(name)
-
-            repeated_values = [value for value, count in (Counter(names)).items() if count > 1]
-            print(repeated_values)
-            if repeated_values:
-                for x in name_distance:
-                    if x[0] != 'unknown':
-                        if x[0] in repeated_values:
-                            print('repete')
-                                
-
 
 
 #  distancesTuple = ()
