@@ -36,7 +36,7 @@ class YoloTrackerRecognition(BaseRecognition):
         if self.tracking_on_init:
             self.startTracking(None)
 
-        rospy.loginfo("Yolo Tracker Recognition started")
+        rospy.loginfo("Yolo Tracker Recognition Node started")
 
     def initRosComm(self):
         self.debugPub = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
@@ -169,7 +169,6 @@ class YoloTrackerRecognition(BaseRecognition):
             description.bbox.center.y = (Y1+Y2)/2
             description.bbox.size_x = X2-X1
             description.bbox.size_y = Y2-Y1
-            description.type = Description2D.DETECTION
             description.label = self.model.names[clss]
 
             box_label = ""
@@ -179,6 +178,9 @@ class YoloTrackerRecognition(BaseRecognition):
                 description.global_id = ID
                 if description.label == "person":
                     people_ids.append(ID)
+                    description.type = Description2D.POSE
+                else:
+                    description.type = Description2D.DETECTION
                 
                 box_label = f"ID:{ID} "
                 dist = np.sqrt(np.power(description.bbox.center.x-center[0],2)+np.power(description.bbox.center.y-center[1],2))
@@ -197,16 +199,15 @@ class YoloTrackerRecognition(BaseRecognition):
             cv.putText(debug_img,f"{box_label}{self.model.names[clss]}:{score:.2f}", (int(X1), int(Y1)), cv.FONT_HERSHEY_SIMPLEX,0.75,(0,0,255),thickness=2)
         
         track_recognition = Recognitions2D()
+        track_recognition.header = HEADER
+        tracked_description : Description2D = deepcopy(tracked_box)
         if tracked_box != None:
             track_recognition.header = recognition.header
             track_recognition.image_rgb = recognition.image_rgb
             track_recognition.image_depth = recognition.image_depth
             track_recognition.camera_info = recognition.camera_info
-
-            tracked_description = deepcopy(tracked_box)
             tracked_description.type = Description2D.DETECTION
             # recognition.descriptions.append(tracked_box)
-            track_recognition.descriptions.append(tracked_description)
             self.lastTrack = now
             cv.rectangle(debug_img,(int(tracked_box.bbox.center.x-tracked_box.bbox.size_x/2),\
                                     int(tracked_box.bbox.center.y-tracked_box.bbox.size_y/2)),\
@@ -215,33 +216,33 @@ class YoloTrackerRecognition(BaseRecognition):
             
         
         poses = results[0].keypoints.data.cpu().numpy()
-
+        counter = 0
+        if len(people_ids) == len(poses):
+            desc : Description2D
+            for desc in recognition.descriptions:
+                if desc.label == "person":
+                    # desc.type = Description2D.POSE
+                    for idx, kpt in enumerate(poses[counter]):
+                        keypoint = KeyPoint2D()
+                        keypoint.x = kpt[0]
+                        keypoint.y = kpt[1]
+                        keypoint.id = idx
+                        keypoint.score = kpt[2]
+                        desc.pose.append(keypoint)
+                        if kpt[2] >= self.threshold:
+                            cv.circle(debug_img, (int(kpt[0]), int(kpt[1])),3,(0,255,0),thickness=-1)
+                        desc.global_id = people_ids[counter]
+                    if tracked_box != None and tracked_description.global_id == desc.global_id:
+                        desc.header = HEADER
+                        tracked_description = desc
+                        for kpt in desc.pose:
+                            if kpt.score >= self.threshold:
+                                cv.circle(debug_img, (int(kpt.x), int(kpt.y)),3,(0,255,255),thickness=-1)
+                    counter +=1
+                # recognition.descriptions.append(description)
         
-        for i, pose in enumerate(poses):
-            description = Description2D()
-            description.header = HEADER
-            description.type = Description2D.POSE
-            # rospy.logerr(len(poses))
-            # rospy.logerr(len(people_ids))
-            # rospy.logwarn(pose)
-            for idx, kpt in enumerate(pose):
-                keypoint = KeyPoint2D()
-                keypoint.x = kpt[0]
-                keypoint.y = kpt[1]
-                keypoint.id = idx
-                keypoint.score = kpt[2]
-                description.pose.append(keypoint)
-                if kpt[2] >= self.threshold:
-                    cv.circle(debug_img, (int(kpt[0]), int(kpt[1])),3,(0,255,0),thickness=-1)
-            if tracking and len(poses) == len(people_ids):
-                description.global_id = people_ids[i]
-                if len(track_recognition.descriptions) and description.global_id == track_recognition.descriptions[0].global_id:
-                    track_recognition.descriptions.append(description)
-                    for kpt in description.pose:
-                        if kpt.score >= self.threshold:
-                            cv.circle(debug_img, (int(kpt.x), int(kpt.y)),3,(0,255,255),thickness=-1)
-            recognition.descriptions.append(description)
-
+        # rospy.logerr()
+        track_recognition.descriptions.append(tracked_description)
         debug_msg = ros_numpy.msgify(Image, debug_img, encoding='bgr8')
         debug_msg.header = HEADER
         self.debugPub.publish(debug_msg)
@@ -251,7 +252,10 @@ class YoloTrackerRecognition(BaseRecognition):
             # recognition.descriptions = descriptions
             self.recognitionPub.publish(recognition)
         
-        if len(track_recognition.descriptions) > 0:
+        # for desc in track_recognition.descriptions:
+        #     rospy.logerr(desc)
+        #     rospy.logerr(type(tracked_box))
+        if tracked_box != None and len(track_recognition.descriptions) > 0:
             # rospy.logwarn("OI"*1000)
             # recognition.descriptions = descriptions
             self.trackingPub.publish(track_recognition)
