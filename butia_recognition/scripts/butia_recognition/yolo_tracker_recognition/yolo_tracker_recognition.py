@@ -21,7 +21,6 @@ from copy import deepcopy
 
 DeepOCSORT = None
 
-
 class YoloTrackerRecognition(BaseRecognition):
     def __init__(self,state = True):
         super().__init__(state=state)
@@ -29,7 +28,6 @@ class YoloTrackerRecognition(BaseRecognition):
         self.loadModel()
         self.initRosComm()
         if self.use_boxmot:
-            # from boxmot import DeepOCSORT
             import boxmot
             global DeepOCSORT
             DeepOCSORT = boxmot.DeepOCSORT
@@ -82,7 +80,7 @@ class YoloTrackerRecognition(BaseRecognition):
                 model_weights=Path(self.reid_model_file),
                 device="cuda:0",
                 fp16=True,
-                det_thresh=self.reid_threshold,
+                det_thresh=self.det_threshold,
                 max_age=self.max_age,
                 iou_threshold=self.iou_threshold)
         return
@@ -120,35 +118,27 @@ class YoloTrackerRecognition(BaseRecognition):
         recognition.camera_info = camera_info
         recognition.header = HEADER
         recognition.descriptions = []
-        # rospy.logwarn(recognition)
-       
         img = ros_numpy.numpify(img)        
 
         debug_img = deepcopy(img)
-        # print(debug_img == img)
-        
-        # results = self.model(img)
-
         results = None
         bboxs   = None
 
         if tracking and self.use_boxmot:
-            results = self.model(img)
+            results = self.model(img,verbose=False)
             bboxs  = self.tracker.update(results[0].boxes.data.cpu().numpy(),img)
         elif tracking:
             results = self.model.track(img, persist=True,
-                                        conf=self.reid_threshold,
+                                        conf=self.det_threshold,
                                         iou=self.iou_threshold,
                                         device="cuda:0",
-                                        tracker=self.tracker_cfg_file)
+                                        tracker=self.tracker_cfg_file,
+                                        verbose=False)
             bboxs = results[0].boxes.data.cpu().numpy()
         else:
-            results = self.model(img)
+            results = self.model(img,verbose=False)
             bboxs = results[0].boxes.data.cpu().numpy()
 
-        # bboxs = results[0].boxes.data.cpu().numpy()
-        # if self.tracking:
-        #     pass
         people_ids = []
 
         tracked_box = None
@@ -157,8 +147,6 @@ class YoloTrackerRecognition(BaseRecognition):
         for box in bboxs:
             description = Description2D()
             description.header = HEADER
-            # rospy.logerr(len(box))
-            # rospy.logerr(box)
 
             X1,Y1,X2,Y2 = box[:4]
             ID = int(box[4]) if self.tracking and len(box) == 7 else -1
@@ -171,17 +159,16 @@ class YoloTrackerRecognition(BaseRecognition):
             description.bbox.size_y = Y2-Y1
             description.label = self.model.names[clss]
             description.type = Description2D.DETECTION
+            description.score = score
 
             box_label = ""
             previus_size = float("-inf")
-            # center = (IMG_WIDTH/2,IMG_HEIGHT/2)
             if tracking:
                 description.global_id = ID
                 if description.label == "person":
                     people_ids.append(ID)                 
                 
                 box_label = f"ID:{ID} "
-                # dist = np.sqrt(np.power(description.bbox.center.x-center[0],2)+np.power(description.bbox.center.y-center[1],2))
                 size = description.bbox.size_x * description.bbox.size_y
                 if ID == self.trackID or \
                     self.trackID == -1 or \
@@ -215,50 +202,43 @@ class YoloTrackerRecognition(BaseRecognition):
             
         
         poses = results[0].keypoints.data.cpu().numpy()
+        scores = results[0].boxes.conf.cpu().numpy()
+        poses_idx = scores > self.det_threshold
+        poses = poses[poses_idx]
         counter = 0
-        if not tracking or len(people_ids) == len(poses):
-            # rospy.logerr("OI"*10000)
-            desc : Description2D
-            for desc in recognition.descriptions:
-                if desc.label == "person":
-                    desc.type = Description2D.DETECTION
-                    for idx, kpt in enumerate(poses[counter]):
-                        keypoint = KeyPoint2D()
-                        keypoint.x = kpt[0]
-                        keypoint.y = kpt[1]
-                        keypoint.id = idx
-                        keypoint.score = kpt[2]
-                        desc.pose.append(keypoint)
-                        if kpt[2] >= self.threshold:
-                            cv.circle(debug_img, (int(kpt[0]), int(kpt[1])),3,(0,255,0),thickness=-1)
-                        if tracking:
-                            desc.global_id = people_ids[counter]
-                    if tracked_box != None and tracked_description.global_id == desc.global_id:
-                        desc.header = HEADER
-                        tracked_description = desc
-                        for kpt in desc.pose:
-                            if kpt.score >= self.threshold:
-                                cv.circle(debug_img, (int(kpt.x), int(kpt.y)),3,(0,255,255),thickness=-1)
-                    counter +=1
-                # recognition.descriptions.append(description)
-        
-        # rospy.logerr()
+        # if not tracking or len(people_ids) == len(poses):
+        desc : Description2D
+        for desc in recognition.descriptions:
+            if desc.label == "person" and desc.score >= self.det_threshold:
+                desc.type = Description2D.DETECTION
+                rospy.logwarn(desc.score)
+                for idx, kpt in enumerate(poses[counter]):
+                    keypoint = KeyPoint2D()
+                    keypoint.x = kpt[0]
+                    keypoint.y = kpt[1]
+                    keypoint.id = idx
+                    keypoint.score = kpt[2]
+                    desc.pose.append(keypoint)
+                    if kpt[2] >= self.threshold:
+                        cv.circle(debug_img, (int(kpt[0]), int(kpt[1])),3,(0,255,0),thickness=-1)
+                    if tracking:
+                        desc.global_id = people_ids[counter]
+                if tracked_box != None and tracked_description.global_id == desc.global_id:
+                    desc.header = HEADER
+                    tracked_description = desc
+                    for kpt in desc.pose:
+                        if kpt.score >= self.threshold:
+                            cv.circle(debug_img, (int(kpt.x), int(kpt.y)),3,(0,255,255),thickness=-1)
+                counter +=1
+
         track_recognition.descriptions.append(tracked_description)
         debug_msg = ros_numpy.msgify(Image, debug_img, encoding='bgr8')
         debug_msg.header = HEADER
         self.debugPub.publish(debug_msg)
         
         if len(recognition.descriptions) > 0:
-            # rospy.logwarn("OI"*1000)
-            # recognition.descriptions = descriptions
             self.recognitionPub.publish(recognition)
-        
-        # for desc in track_recognition.descriptions:
-        #     rospy.logerr(desc)
-        #     rospy.logerr(type(tracked_box))
         if tracked_box != None and len(track_recognition.descriptions) > 0:
-            # rospy.logwarn("OI"*1000)
-            # recognition.descriptions = descriptions
             self.trackingPub.publish(track_recognition)
         
     def readParameters(self):
@@ -277,20 +257,17 @@ class YoloTrackerRecognition(BaseRecognition):
         self.threshold = rospy.get_param("~debug_kpt_threshold", 0.5)
 
         self.model_file = rospy.get_param("~model_file","yolov8n-pose")
-        self.reid_model_file = rospy.get_param("~reid_model_file","osnet_x0_25_msmt17.pt")
+        self.reid_model_file = rospy.get_param("~tracking/model_file","osnet_x0_25_msmt17.pt")
 
-        self.reid_threshold = rospy.get_param("~tracking/thresholds/reid_threshold", 0.5)
+        self.det_threshold = rospy.get_param("~tracking/thresholds/det_threshold", 0.5)
+        self.reid_threshold = rospy.get_param("~tracking/thresholds/reid_threshold", 0.3)
         self.iou_threshold = rospy.get_param('~tracking/thresholds/iou_threshold',0.5)
         self.max_time = rospy.get_param("~tracking/thresholds/max_time",60)
         self.max_age = rospy.get_param("~tracking/thresholds/max_age",5)
         self.tracking_on_init = rospy.get_param("~tracking/start_on_init", False)
         self.use_boxmot = rospy.get_param("~tracking/use_boxmot", False)
 
-        import rospkg
-        rospack = rospkg.RosPack()
-        rospack.list()
-
-        self.tracker_cfg_file = rospack.get_path("butia_recognition") + "/" + rospy.get_param("~tracker-file","")
+        self.tracker_cfg_file = rospy.get_param("~tracker-file","")
 
         self.tracking = False
 

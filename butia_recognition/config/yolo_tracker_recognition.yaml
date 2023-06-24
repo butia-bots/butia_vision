@@ -1,12 +1,6 @@
 debug_kpt_threshold: 0.5
 
-classes_by_category:
-    people: [person]
-classes:
-    - person
-
 model_file: yolov8s-pose.pt
-reid_model_file: osnet_x0_25_msmt17.pt
 
 subscribers:
   
@@ -36,10 +30,6 @@ publishers:
     queue_size: 1
 
 servers:
-
-  list_classes:
-    service: /butia_vision/br/yolo_tracking/list_classes
-
   start:
     service: /butia_vision/br/yolo_tracking/start
 
@@ -54,8 +44,10 @@ services:
 tracking:
   start_on_init: false
   use_boxmot: false
+  model_file: osnet_x0_25_msmt17.pt
   thresholds:
     reid_threshold: 0.3
+    det_threshold: 0.5
     iou_threshold: 0.15
     max_age: 10
     max_time: 10
