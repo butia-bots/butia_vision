@@ -20,8 +20,7 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 from butia_vision_msgs.srv import PeopleIntroducing, PeopleIntroducingResponse
-
-
+from geometry_msgs.msg import Vector3
 
 PACK_DIR = rospkg.RosPack().get_path('butia_recognition')
 class FaceRecognition(BaseRecognition):
@@ -244,6 +243,7 @@ class FaceRecognition(BaseRecognition):
             description.type = Description2D.DETECTION
             description.id = description.header.seq
             description.score = 1
+            description.max_size = Vector3(*[0.2, 0.2, 0.2])
             size = int(right-left), int(bottom-top)
             description.bbox.center.x = int(left) + int(size[1]/2)
             description.bbox.center.y = int(top) + int(size[0]/2)
