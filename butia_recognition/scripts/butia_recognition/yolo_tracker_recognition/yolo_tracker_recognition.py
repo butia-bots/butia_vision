@@ -210,7 +210,7 @@ class YoloTrackerRecognition(BaseRecognition):
         desc : Description2D
         for desc in recognition.descriptions:
             if desc.label == "person" and desc.score >= self.det_threshold:
-                desc.type = Description2D.DETECTION
+                desc.type = Description2D.POSE
                 rospy.logwarn(desc.score)
                 for idx, kpt in enumerate(poses[counter]):
                     keypoint = KeyPoint2D()
