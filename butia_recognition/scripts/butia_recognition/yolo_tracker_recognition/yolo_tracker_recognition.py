@@ -16,7 +16,7 @@ from ultralytics import YOLO
 from sensor_msgs.msg import Image
 from std_srvs.srv import EmptyResponse, Empty
 
-from butia_vision_msgs.msg import Recognitions2D, Description2D, KeyPoint2D
+from butia_vision_msgs.msg import Recognitions2D, Description2D, KeyPoint2D, Recognitions3D
 from copy import deepcopy
 
 DeepOCSORT = None
@@ -211,7 +211,7 @@ class YoloTrackerRecognition(BaseRecognition):
         for desc in recognition.descriptions:
             if desc.label == "person" and desc.score >= self.det_threshold:
                 desc.type = Description2D.POSE
-                rospy.logwarn(desc.score)
+                # rospy.logwarn(desc.score)
                 for idx, kpt in enumerate(poses[counter]):
                     keypoint = KeyPoint2D()
                     keypoint.x = kpt[0]

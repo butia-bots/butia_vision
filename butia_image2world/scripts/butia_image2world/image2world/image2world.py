@@ -13,7 +13,7 @@ import ros_numpy
 from butia_vision_bridge import VisionBridge
 
 from sensor_msgs.msg import PointCloud2
-from butia_vision_msgs.msg import Description2D, Recognitions2D, Description3D, Recognitions3D
+from butia_vision_msgs.msg import KeyPoint2D, Description2D, Recognitions2D, KeyPoint3D, Description3D, Recognitions3D
 from visualization_msgs.msg import Marker, MarkerArray
 
 #from tf.transformations (that it is not working on jetson)
@@ -47,7 +47,8 @@ class Image2World:
         self.DESCRIPTION_PROCESSING_ALGORITHMS = {
             Description2D.DETECTION: self.__detectionDescriptionProcessing,
             Description2D.INSTANCE_SEGMENTATION: self.__instanceSegmentationDescriptionProcessing,
-            Description2D.SEMANTIC_SEGMENTATION: self.__semanticSegmentationDescriptionProcessing
+            Description2D.SEMANTIC_SEGMENTATION: self.__semanticSegmentationDescriptionProcessing,
+            Description2D.POSE: self.__poseDescriptionProcessing
         }
 
         self.debug = rospy.Publisher('pub/debug', PointCloud2, queue_size=1)
@@ -287,6 +288,21 @@ class Image2World:
 
     def __instanceSegmentationDescriptionProcessing(self, source_data, description2d, header):
         return None
+    
+    def __poseDescriptionProcessing(self, data, description2d : Description2D, header):
+        description3d : Description3D = self.__detectionDescriptionProcessing(data, description2d ,header)
+
+        kpt : KeyPoint2D
+        for kpt in description2d.pose:
+            kpt3D = KeyPoint3D()
+            kpt3D.id = kpt.id
+            kpt3D.score = kpt.score
+            kpt3D.x = kpt.x
+            kpt3D.y = kpt.y
+            kpt3D.z = 0
+            description3d.pose.append(kpt3D)
+
+        return description3d
 
     def __createDescription3D(self, source_data, description2d, header):
         if description2d.type in self.DESCRIPTION_PROCESSING_ALGORITHMS:

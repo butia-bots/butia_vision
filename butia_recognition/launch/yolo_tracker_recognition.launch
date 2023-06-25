@@ -16,6 +16,7 @@
 
   <node pkg="butia_image2world" type="image2world.py" name="image2world" output="$(arg output)" if="$(arg launch_image2world)">
     <remap from="sub/recognitions2d" to="/butia_vision/pt/tracking2d"/>
+    <remap from="pub/recognitions3d" to="/butia_vision/pt/pose3d"/>
   </node>
 
   <node pkg="rviz" type="rviz" output="log" name="rviz" if="$(arg launch_rviz)"/>
