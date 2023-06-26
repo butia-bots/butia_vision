@@ -4,8 +4,8 @@
   <arg name="output" default="screen"/>
   <arg name="node_name" default="butia_object_recognition"/>
   <arg name="config_file" default="yolo_tracker_recognition.yaml"/>
-  <arg name="launch_rviz" default="false"/>
-  <arg name="launch_image2world" default="false"/>
+  <!-- <arg name="launch_rviz" default="false"/>
+  <arg name="launch_image2world" default="false"/> -->
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
@@ -14,10 +14,10 @@
     <rosparam param="tracker-file" subst_value="True">$(find butia_recognition)/config/yolo_tracker_config/yolov8_botsort_tracker_config.yaml</rosparam>
   </node>
 
-  <node pkg="butia_image2world" type="image2world.py" name="image2world" output="$(arg output)" if="$(arg launch_image2world)">
+  <!-- <node pkg="butia_image2world" type="image2world.py" name="image2world" output="$(arg output)" if="$(arg launch_image2world)">
     <remap from="sub/recognitions2d" to="/butia_vision/pt/tracking2d"/>
     <remap from="pub/recognitions3d" to="/butia_vision/pt/pose3d"/>
   </node>
 
-  <node pkg="rviz" type="rviz" output="log" name="rviz" if="$(arg launch_rviz)"/>
+  <node pkg="rviz" type="rviz" output="log" name="rviz" if="$(arg launch_rviz)"/> -->
 </launch>

@@ -11,7 +11,6 @@ from pathlib import Path
 from time import perf_counter
 
 from ultralytics import YOLO
-# from boxmot import DeepOCSORT
 
 from sensor_msgs.msg import Image
 from std_srvs.srv import EmptyResponse, Empty
@@ -106,10 +105,6 @@ class YoloTrackerRecognition(BaseRecognition):
         img = data["image_rgb"]
         img_depth = data["image_depth"]
         camera_info = data["camera_info"]
-
-        IMG_HEIGHT = img.height
-        IMG_WIDTH  = img.width
-
         HEADER = img.header
 
         recognition = Recognitions2D()
@@ -150,8 +145,8 @@ class YoloTrackerRecognition(BaseRecognition):
 
             X1,Y1,X2,Y2 = box[:4]
             ID = int(box[4]) if self.tracking and len(box) == 7 else -1
-            score = box[5] if self.tracking and len(box) == 7 else box[4]
-            clss = int(box[6] if self.tracking and len(box) == 7 else box[5])
+            score = box[-2]
+            clss = int(box[-1])
 
             description.bbox.center.x = (X1+X2)/2
             description.bbox.center.y = (Y1+Y2)/2
