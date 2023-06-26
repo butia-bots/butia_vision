@@ -84,8 +84,17 @@ class FaceRecognition(BaseRecognition):
                 for person_img in pix:
                     face = face_recognition.load_image_file(self.dataset_dir + person + "/" + person_img)
                     face_bounding_boxes = face_recognition.face_locations(face, model = 'yolov8')
-                    if len(face_bounding_boxes) > 0:
-                        face_enc = face_recognition.face_encodings(face, known_face_locations= face_bounding_boxes)[0]
+
+                    M_face = None
+                    M_area = -float('inf')
+                    for top, right, bottom, left in face_bounding_boxes:
+                        area = (bottom - top)*(right - left)
+                        if area > M_area:
+                            M_area = area
+                            M_face = (top, right, bottom, left)
+
+                    if M_face is not None:
+                        face_enc = face_recognition.face_encodings(face, known_face_locations=[M_face])[0]
                         encodings.append(face_enc)
 
                         if person not in names:
@@ -138,7 +147,7 @@ class FaceRecognition(BaseRecognition):
         num_images = ros_srv.num_images
 
         i = 0
-        while i<num_images:
+        while i < num_images:
             self.regressiveCounter(ros_srv.interval)
             try:
                 ros_image_aux = rospy.wait_for_message(self.subscribers_dict['image_rgb'], Image, 1000)
@@ -147,18 +156,10 @@ class FaceRecognition(BaseRecognition):
             ros_image = ros_numpy.numpify(ros_image_aux)
             ros_image = np.flip(ros_image)
             ros_image = np.flipud(ros_image)
-            face = face_recognition.face_locations(ros_image, model='yolov8')
-
-            if len(face) > 1:
-                for idx, (top, right, bottom, left) in enumerate(face):
-                    area = (right-left) * (top-bottom)
-                    if area > prevArea:
-                        prevArea = area
+            
+            face_locations = face_recognition.face_locations(ros_image, model='yolov8')
                 
-            if len(face) > 0 and len(face) < 1:
-                print("detectei o rosto")
-                print('TEM FACE')
-            if len(face) > 0:
+            if len(face_locations) > 0:
                 ros_image = cv2.cvtColor(ros_image, cv2.COLOR_BGR2RGB)
                 cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), ros_image)
                 rospy.logwarn('Picture ' + add_image_labels[i] + ' was  saved.')
@@ -166,10 +167,10 @@ class FaceRecognition(BaseRecognition):
             else:
                 rospy.logerr("The face was not detected.")
 
-
         cv2.destroyAllWindows()
         response = PeopleIntroducingResponse()
         response.response = True
+
         self.encode_faces()
 
         known_faces_dict = self.loadVar('features')
@@ -219,11 +220,6 @@ class FaceRecognition(BaseRecognition):
             description.label = name
 
             names.append(name)
-
-
-#  distancesTuple = ()
-# setattr(distancesTuple, 'names', name())
-# setattr(distancesTuple, 'distance', face_distances())
 
             description_header = img.header
             description_header.seq = 0
