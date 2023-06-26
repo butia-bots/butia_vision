@@ -139,7 +139,7 @@ class YoloTrackerRecognition(BaseRecognition):
         tracked_box = None
         now = perf_counter()
         # descriptions = []
-        for box in bboxs:
+        for i, box in enumerate(bboxs):
             description = Description2D()
             description.header = HEADER
 
@@ -155,6 +155,7 @@ class YoloTrackerRecognition(BaseRecognition):
             description.label = self.model.names[clss]
             description.type = Description2D.DETECTION
             description.score = score
+            description.id = i
 
             box_label = ""
             previus_size = float("-inf")
