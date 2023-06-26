@@ -18,7 +18,7 @@ subscribers:
 publishers:
 
   recognition:
-    topic: /butia_vision/br/recognitions2d
+    topic: /butia_vision/br/recognitions2D
     queue_size: 1
     
   debug:

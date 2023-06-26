@@ -34,7 +34,7 @@
 
     <node pkg="butia_image2world" type="image2world.py" name="image2world_detections" output="$(arg output)" if="$(arg use_image2world)" machine="$(arg machine)">
         <remap from="sub/recognitions2d" to="/butia_vision/br/recognitions2D"/>
-        <remap from="pub/recognitions3d" to="/butia_vision/br/detections3D"/>
+        <remap from="pub/recognitions3d" to="/butia_vision/br/recognitions3D"/>
     </node>
 
     <node pkg="butia_image2world" type="image2world.py" name="image2world_tracking" output="$(arg output)" if="$(arg use_image2world)" machine="$(arg machine)">
