@@ -6,6 +6,7 @@ import rospy
 import cv2 as cv
 import numpy as np
 import ros_numpy
+import rospkg
 
 from pathlib import Path
 from time import perf_counter
@@ -128,7 +129,7 @@ class YoloTrackerRecognition(BaseRecognition):
                                         iou=self.iou_threshold,
                                         device="cuda:0",
                                         tracker=self.tracker_cfg_file,
-                                        verbose=False)
+                                        verbose=True)
             bboxs = results[0].boxes.data.cpu().numpy()
         else:
             results = self.model(img,verbose=False)
@@ -252,7 +253,10 @@ class YoloTrackerRecognition(BaseRecognition):
 
         self.threshold = rospy.get_param("~debug_kpt_threshold", 0.5)
 
-        self.model_file = rospy.get_param("~model_file","yolov8n-pose")
+        r = rospkg.RosPack()
+
+        r.list()
+        self.model_file = r.get_path("butia_recognition") + "/weigths/" + rospy.get_param("~model_file","yolov8n-pose")
         self.reid_model_file = rospy.get_param("~tracking/model_file","osnet_x0_25_msmt17.pt")
 
         self.det_threshold = rospy.get_param("~tracking/thresholds/det_threshold", 0.5)
