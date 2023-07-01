@@ -5,6 +5,10 @@
   <arg name="node_name" default="butia_object_recognition"/>
   <arg name="config_file" default="yolo_tracker_recognition.yaml"/>
 
+  <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch">
+        <arg name="camera" value="realsense"/>
+    </include>
+
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
   <node pkg="butia_recognition" type="yolo_tracker_recognition.py" output="$(arg output)" name="$(arg node_name)" machine="$(arg machine)" required="true">
