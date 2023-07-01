@@ -4,6 +4,7 @@
   <arg name="output" default="screen"/>
   <arg name="node_name" default="butia_object_recognition"/>
   <arg name="config_file" default="yolo_tracker_recognition.yaml"/>
+  <arg name="use_rviz" default="false"/>
 
   <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch">
         <arg name="camera" value="realsense"/>
@@ -15,4 +16,8 @@
     <rosparam command="load" file="$(find butia_recognition)/config/$(arg config_file)"/>
     <rosparam param="tracker-file" subst_value="True">$(find butia_recognition)/config/yolo_tracker_config/yolov8_botsort_tracker_config.yaml</rosparam>
   </node>
+
+  <group if="$(arg use_rviz)">
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find butia_recognition)/rviz/test_gesture_detection.rviz" output="$(arg output)" />
+  </group>
 </launch>
