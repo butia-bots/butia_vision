@@ -40,7 +40,7 @@ class YoloV8Recognition(BaseRecognition):
         return super().serverStop(req)
 
     def loadModel(self): 
-        self.model = YOLO("/home/jetson/sd/butia_ws/src/butia_vision/butia_recognition/config/yolov8_network_config/best.pt")
+        self.model = YOLO("/home/jetson/sd/butia_ws/src/butia_vision/butia_recognition/config/yolov8_network_config/yolo_lab_objects.pt")
         self.model.conf = self.threshold
         print('Done loading model!')
 
