@@ -1,63 +1,17 @@
 threshold: 0.5
 classes_by_category:
-    drink: ['guarana', 'Guarana', 'IceTea', 'tonic', Tonic', 'Coke', 'Beer can', 'CoconutWater', 'Water', Soda can']
-    snack: ['corn flakes', 'CornFlakes', 'pringles', 'Pringles', 'Popcorn', 'Cookies', 'Cracker', 'Chocolate Milk', 'TunaCan']
-    fruits: ['apple', 'Apple', 'kiwi', 'Kiwi', 'orange', 'Banana', 'Orange']
-    cutlelary: ['bowl', 'Bowl', 'fork', 'knife', 'plate', 'Plate', 'Cleaner', 'Napkin', 'Cloth', 'EnglishSauce', 'TomatoSauce']
-    misc: ['sponge', 'Sponge', 'Bag', 'Alcohol Bottle', 'Soap', 'Mug', 'Carrot', 'Yeast', 'Coconut Milk', 'Chocolate Powder', 'Ketchup', 'Mayonnaise', 'Mustard', 'Toothpaste', 'Gelatine']
+    fruits: ['Apple', 'Banana', 'Grape', 'Orange', 'Pineapple', 'Watermelon']
 all_classes: 
-    - Alcohol Bottle
     - Apple
-    - Bag
     - Banana
-    - Beer can
-    - Bowl
-    - Carrot
-    - Chocolate Milk
-    - Chocolate Powder
-    - Cleaner
-    - Cloth
-    - Coconut Milk
-    - CoconutWater
-    - Coke
-    - Cookies
-    - CornFlakes
-    - Cracker
-    - EnglishSauce
-    - Gelatine
-    - Guarana
-    - IceTea
-    - Ketchup
-    - Kiwi
-    - Mayonnaise
-    - Mug
-    - Mustard
-    - Napkin
+    - Grape
     - Orange
-    - Plate
-    - Popcorn
-    - Pringles
-    - Soap
-    - Soda can
-    - Sponge
-    - TomatoSauce
-    - Tonic
-    - Toothpaste
-    - TunaCan
-    - Water
-    - Yeast
-    - apple
-    - bowl
-    - corn flakes
-    - fork
-    - guarana
-    - kiwi
-    - knife
-    - orange
-    - plate
-    - pringles
-    - sponge
-    - tonic
+    - Pineapple
+    - Watermelon
+  
+max_sizes:
+    - [0.5, 2.5, 0.5]
+
 model_file: yolov8_lab_objects.pt
 
 subscribers:
