@@ -40,7 +40,7 @@ class YoloV8Recognition(BaseRecognition):
         return super().serverStop(req)
 
     def loadModel(self): 
-        self.model = YOLO("home/jetson/sd/butia_ws/src/butia_vision/butia_recognition/scripts/butia_recognition/yolov8_recognition/yolov8_lab_objects.pt")
+        self.model = YOLO("/home/jetson/sd/butia_ws/src/butia_vision/butia_recognition/config/yolov8_network_config/best.pt")
         self.model.conf = self.threshold
         print('Done loading model!')
 
@@ -115,7 +115,7 @@ class YoloV8Recognition(BaseRecognition):
                 debug_img = results[0].plot()
                 description_header.seq += 1
             
-            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
+                self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
             if len(objects_recognition.descriptions) > 0:
                 self.object_recognition_publisher.publish(objects_recognition)
