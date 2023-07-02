@@ -1,4 +1,4 @@
-threshold: 0.5
+threshold: 0.0
 classes_by_category:
     bag: ['Handbag']
 all_classes: 
