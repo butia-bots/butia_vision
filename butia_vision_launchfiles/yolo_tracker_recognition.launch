@@ -15,14 +15,14 @@
 
     <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
-    <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch">
+    <!-- <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch">
         <arg name="machine" value="$(arg bvb_machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
         <arg name="output" value="$(arg output)"/>
         <arg name="use_bridge" value="$(arg use_bridge)"/>
         <arg name="publish_tf" value="$(arg publish_tf)"/>
         <arg name="camera" value="$(arg camera)"/>
-    </include>
+    </include> -->
 
     <include file="$(find butia_recognition)/launch/yolov8_bag_recognition.launch">
         <arg name="machine" value="$(arg br_machine)" />
