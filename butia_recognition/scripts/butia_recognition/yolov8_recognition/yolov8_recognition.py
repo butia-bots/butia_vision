@@ -106,6 +106,7 @@ class YoloV8Recognition(BaseRecognition):
                     index = None
 
                     for value in self.classes_by_category.values():
+                        rospy.loginfo('a'*100, value)
                         if label_class in value[1]:
                             index = value[0]
 
