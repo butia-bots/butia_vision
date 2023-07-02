@@ -282,7 +282,6 @@ class Image2World:
 
         return description3d
 
-
     def __semanticSegmentationDescriptionProcessing(self, source_data, description2d, header):
         return None
 
