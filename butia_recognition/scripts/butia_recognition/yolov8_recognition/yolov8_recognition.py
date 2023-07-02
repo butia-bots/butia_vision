@@ -40,7 +40,7 @@ class YoloV8Recognition(BaseRecognition):
         return super().serverStop(req)
 
     def loadModel(self): 
-        self.model = YOLO("/home/jetson/sd/butia_ws/src/butia_vision/butia_recognition/config/yolov8_network_config/yolo_lab_objects.pt")
+        self.model = YOLO("/home/jetson/sd/butia_ws/src/butia_vision/butia_recognition/config/yolov8_network_config/best.pt")
         self.model.conf = self.threshold
         print('Done loading model!')
 
@@ -83,7 +83,7 @@ class YoloV8Recognition(BaseRecognition):
                     continue
 
                 label_class = self.all_classes[int(box.cls)]
-
+                #rospy.logwarn('classe', label_class)
 
                 description = Description2D()
                 description.header = copy(description_header)
@@ -105,8 +105,8 @@ class YoloV8Recognition(BaseRecognition):
                 elif (label_class in [val for sublist in self.all_classes for val in sublist] or label_class in self.all_classes) and box.conf >= self.threshold:
                     index = None
 
-                    for value in self.classes_by_category.values():
-                        rospy.loginfo('a'*100, value)
+                    for value in self.classes_by_category.items():
+                        #rospy.logwarn('value', value)
                         if label_class in value[1]:
                             index = value[0]
 
