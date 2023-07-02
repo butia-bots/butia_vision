@@ -9,6 +9,6 @@
 
   <node pkg="butia_recognition" type="yolo_tracker_recognition.py" output="$(arg output)" name="$(arg node_name)" machine="$(arg machine)" required="true">
     <rosparam command="load" file="$(find butia_recognition)/config/$(arg config_file)"/>
-    <rosparam param="tracker-file" subst_value="True">$(find butia_recognition)/config/yolo_tracker_config/yolov8_botsort_tracker_config.yaml</rosparam>
+    <rosparam param="tracker-file" subst_value="True">config/yolo_tracker_config/yolov8_botsort_tracker_config.yaml</rosparam>
   </node>
 </launch>

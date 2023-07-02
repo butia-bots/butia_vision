@@ -267,7 +267,7 @@ class YoloTrackerRecognition(BaseRecognition):
         self.tracking_on_init = rospy.get_param("~tracking/start_on_init", False)
         self.use_boxmot = rospy.get_param("~tracking/use_boxmot", False)
 
-        self.tracker_cfg_file = rospy.get_param("~tracker-file","")
+        self.tracker_cfg_file = r.get_path("butia_recognition") + "/" + rospy.get_param("~tracker-file","")
 
         self.tracking = False
 
