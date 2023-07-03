@@ -25,7 +25,7 @@
         <arg name="camera" value="$(arg camera)"/>
     </include>
 
-    <include file="$(find butia_recognition)/launch/yolov8_bag_recognition.launch">
+    <include file="$(find butia_recognition)/launch/yolo_tracker_recognition.launch">
         <arg name="machine" value="$(arg br_machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
         <arg name="node_name" value="$(arg node_name)"/>
