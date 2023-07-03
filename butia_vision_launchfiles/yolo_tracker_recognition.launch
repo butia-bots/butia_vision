@@ -12,11 +12,10 @@
     <arg name="node_name" default="yolo_tracker_recognition"/>
     <arg name="camera" default="realsense"/>
     <arg name="launch_image2world" default="true"/>
-    <arg name="launch_bvb" default="true"/>
 
     <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
-    <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch" if="$(arg launch_bvb)">
+    <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch">
         <arg name="machine" value="$(arg bvb_machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
         <arg name="output" value="$(arg output)"/>
@@ -33,12 +32,12 @@
         <arg name="config_file" value="$(arg config_file)"/>
     </include>
 
-    <node pkg="butia_image2world" type="image2world.py" name="image2world_detections" output="$(arg output)" if="$(arg use_image2world)" machine="$(arg machine)">
+    <node pkg="butia_image2world" type="image2world.py" name="image2world_detections" output="$(arg output)" machine="$(arg machine)">
         <remap from="sub/recognitions2d" to="/butia_vision/br/recognitions2D"/>
         <remap from="pub/recognitions3d" to="/butia_vision/br/recognitions3D"/>
     </node>
 
-    <node pkg="butia_image2world" type="image2world.py" name="image2world_tracking" output="$(arg output)" if="$(arg use_image2world)" machine="$(arg machine)">
+    <node pkg="butia_image2world" type="image2world.py" name="image2world_tracking" output="$(arg output)" machine="$(arg machine)">
         <remap from="sub/recognitions2d" to="/butia_vision/pt/tracking2D"/>
         <remap from="pub/recognitions3d" to="/butia_vision/pt/tracking3D"/>
     </node>

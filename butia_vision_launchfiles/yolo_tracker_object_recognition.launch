@@ -11,15 +11,13 @@
     <arg name="config_file_object" default="yolov8_bag_recognition.yaml"/>
     <arg name="camera" default="realsense"/>
     <arg name="launch_image2world" default="true"/>
-    <arg name="launch_bvb" default="true"/>
 
     <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
     <include file="$(find butia_vision_launchfiles)/yolo_tracker_recognition.launch">
         <arg name="machine" value="jetson"/>
         <arg name="camera" value="$(arg camera)"/>
-        <arm name="use_image2world" value="(arg use_image2world)"/>
-        <arg name="launch_bvb" value="$(arg launch_bvb)"/>
+        <arg name="use_image2world" value="(arg use_image2world)"/>
     </include>
 
     <include file="$(find butia_recognition)/launch/yolov8_bag_recognition.launch">
