@@ -58,7 +58,7 @@
       <!-- <arg name="enable_pointcloud" value="true"/> -->
       <arg name="color_fps" value="15"/>
       <arg name="depth_fps" value="15"/>
-      <arg name="filters" value="pointcloud,spatial,hole_filling,temporal"/>
+      <arg name="filters" value="pointcloud"/>
       <arg name="depth_width" value="640"/>
       <arg name="depth_height" value="480"/>
       <arg name="color_width" value="640"/>
