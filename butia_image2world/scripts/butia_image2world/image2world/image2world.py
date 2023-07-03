@@ -320,9 +320,11 @@ class Image2World:
         return description3d
 
 
-    def __createDescription3D(self, source_data, description2d, header):
+    def __createDescription3D(self, source_data, description2d : Description2D, header):
         if description2d.type in self.DESCRIPTION_PROCESSING_ALGORITHMS:
-            return self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
+            description3D : Description3D = self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
+            description3D.bbox2D = description2d.bbox
+            return description3D
         else:
             return None
 
