@@ -1,8 +1,8 @@
 threshold: 0.0
 classes_by_category:
-    bag: ['Handbag']
+    bag: ['bag']
 all_classes: 
-    - Handbag
+    - bag
   
 max_sizes:
     - [0.5, 2.5, 0.5]
