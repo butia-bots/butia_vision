@@ -2,7 +2,7 @@
   <arg name="machine" default="localhost"/>
   <arg name="use_machine" default="true"/>
   <arg name="output" default="screen"/>
-  <arg name="node_name" default="butia_object_recognition"/>
+  <arg name="node_name" default="butia_tracker_recognition"/>
   <arg name="config_file" default="yolo_tracker_recognition.yaml"/>
   <arg name="use_rviz" default="false"/>
 

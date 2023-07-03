@@ -8,7 +8,11 @@
     <arg name="use_bridge" default="false"/>
     <arg name="use_image2world" default="true"/>
     <arg name="publish_tf" default="true"/>
+<<<<<<< HEAD
     <arg name="config_file_object" default="yolo_tracker_recognition.yaml"/>
+=======
+    <arg name="config_file" default="yolo_tracker_recognition.yaml"/>
+>>>>>>> a32e67a4cd4fb9f677213bca521b46fbe47e5071
     <arg name="camera" default="realsense"/>
     <arg name="launch_image2world" default="true"/>
     <arg name="launch_bvb" default="true"/>
@@ -26,6 +30,9 @@
         <arg name="machine" value="$(arg br_machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
         <arg name="output" value="$(arg output)"/>
+<<<<<<< HEAD
         <arg name="config_file_object" value="yolov8_bag_recognition.yaml"/>
+=======
+>>>>>>> a32e67a4cd4fb9f677213bca521b46fbe47e5071
     </include>
 </launch>
