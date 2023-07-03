@@ -136,8 +136,8 @@ class Image2World:
             w, h, _ = array_point_cloud.shape
 
             bbox_limits[0] = bbox_limits[0] if bbox_limits[0] > 0 else 0
-            bbox_limits[1] = bbox_limits[1] if bbox_limits[1] > 0 else 0
-            bbox_limits[2] = bbox_limits[2] if bbox_limits[2] < w else w-1
+            bbox_limits[1] = bbox_limits[1] if bbox_limits[1] < w else w-1
+            bbox_limits[2] = bbox_limits[2] if bbox_limits[2] > 0 else 0
             bbox_limits[3] = bbox_limits[3] if bbox_limits[3] < h else h-1
 
             desc_point_cloud = array_point_cloud[bbox_limits[2]:bbox_limits[3], bbox_limits[0]:bbox_limits[1], :]
@@ -214,8 +214,8 @@ class Image2World:
             h, w = image_depth.shape
 
             bbox_limits[0] = bbox_limits[0] if bbox_limits[0] > 0 else 0
-            bbox_limits[1] = bbox_limits[1] if bbox_limits[1] > 0 else 0
-            bbox_limits[2] = bbox_limits[2] if bbox_limits[2] < w else w-1
+            bbox_limits[1] = bbox_limits[1] if bbox_limits[1] < w else w-1
+            bbox_limits[2] = bbox_limits[2] if bbox_limits[2] > 0 else 0
             bbox_limits[3] = bbox_limits[3] if bbox_limits[3] < h else h-1
 
             self.__mountLutTable(camera_info)
