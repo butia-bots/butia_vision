@@ -115,11 +115,11 @@ if __name__ == '__main__':
     
     queue_size = rospy.get_param("/people_tracking/queue/size", 1)
 
-    param_start_service = rospy.get_param("/services/people_tracking/start_tracking", "/butia_vision/pt/start")
-    param_stop_service = rospy.get_param("/services/people_tracking/stop_tracking", "/butia_vision/pt/stop")
+    param_start_service = rospy.get_param("people_tracking/services/people_tracking/start_tracking", "/butia_vision/pt/start")
+    param_stop_service = rospy.get_param("people_tracking/services/people_tracking/stop_tracking", "/butia_vision/pt/stop")
 
-    param_people_detection_topic = rospy.get_param("/topics/butia_recognition/people_detection", "/butia_vision/br/people_detection")
-    param_people_tracking_topic = rospy.get_param("/topics/people_tracking/people_tracking", "/butia_vision/pt/people_tracking")
+    param_people_detection_topic = rospy.get_param("people_tracking/topics/people_tracking/people_detection", "/butia_vision/br/recognitions2D")
+    param_people_tracking_topic = rospy.get_param("people_tracking/topics/people_tracking/people_tracking", "/butia_vision/pt/people_tracking")
 
     tracker_publisher = rospy.Publisher(param_people_tracking_topic, Recognitions2D, queue_size = queue_size)
     view_publisher = rospy.Publisher('/butia_vision/pt/people_tracking_view', Image, queue_size = queue_size)
