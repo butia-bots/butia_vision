@@ -1,0 +1,25 @@
+<launch>
+<arg name="machine" default="localhost"/>
+    <arg name="bvb_machine" default="$(arg machine)"/>
+    <arg name="br_machine" default="$(arg machine)"/>
+    <arg name="i2w_machine" default="$(arg machine)"/>
+    <arg name="use_machine" default="true"/>
+    <arg name="output" default="screen"/>
+    <arg name="use_bridge" default="false"/>
+    <arg name="use_image2world" default="true"/>
+    <arg name="publish_tf" default="true"/>
+    <arg name="config_file" default="yolo_tracker_bag_recognition.yaml"/>
+    <arg name="node_name" default="yolo_tracker_recognition"/>
+    <arg name="camera" default="realsense"/>
+
+    <include file="$(find butia_recognition)/launch/yolo_tracker_recognition.launch">
+        <arg name="machine" value="$(arg machine)" />
+        <arg name="config_file" value="$(arg config_file)"/>
+        <arg name="camera" value="$(arg camera)"/>
+    </include>
+
+    <include file="$(find butia_recognition)/launch/yolov8_bag_recognition.launch">
+        <arg name="machine" value="$(arg machine)" />
+        <arg name="camera" value="None"/>
+    </include>
+</launch>
