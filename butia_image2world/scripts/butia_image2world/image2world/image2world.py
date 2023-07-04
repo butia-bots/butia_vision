@@ -13,7 +13,7 @@ import ros_numpy
 from butia_vision_bridge import VisionBridge
 
 from sensor_msgs.msg import PointCloud2
-from butia_vision_msgs.msg import Description2D, Recognitions2D, Description3D, Recognitions3D
+from butia_vision_msgs.msg import KeyPoint2D, Description2D, Recognitions2D, KeyPoint3D, Description3D, Recognitions3D
 from visualization_msgs.msg import Marker, MarkerArray
 
 #from tf.transformations (that it is not working on jetson)
@@ -47,7 +47,8 @@ class Image2World:
         self.DESCRIPTION_PROCESSING_ALGORITHMS = {
             Description2D.DETECTION: self.__detectionDescriptionProcessing,
             Description2D.INSTANCE_SEGMENTATION: self.__instanceSegmentationDescriptionProcessing,
-            Description2D.SEMANTIC_SEGMENTATION: self.__semanticSegmentationDescriptionProcessing
+            Description2D.SEMANTIC_SEGMENTATION: self.__semanticSegmentationDescriptionProcessing,
+            Description2D.POSE: self.__poseDescriptionProcessing
         }
 
         self.debug = rospy.Publisher('pub/debug', PointCloud2, queue_size=1)
@@ -122,7 +123,7 @@ class Image2World:
     def __detectionDescriptionProcessing(self, data, description2d, header):
         center_x, center_y = description2d.bbox.center.x, description2d.bbox.center.y
         bbox_size_x, bbox_size_y = description2d.bbox.size_x, description2d.bbox.size_y
-
+        print(bbox_size_x, bbox_size_y)
         if bbox_size_x == 0 or bbox_size_y == 0:
             rospy.logwarn('BBox with zero size.')
             return None
@@ -136,8 +137,8 @@ class Image2World:
             w, h, _ = array_point_cloud.shape
 
             bbox_limits[0] = bbox_limits[0] if bbox_limits[0] > 0 else 0
-            bbox_limits[1] = bbox_limits[1] if bbox_limits[1] > 0 else 0
-            bbox_limits[2] = bbox_limits[2] if bbox_limits[2] < w else w-1
+            bbox_limits[1] = bbox_limits[1] if bbox_limits[1] < w else w-1
+            bbox_limits[2] = bbox_limits[2] if bbox_limits[2] > 0 else 0
             bbox_limits[3] = bbox_limits[3] if bbox_limits[3] < h else h-1
 
             desc_point_cloud = array_point_cloud[bbox_limits[2]:bbox_limits[3], bbox_limits[0]:bbox_limits[1], :]
@@ -214,21 +215,20 @@ class Image2World:
             h, w = image_depth.shape
 
             bbox_limits[0] = bbox_limits[0] if bbox_limits[0] > 0 else 0
-            bbox_limits[1] = bbox_limits[1] if bbox_limits[1] > 0 else 0
-            bbox_limits[2] = bbox_limits[2] if bbox_limits[2] < w else w-1
+            bbox_limits[1] = bbox_limits[1] if bbox_limits[1] < w else w-1
+            bbox_limits[2] = bbox_limits[2] if bbox_limits[2] > 0 else 0
             bbox_limits[3] = bbox_limits[3] if bbox_limits[3] < h else h-1
 
-            self.__mountLutTable(camera_info)    
+            self.__mountLutTable(camera_info)
 
             center_depth = image_depth[int(center_y), int(center_x)]
 
-            if center_depth == 0:
+            if center_depth <= 0:
                 rospy.logwarn('INVALID DEPTH VALUE')
             
             center_depth/= 1000.
 
             limits = np.asarray([(bbox_limits[0], bbox_limits[2]), (bbox_limits[1], bbox_limits[3])])
-
 
             vertices_3d = np.zeros((len(limits), 3))
 
@@ -266,7 +266,24 @@ class Image2World:
             min_bound = np.min(vertices_3d, axis=0)
             max_bound = np.max(vertices_3d, axis=0)
 
-            box = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
+            if self.fit_bbox:
+                box_depths = image_depth[limits[0, 1]:limits[1, 1], limits[0, 0]:limits[1, 0]]/1000.
+                box_lut = self.lut_table[limits[0, 1]:limits[1, 1], limits[0, 0]:limits[1, 0], :]
+
+                box_points = np.zeros((box_depths.size, 3))
+
+                box_points[:, 0] = box_lut[:, :, 0].flatten()*box_depths.flatten()
+                box_points[:, 1] = box_lut[:, :, 1].flatten()*box_depths.flatten()
+                box_points[:, 2] = box_depths.flatten()
+
+                box_points = box_points[box_points[:, 2] > 0]
+                box_points = box_points[np.logical_and(np.all(box_points > min_bound, axis=1),
+                                                    np.all(box_points < max_bound, axis=1))]
+                
+                box = o3d.geometry.AxisAlignedBoundingBox().create_from_points(o3d.utility.Vector3dVector(box_points))
+            
+            else:
+                box = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
 
             #TODO:
             '''
@@ -281,16 +298,33 @@ class Image2World:
 
         return description3d
 
-
     def __semanticSegmentationDescriptionProcessing(self, source_data, description2d, header):
         return None
 
     def __instanceSegmentationDescriptionProcessing(self, source_data, description2d, header):
         return None
+    
+    def __poseDescriptionProcessing(self, data, description2d : Description2D, header):
+        description3d : Description3D = self.__detectionDescriptionProcessing(data, description2d ,header)
 
-    def __createDescription3D(self, source_data, description2d, header):
+        kpt : KeyPoint2D
+        for kpt in description2d.pose:
+            kpt3D = KeyPoint3D()
+            kpt3D.id = kpt.id
+            kpt3D.score = kpt.score
+            kpt3D.x = kpt.x
+            kpt3D.y = kpt.y
+            kpt3D.z = 0
+            description3d.pose.append(kpt3D)
+
+        return description3d
+
+
+    def __createDescription3D(self, source_data, description2d : Description2D, header):
         if description2d.type in self.DESCRIPTION_PROCESSING_ALGORITHMS:
-            return self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
+            description3D : Description3D = self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
+            description3D.bbox2D = description2d.bbox
+            return description3D
         else:
             return None
 
@@ -311,6 +345,7 @@ class Image2World:
         pc2 = data.points
         img_depth = data.image_depth
         camera_info = data.camera_info
+        image_rgb = data.image_rgb
         
         recognitions = Recognitions3D()
         if pc2.width*pc2.height > 0:
@@ -329,6 +364,7 @@ class Image2World:
         else:
             rospy.logwarn('Image2World cannot be used because pointcloud and depth images are void.')
 
+        recognitions.image_rgb = image_rgb
         if self.publish_markers:
             self.publishMarkers(recognitions.descriptions)
         return recognitions
@@ -397,7 +433,8 @@ class Image2World:
         self.publish_debug = rospy.get_param('~publish_debug', False)
         self.publish_markers = rospy.get_param('~publish_markers', True)
         self.color = rospy.get_param('~color', [255, 0, 0])
-        self.depth_mean_error = rospy.get_param('~depth_mean_error', 0.017)
+        self.depth_mean_error = rospy.get_param('~depth_mean_error', 0.05)
+        self.fit_bbox = rospy.get_param('~fit_bbox', False)
 
 if __name__ == '__main__':
     rospy.init_node('image2world_node', anonymous = True)

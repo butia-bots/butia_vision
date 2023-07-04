@@ -20,4 +20,4 @@ all_classes:
     - Gelatine
     - Cracker
     - Chocolate Milk
-model_file: larc2021_real.pt
+model_file: yolov5s.pt
