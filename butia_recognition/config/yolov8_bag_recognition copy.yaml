@@ -1,0 +1,42 @@
+threshold: 0.5
+classes_by_category:
+    bag: ['bag']
+all_classes: 
+    - bag
+  
+max_sizes:
+    - [0.5, 2.5, 0.5]
+
+model_file: yolov8_bag.pt
+
+subscribers:
+  
+  queue_size: 1
+  exact_time: false
+  slop: 0.2
+
+  image_rgb: /butia_vision/bvb/image_rgb
+  camera_info: /butia_vision/bvb/camera_info
+  image_depth: /butia_vision/bvb/image_depth
+  points: /butia_vision/bvb/points
+
+  # image_rgb: /camera/color/image_raw
+  # camera_info: /camera/color/camera_info
+  # image_depth: /camera/aligned_depth_to_color/image_raw
+
+publishers:
+
+  object_recognition:
+    topic: /butia_vision/br/object_recognition
+    queue_size: 1
+
+servers:
+
+  list_classes:
+    service: /butia_vision/br/object_recognition/list_classes
+
+  start:
+    service: /butia_vision/br/object_recognition/start
+
+  stop:
+    service: /butia_vision/br/object_recognition/stop
