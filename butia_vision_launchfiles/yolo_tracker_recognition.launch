@@ -11,12 +11,10 @@
     <arg name="config_file" default="yolo_tracker_recognition.yaml"/>
     <arg name="node_name" default="yolo_tracker_recognition"/>
     <arg name="camera" default="realsense"/>
-    <arg name="launch_image2world" default="true"/>
-    <arg name="launch_bvb" default="true"/>
 
     <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
-    <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch" if="$(arg launch_bvb)">
+    <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch">
         <arg name="machine" value="$(arg bvb_machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
         <arg name="output" value="$(arg output)"/>
