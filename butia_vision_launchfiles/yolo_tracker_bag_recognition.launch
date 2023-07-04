@@ -12,7 +12,7 @@
     <arg name="node_name" default="yolo_tracker_recognition"/>
     <arg name="camera" default="realsense"/>
 
-    <include file="$(find butia_vision_launchfiles)/launch/yolo_tracker_recognition.launch">
+    <include file="$(find butia_vision_launchfiles)/yolo_tracker_recognition.launch">
         <arg name="machine" value="$(arg machine)" />
         <arg name="config_file" value="$(arg config_file)"/>
         <arg name="camera" value="$(arg camera)"/>
