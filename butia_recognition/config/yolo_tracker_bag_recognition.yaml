@@ -38,8 +38,8 @@ servers:
 
 services:
   tracking:
-    start: /butia_vision/pt/start
-    stop: /butia_vision/pt/stop
+    start: /butia_vision/yolo_pt/start
+    stop: /butia_vision/yolo_pt/stop
 
 tracking:
   start_on_init: false
