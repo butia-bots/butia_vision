@@ -105,7 +105,7 @@ class YoloV8Recognition(BaseRecognition):
                 elif (label_class in [val for sublist in self.all_classes for val in sublist] or label_class in self.all_classes) and box.conf >= self.threshold:
                     index = None
 
-                    for value in self.classes_by_category.values():
+                    for value in self.classes_by_category.items():
                         if label_class in value[1]:
                             index = value[0]
 
