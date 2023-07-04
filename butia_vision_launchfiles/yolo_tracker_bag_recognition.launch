@@ -41,7 +41,7 @@
         <rosparam param="n_neighbors_cluster_selection">30</rosparam>
     </node>
 
-    <!-- <include file="$(find butia_recognition)/launch/yolov8_bag_recognition.launch">
+    <include file="$(find butia_recognition)/launch/yolov8_bag_recognition.launch">
         <arg name="machine" value="$(arg machine)" />
-    </include> -->
+    </include>
 </launch>
