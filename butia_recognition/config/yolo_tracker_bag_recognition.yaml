@@ -5,8 +5,8 @@ model_file: yolov8s-pose.pt
 subscribers:
   
   queue_size: 1
-  exact_time: false
-  slop: 0.5
+  exact_time: true
+  slop: 0.1
 
   image_rgb: /butia_vision/bvb/image_rgb
 

@@ -12,6 +12,7 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
+import torch
 
 
 class YoloV8Recognition(BaseRecognition):
@@ -46,6 +47,8 @@ class YoloV8Recognition(BaseRecognition):
 
     def unLoadModel(self):
         del self.model
+        torch.cuda.empty_cache()
+        self.model = None
 
     @ifState
     def callback(self, *args):
@@ -71,7 +74,7 @@ class YoloV8Recognition(BaseRecognition):
         description_header = img_rgb.header
         description_header.seq = 0
 
-        results = self.model.predict(cv_img)
+        results = list(self.model.predict(cv_img, verbose=False, stream=True))
         boxes_ = results[0].boxes.cpu().numpy()
 
         if len(results[0].boxes):

@@ -26,14 +26,17 @@
         <arg name="config_file" value="$(arg config_file)"/>
     </include>
 
-    <include file="$(find butia_people_tracking)/launch/people_tracking.launch">
+    <!-- TO USE OLD TRACKING -->
+    <!-- <include file="$(find butia_people_tracking)/launch/people_tracking.launch">
         <arg name="machine" value="$(arg machine)" />
-    </include>
+    </include> -->
 
     <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_people_tracking_node" machine="$(arg machine)">
-        <remap from="sub/recognitions2d"  to="/butia_vision/pt/people_tracking"/>
-        <remap from="pub/recognitions3d"  to="/butia_vision/br/people_tracking3d"/>
-        <remap from="pub/markers" to="/butia_vision/br/markers"/>
+        <!-- TO USE OLD TRACKING -->
+        <!-- <remap from="sub/recognitions2d"  to="/butia_vision/pt/people_tracking"/> -->
+        <remap from="sub/recognitions2d"  to="/butia_vision/pt/tracking2D"/>
+        <remap from="pub/recognitions3d"  to="/butia_vision/pt/people_tracking3d"/>
+        <remap from="pub/markers" to="/butia_vision/pt/markers"/>
         <rosparam param="color">[0,255,0]</rosparam>
         <rosparam param="n_neighbors_cluster_selection">30</rosparam>
     </node>

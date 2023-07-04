@@ -19,6 +19,9 @@ from std_srvs.srv import EmptyResponse, Empty
 from butia_vision_msgs.msg import Recognitions2D, Description2D, KeyPoint2D, Recognitions3D
 from copy import deepcopy
 
+import gc
+import torch
+
 DeepOCSORT = None
 
 class YoloTrackerRecognition(BaseRecognition):
@@ -48,11 +51,11 @@ class YoloTrackerRecognition(BaseRecognition):
     
     def serverStart(self, req):
         self.loadModel()
-        
         return super().serverStart(req)
     
     def serverStop(self, req):
         self.unLoadModel()
+        self.stopTracking(None)
         return super().serverStop(req)
     
     def startTracking(self, req):
@@ -88,12 +91,15 @@ class YoloTrackerRecognition(BaseRecognition):
     def unLoadTrackerModel(self):
         if self.use_boxmot:
             del self.tracker
+            torch.cuda.empty_cache()
+            self.tracker = None
         return
             
     
     def unLoadModel(self):
         del self.model
-        self.unLoadTrackingModel
+        torch.cuda.empty_cache()
+        self.model = None
         return
     
     @ifState
@@ -121,18 +127,18 @@ class YoloTrackerRecognition(BaseRecognition):
         bboxs   = None
 
         if tracking and self.use_boxmot:
-            results = self.model(img,verbose=False)
+            results = list(self.model.predict(img, verbose=False, stream=True))
             bboxs  = self.tracker.update(results[0].boxes.data.cpu().numpy(),img)
         elif tracking:
-            results = self.model.track(img, persist=True,
+            results = list(self.model.track(img, persist=True,
                                         conf=self.det_threshold,
                                         iou=self.iou_threshold,
                                         device="cuda:0",
                                         tracker=self.tracker_cfg_file,
-                                        verbose=True)
+                                        verbose=True, stream=True))
             bboxs = results[0].boxes.data.cpu().numpy()
         else:
-            results = self.model(img,verbose=False)
+            results = list(self.model.predict(img, verbose=False, stream=True))
             bboxs = results[0].boxes.data.cpu().numpy()
 
         people_ids = []
