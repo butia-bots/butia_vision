@@ -20,6 +20,5 @@
 
     <include file="$(find butia_recognition)/launch/yolov8_bag_recognition.launch">
         <arg name="machine" value="$(arg machine)" />
-        <arg name="camera" value="None"/>
     </include>
 </launch>
