@@ -173,23 +173,33 @@ class YoloTrackerRecognition(BaseRecognition):
                 
                 box_label = f"ID:{ID} "
                 size = description.bbox.size_x * description.bbox.size_y
-                if ID == self.trackID or \
-                    self.trackID == -1 or \
-                    (perf_counter() - self.lastTrack >= self.max_time and \
-                    (tracked_box == None or\
-                    size > previus_size)):
+                # if ID == self.trackID or \
+                #     self.trackID == -1 or \
+                #     (perf_counter() - self.lastTrack >= self.max_time and \
+                #     (tracked_box == None or\
+                #     size > previus_size)):
 
+                #     self.trackID = ID
+                #     previus_size = size
+                #     tracked_box = description
+                if ID == self.trackID:
                     self.trackID = ID
                     previus_size = size
                     tracked_box = description
+                    self.lastTrack = perf_counter()
+                elif perf_counter() - self.lastTrack >= self.max_time and (tracked_box == None or size > previus_size): 
+                    previus_size = size
+                    tracked_box = description
+                    self.trackID = ID
                  
 
             recognition.descriptions.append(description)
-                    
+
             cv.rectangle(debug_img,(int(X1),int(Y1)), (int(X2),int(Y2)),(0,0,255),thickness=2)
             cv.putText(debug_img,f"{box_label}{self.model.names[clss]}:{score:.2f}", (int(X1), int(Y1)), cv.FONT_HERSHEY_SIMPLEX,0.75,(0,0,255),thickness=2)
         if tracked_box != None:
             self.lastTrack = perf_counter()
+
         
         track_recognition = Recognitions2D()
         track_recognition.header = HEADER
