@@ -324,6 +324,8 @@ class Image2World:
         if description2d.type in self.DESCRIPTION_PROCESSING_ALGORITHMS:
             description3D : Description3D = self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
             description3D.bbox2D = description2d.bbox
+            description3D.class_num = description2d.class_num
+            print(description3D.class_num)
             return description3D
         else:
             return None

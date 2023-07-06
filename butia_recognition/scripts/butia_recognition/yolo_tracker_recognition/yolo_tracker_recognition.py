@@ -156,6 +156,7 @@ class YoloTrackerRecognition(BaseRecognition):
             description.label = self.model.names[clss]
             description.type = Description2D.DETECTION
             description.score = score
+            description.class_num = clss
             description.id = i
 
             box_label = ""
