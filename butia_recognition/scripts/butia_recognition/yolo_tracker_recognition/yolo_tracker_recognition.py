@@ -60,8 +60,8 @@ class YoloTrackerRecognition(BaseRecognition):
     
     def startTracking(self, req):
         self.loadTrackerModel()
-        self.trackID = -1
-        self.lastTrack = 0
+        self.trackID = -2
+        self.lastTrack = -self.max_time
         self.tracking = True
         rospy.loginfo("Tracking started!!!")
         return EmptyResponse()
@@ -182,6 +182,20 @@ class YoloTrackerRecognition(BaseRecognition):
                     self.trackID = ID
                     previus_size = size
                     tracked_box = description
+                    self.lastTrack = perf_counter()
+
+                if ID == self.trackID or self.trackID >= -1:
+                    self.trackID = ID
+                    previus_size = size
+                    tracked_box = description
+                    self.lastTrack = perf_counter()
+                elif perf_counter() - self.lastTrack >= self.max_time:
+                    if tracked_box == None or size > previus_size:
+                        self.trackID = ID
+                        previus_size = size
+                        tracked_box = description
+                        self.lastTrack = perf_counter()
+
             recognition.descriptions.append(description)
                     
             cv.rectangle(debug_img,(int(X1),int(Y1)), (int(X2),int(Y2)),(0,0,255),thickness=2)
