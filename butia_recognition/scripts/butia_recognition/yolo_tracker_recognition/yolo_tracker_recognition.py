@@ -204,35 +204,36 @@ class YoloTrackerRecognition(BaseRecognition):
                                     int(tracked_box.bbox.center.y+tracked_box.bbox.size_y/2)),(255,0,0),thickness=2)
             
         
-        poses = results[0].keypoints.data.cpu().numpy()
-        scores = results[0].boxes.conf.cpu().numpy()
-        poses_idx = scores > self.det_threshold
-        poses = poses[poses_idx]
-        counter = 0
-        # if not tracking or len(people_ids) == len(poses):
-        desc : Description2D
-        for desc in recognition.descriptions:
-            if desc.label == "person" and desc.score >= self.det_threshold:
-                desc.type = Description2D.POSE
-                # rospy.logwarn(desc.score)
-                for idx, kpt in enumerate(poses[counter]):
-                    keypoint = KeyPoint2D()
-                    keypoint.x = kpt[0]
-                    keypoint.y = kpt[1]
-                    keypoint.id = idx
-                    keypoint.score = kpt[2]
-                    desc.pose.append(keypoint)
-                    if kpt[2] >= self.threshold:
-                        cv.circle(debug_img, (int(kpt[0]), int(kpt[1])),3,(0,255,0),thickness=-1)
-                    if tracking:
-                        desc.global_id = people_ids[counter]
-                if tracked_box != None and tracked_description.global_id == desc.global_id:
-                    desc.header = HEADER
-                    tracked_description = desc
-                    for kpt in desc.pose:
-                        if kpt.score >= self.threshold:
-                            cv.circle(debug_img, (int(kpt.x), int(kpt.y)),3,(0,255,255),thickness=-1)
-                counter +=1
+        if results[0].keypoints != None:
+            poses = results[0].keypoints.data.cpu().numpy()
+            scores = results[0].boxes.conf.cpu().numpy()
+            poses_idx = scores > self.det_threshold
+            poses = poses[poses_idx]
+            counter = 0
+            # if not tracking or len(people_ids) == len(poses):
+            desc : Description2D
+            for desc in recognition.descriptions:
+                if desc.label == "person" and desc.score >= self.det_threshold:
+                    desc.type = Description2D.POSE
+                    # rospy.logwarn(desc.score)
+                    for idx, kpt in enumerate(poses[counter]):
+                        keypoint = KeyPoint2D()
+                        keypoint.x = kpt[0]
+                        keypoint.y = kpt[1]
+                        keypoint.id = idx
+                        keypoint.score = kpt[2]
+                        desc.pose.append(keypoint)
+                        if kpt[2] >= self.threshold:
+                            cv.circle(debug_img, (int(kpt[0]), int(kpt[1])),3,(0,255,0),thickness=-1)
+                        if tracking:
+                            desc.global_id = people_ids[counter]
+                    if tracked_box != None and tracked_description.global_id == desc.global_id:
+                        desc.header = HEADER
+                        tracked_description = desc
+                        for kpt in desc.pose:
+                            if kpt.score >= self.threshold:
+                                cv.circle(debug_img, (int(kpt.x), int(kpt.y)),3,(0,255,255),thickness=-1)
+                    counter +=1
 
         track_recognition.descriptions.append(tracked_description)
         debug_msg = ros_numpy.msgify(Image, debug_img, encoding='bgr8')
