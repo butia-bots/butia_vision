@@ -19,6 +19,9 @@ from std_srvs.srv import EmptyResponse, Empty
 from butia_vision_msgs.msg import Recognitions2D, Description2D, KeyPoint2D, Recognitions3D
 from copy import deepcopy
 
+import gc
+import torch
+
 DeepOCSORT = None
 
 class YoloTrackerRecognition(BaseRecognition):
@@ -33,6 +36,8 @@ class YoloTrackerRecognition(BaseRecognition):
             DeepOCSORT = boxmot.DeepOCSORT
         if self.tracking_on_init:
             self.startTracking(None)
+        
+        self.lastTrack = perf_counter()
 
         rospy.loginfo("Yolo Tracker Recognition Node started")
 
@@ -48,17 +53,17 @@ class YoloTrackerRecognition(BaseRecognition):
     
     def serverStart(self, req):
         self.loadModel()
-        
         return super().serverStart(req)
     
     def serverStop(self, req):
         self.unLoadModel()
+        self.stopTracking(None)
         return super().serverStop(req)
     
     def startTracking(self, req):
         self.loadTrackerModel()
         self.trackID = -1
-        self.lastTrack = 0
+        self.lastTrack = perf_counter()
         self.tracking = True
         rospy.loginfo("Tracking started!!!")
         return EmptyResponse()
@@ -88,12 +93,15 @@ class YoloTrackerRecognition(BaseRecognition):
     def unLoadTrackerModel(self):
         if self.use_boxmot:
             del self.tracker
+            torch.cuda.empty_cache()
+            self.tracker = None
         return
             
     
     def unLoadModel(self):
         del self.model
-        self.unLoadTrackingModel
+        torch.cuda.empty_cache()
+        self.model = None
         return
     
     @ifState
@@ -121,24 +129,28 @@ class YoloTrackerRecognition(BaseRecognition):
         bboxs   = None
 
         if tracking and self.use_boxmot:
-            results = self.model(img,verbose=False)
+            results = list(self.model.predict(img, verbose=False, stream=True))
             bboxs  = self.tracker.update(results[0].boxes.data.cpu().numpy(),img)
         elif tracking:
-            results = self.model.track(img, persist=True,
+            results = list(self.model.track(img, persist=True,
                                         conf=self.det_threshold,
                                         iou=self.iou_threshold,
                                         device="cuda:0",
                                         tracker=self.tracker_cfg_file,
-                                        verbose=True)
+                                        verbose=True, stream=True))
             bboxs = results[0].boxes.data.cpu().numpy()
         else:
-            results = self.model(img,verbose=False)
+            results = list(self.model.predict(img, verbose=False, stream=True))
             bboxs = results[0].boxes.data.cpu().numpy()
 
         people_ids = []
 
         tracked_box = None
         now = perf_counter()
+        is_aged = (now - self.lastTrack >= self.max_time)
+        is_id_found = False
+        previus_size = float("-inf")
+        new_id = -1
         # descriptions = []
         for i, box in enumerate(bboxs):
             description = Description2D()
@@ -160,7 +172,6 @@ class YoloTrackerRecognition(BaseRecognition):
             description.id = i
 
             box_label = ""
-            previus_size = float("-inf")
             if tracking:
                 description.global_id = ID
                 if description.label == "person":
@@ -168,29 +179,33 @@ class YoloTrackerRecognition(BaseRecognition):
                 
                 box_label = f"ID:{ID} "
                 size = description.bbox.size_x * description.bbox.size_y
-                if ID == self.trackID or \
-                    self.trackID == -1 or \
-                    (perf_counter() - self.lastTrack >= self.max_time and \
-                    (tracked_box == None or\
-                    size > previus_size)):
 
-                    self.trackID = ID
-                    previus_size = size
+                if ID == self.trackID:
+                    is_id_found = True
                     tracked_box = description
+
+                if (not is_id_found) and (is_aged or self.trackID == -1):
+                    if tracked_box is None or size > previus_size:
+                        previus_size = size
+                        tracked_box = description
+                        new_id = ID                    
+
             recognition.descriptions.append(description)
-                    
+
             cv.rectangle(debug_img,(int(X1),int(Y1)), (int(X2),int(Y2)),(0,0,255),thickness=2)
             cv.putText(debug_img,f"{box_label}{self.model.names[clss]}:{score:.2f}", (int(X1), int(Y1)), cv.FONT_HERSHEY_SIMPLEX,0.75,(0,0,255),thickness=2)
         
         track_recognition = Recognitions2D()
         track_recognition.header = HEADER
         tracked_description : Description2D = deepcopy(tracked_box)
-        if tracked_box != None:
+        if tracked_box is not None:
             track_recognition.header = recognition.header
             track_recognition.image_rgb = recognition.image_rgb
             track_recognition.image_depth = recognition.image_depth
             track_recognition.camera_info = recognition.camera_info
             tracked_description.type = Description2D.DETECTION
+            if not is_id_found:
+                self.trackID = new_id
             # recognition.descriptions.append(tracked_box)
             self.lastTrack = now
             cv.rectangle(debug_img,(int(tracked_box.bbox.center.x-tracked_box.bbox.size_x/2),\

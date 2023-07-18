@@ -307,18 +307,47 @@ class Image2World:
     def __poseDescriptionProcessing(self, data, description2d : Description2D, header):
         description3d : Description3D = self.__detectionDescriptionProcessing(data, description2d ,header)
 
-        kpt : KeyPoint2D
-        for kpt in description2d.pose:
-            kpt3D = KeyPoint3D()
-            kpt3D.id = kpt.id
-            kpt3D.score = kpt.score
-            kpt3D.x = kpt.x
-            kpt3D.y = kpt.y
-            kpt3D.z = 0
-            description3d.pose.append(kpt3D)
+        if 'image_depth' in data and 'camera_info' in data:
+            image_depth = data['image_depth']
+            camera_info = data['camera_info']
 
-        return description3d
+            self.__mountLutTable(camera_info)
 
+            h, w = image_depth.shape
+
+            kpt : KeyPoint2D
+            for kpt in description2d.pose:
+                kpt3D = KeyPoint3D()
+                kpt3D.id = kpt.id
+
+                u = int(kpt.x)
+                v = int(kpt.y)
+
+                if u >= w or u < 0 or v >= h or v < 0:
+                    kpt3D.score = 0
+
+                else:
+                    depth = image_depth[v, u]
+
+                    if depth <= 0:
+                        kpt3D.score = 0
+
+                    else:
+                        kpt3D.score = kpt.score
+
+                        depth /= 1000.
+
+                        vertex_3d = np.zeros(3)
+                        vertex_3d[:2] = self.lut_table[v, u, :]*depth
+                        vertex_3d[2] = depth
+
+                        kpt3D.x = vertex_3d[0]
+                        kpt3D.y = vertex_3d[1]
+                        kpt3D.z = vertex_3d[2]
+
+                description3d.pose.append(kpt3D)
+
+            return description3d
 
     def __createDescription3D(self, source_data, description2d : Description2D, header):
         if description2d.type in self.DESCRIPTION_PROCESSING_ALGORITHMS:
@@ -419,6 +448,29 @@ class Image2World:
             marker.text = '{} ({:.2f})'.format(name, det.score)
             marker.lifetime = rospy.Time.from_sec(2)
             markers.markers.append(marker)
+
+            for idx, kpt3D in enumerate(det.pose):
+                if kpt3D.score > 0:
+                    marker = Marker()
+                    marker.header = det.poses_header
+                    marker.type = Marker.SPHERE
+                    marker.id = idx
+                    marker.color.r = color[1]
+                    marker.color.g = color[2]
+                    marker.color.b = color[0]
+                    marker.color.a = 1
+                    marker.scale.x = 0.05
+                    marker.scale.y = 0.05
+                    marker.scale.z = 0.05
+                    marker.pose.position.x = kpt3D.x
+                    marker.pose.position.y = kpt3D.y
+                    marker.pose.position.z = kpt3D.z
+                    marker.pose.orientation.x = 0.0
+                    marker.pose.orientation.y = 0.0
+                    marker.pose.orientation.z = 0.0
+                    marker.pose.orientation.w = 1.0
+                    marker.lifetime = rospy.Time.from_sec(2)
+                    markers.markers.append(marker)
         
         self.marker_publisher.publish(markers)
     

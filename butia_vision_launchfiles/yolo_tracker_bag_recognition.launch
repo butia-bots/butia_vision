@@ -1,0 +1,47 @@
+<launch>
+<arg name="machine" default="localhost"/>
+    <arg name="bvb_machine" default="$(arg machine)"/>
+    <arg name="br_machine" default="$(arg machine)"/>
+    <arg name="i2w_machine" default="$(arg machine)"/>
+    <arg name="use_machine" default="true"/>
+    <arg name="output" default="screen"/>
+    <arg name="use_bridge" default="false"/>
+    <arg name="use_image2world" default="true"/>
+    <arg name="publish_tf" default="true"/>
+    <arg name="config_file" default="yolo_tracker_bag_recognition.yaml"/>
+    <arg name="node_name" default="yolo_tracker_recognition"/>
+    <arg name="camera" default="realsense"/>
+
+    <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch">
+        <arg name="machine" value="$(arg bvb_machine)" />
+        <arg name="use_machine" value="$(arg use_machine)"/>
+        <arg name="output" value="$(arg output)"/>
+        <arg name="use_bridge" value="$(arg use_bridge)"/>
+        <arg name="publish_tf" value="$(arg publish_tf)"/>
+        <arg name="camera" value="$(arg camera)"/>
+    </include>
+
+    <include file="$(find butia_recognition)/launch/yolo_tracker_recognition.launch">
+        <arg name="machine" value="$(arg machine)" />
+        <arg name="config_file" value="$(arg config_file)"/>
+    </include>
+
+    <!-- TO USE OLD TRACKING -->
+    <!-- <include file="$(find butia_people_tracking)/launch/people_tracking.launch">
+        <arg name="machine" value="$(arg machine)" />
+    </include> -->
+
+    <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_people_tracking_node" machine="$(arg machine)">
+        <!-- TO USE OLD TRACKING -->
+        <!-- <remap from="sub/recognitions2d"  to="/butia_vision/pt/people_tracking"/> -->
+        <remap from="sub/recognitions2d"  to="/butia_vision/pt/tracking2D"/>
+        <remap from="pub/recognitions3d"  to="/butia_vision/pt/people_tracking3d"/>
+        <remap from="pub/markers" to="/butia_vision/pt/markers"/>
+        <rosparam param="color">[0,255,0]</rosparam>
+        <rosparam param="n_neighbors_cluster_selection">30</rosparam>
+    </node>
+
+    <include file="$(find butia_recognition)/launch/yolov8_bag_recognition.launch">
+        <arg name="machine" value="$(arg machine)" />
+    </include>
+</launch>
