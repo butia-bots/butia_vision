@@ -1,4 +1,6 @@
 threshold: 0.5
+use_classifier: True
+classifier_threshold: 0.5
 classes_by_category:
     fruits: ['Apple', 'Banana', 'Grape', 'Orange', 'Pineapple', 'Watermelon']
 all_classes: 

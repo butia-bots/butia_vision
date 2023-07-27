@@ -6,6 +6,7 @@ from butia_recognition import BaseRecognition, ifState
 import numpy as np
 import os
 from copy import copy
+from transformers import pipeline
 import cv2
 from ultralytics import YOLO
 from std_msgs.msg import Header
@@ -42,10 +43,14 @@ class YoloV8Recognition(BaseRecognition):
     def loadModel(self): 
         self.model = YOLO("/home/butiabots/Workspace/butia_ws/src/butia_vision/butia_recognition/config/yolov8_network_config/yolov8_lab_objects.pt")
         self.model.conf = self.threshold
+        if self.use_classifier:
+            self.classifier = pipeline(model="kakaobrain/align-base", task="zero-shot-image-classification")
         print('Done loading model!')
 
     def unLoadModel(self):
         del self.model
+        if self.use_classifier:
+            del self.classifier
 
     @ifState
     def callback(self, *args):
@@ -79,11 +84,23 @@ class YoloV8Recognition(BaseRecognition):
                 box = results[0].boxes[i]
                 xyxy_box = list(boxes_[i].xyxy.astype(int)[0])
                 
-                if int(box.cls) >= len(self.all_classes):
-                    continue
 
-                label_class = self.all_classes[int(box.cls)]
+                if not self.use_classifier:
+                    if int(box.cls) >= len(self.all_classes):
+                        continue
 
+                    label_class = self.all_classes[int(box.cls)]
+                else:
+                    prompts = [f"image of a {class_name}" for class_name in self.all_classes]
+                    cropped_image = cv_image[xyxy_box[0]:xyxy_box[2],xyxy_box[1]:xyxy_box[3]]
+                    zero_shot_predictions = self.classifier(cropped_image, candidate_labels=prompts)
+                    zero_shot_predictions.sort(key=lambda x: x['score'], reverse=True)
+                    top_prompt = zero_shot_predictions[0]['label']
+                    top_conf = zero_shot_predictions[0]['score']
+                    if top_conf >= self.classifier_threshold:
+                        label_class = self.all_classes[prompts.index(top_prompt)]
+                    else:
+                        continue
 
                 description = Description2D()
                 description.header = copy(description_header)
@@ -142,6 +159,8 @@ class YoloV8Recognition(BaseRecognition):
         self.all_classes = list(rospy.get_param("~all_classes", []))
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
         self.model_file = rospy.get_param("~model_file", "yolov8_lab_objects.pt")
+        self.use_classifier = rospy.get_param("~use_classifier", False)
+        self.classifier_threshold = rospy.get_param('~classifier_threshold', 0.5)
 
         super().readParameters()
 
