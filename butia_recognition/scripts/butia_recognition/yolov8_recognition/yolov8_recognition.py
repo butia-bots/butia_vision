@@ -72,6 +72,7 @@ class YoloV8Recognition(BaseRecognition):
         description_header.seq = 0
 
         results = self.model.predict(cv_img)
+        debug_img = cv_img
         boxes_ = results[0].boxes.cpu().numpy()
 
         if len(results[0].boxes):
@@ -104,12 +105,12 @@ class YoloV8Recognition(BaseRecognition):
 
                 elif (label_class in [val for sublist in self.all_classes for val in sublist] or label_class in self.all_classes) and box.conf >= self.threshold:
                     index = None
-                    j = 0
+
                     for value in self.classes_by_category.values():
-                        if label_class in value:
-                            index = j
-                        j += 1
-                    description.label = self.all_classes[index] + '/' + label_class if index is not None else label_class
+                        if label_class in value[1]:
+                            index = value[0]
+
+                    description.label = index + '/' + label_class if index is not None else label_class
                     objects_recognition.descriptions.append(description)
 
                 debug_img = results[0].plot()
