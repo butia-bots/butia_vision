@@ -72,6 +72,7 @@ class YoloV8Recognition(BaseRecognition):
         description_header.seq = 0
 
         results = self.model.predict(cv_img)
+        debug_img = cv_img
         boxes_ = results[0].boxes.cpu().numpy()
 
         if len(results[0].boxes):
