@@ -12,7 +12,7 @@ all_classes:
 max_sizes:
     - [0.5, 2.5, 0.5]
 
-model_file: yolov8_lab_objects.pt
+model_file: yolov8n.pt
 
 subscribers:
   
