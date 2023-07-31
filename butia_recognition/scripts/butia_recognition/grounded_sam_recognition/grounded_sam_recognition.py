@@ -27,15 +27,12 @@ class GroundedSAMRecognition(BaseRecognition):
 
         self.readParameters()
 
-        self.colors = dict([(k, np.random.randint(low=0, high=256, size=(3,)).tolist()) for k in self.classes])
-
         self.loadModel()
         self.initRosComm()
 
     def initRosComm(self):
         self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
         self.object_recognition_publisher = rospy.Publisher(self.object_recognition_topic, Recognitions2D, queue_size=self.object_recognition_qs)
-        self.people_detection_publisher = rospy.Publisher(self.people_detection_topic, Recognitions2D, queue_size=self.people_detection_qs)
         super().initRosComm(callbacks_obj=self)
 
     def serverStart(self, req):
@@ -52,6 +49,7 @@ class GroundedSAMRecognition(BaseRecognition):
 
     def unLoadModel(self):
         del self.dino_model
+        torch.cuda.empty_cache()
 
     @ifState
     def callback(self, *args):
@@ -129,9 +127,6 @@ class GroundedSAMRecognition(BaseRecognition):
 
             if len(objects_recognition.descriptions) > 0:
                 self.object_recognition_publisher.publish(objects_recognition)
-
-            if len(people_recognition.descriptions) > 0:
-                self.people_detection_publisher.publish(people_recognition)
 
     def readParameters(self):
         self.debug_topic = rospy.get_param("~publishers/debug/topic", "/butia_vision/br/debug")
