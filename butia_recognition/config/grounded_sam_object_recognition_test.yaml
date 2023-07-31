@@ -1,0 +1,37 @@
+classes:
+    - table
+    - chair
+max_sizes:
+    - [0.5, 0.5, 0.5]
+    - [0.5, 0.5, 0.5]
+
+subscribers:
+  
+  queue_size: 1
+  exact_time: false
+  slop: 0.2
+
+  image_rgb: /camera/rgb/image_color
+
+  #points: /butia_vision/bvb/points
+  
+  image_depth: /camera/depth/image
+
+  camera_info: /camera/rgb/camera_info
+
+publishers:
+
+  object_recognition:
+    topic: /butia_vision/br/object_recognition
+    queue_size: 1
+
+servers:
+
+  list_classes:
+    service: /butia_vision/br/object_recognition/list_classes
+
+  start:
+    service: /butia_vision/br/object_recognition/start
+
+  stop:
+    service: /butia_vision/br/object_recognition/stop
