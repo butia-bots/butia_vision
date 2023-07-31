@@ -1,0 +1,36 @@
+threshold: 0.5
+classes_by_category:
+    drink: ['guarana', 'tonic']
+    snack: ['corn flakes', 'pringles']
+    fruits: ['apple', 'kiwi', 'orange']
+    cuttelary: ['bowl', 'fork', 'knife', 'plate']
+    misc: ['sponge']
+classes: ['apple', 'bowl', 'corn flakes', 'fork', 'guarana', 'kiwi', 'knife', 'orange', 'plate', 'pringles', 'sponge', 'tonic']
+model_file: yolov5s.pt
+
+subscribers:
+  
+  queue_size: 1
+  exact_time: false
+  slop: 0.2
+
+  image_rgb: /camera/color/image_raw
+
+  points: /camera/depth/color/points
+
+publishers:
+
+  object_recognition:
+    topic: /butia_vision/br/object_recognition
+    queue_size: 1
+
+servers:
+
+  list_classes:
+    service: /butia_vision/br/object_recognition/list_classes
+
+  start:
+    service: /butia_vision/br/object_recognition/start
+
+  stop:
+    service: /butia_vision/br/object_recognition/stop
