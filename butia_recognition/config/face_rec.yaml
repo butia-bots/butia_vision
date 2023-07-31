@@ -2,8 +2,8 @@ threshold: 0.5
 
 subscribers:
   
-  queue_size: 100
-  exact_time: false
+  queue_size: 1
+  exact_time: true
   slop: 0.5
 
   image_rgb: /butia_vision/bvb/image_rgb
