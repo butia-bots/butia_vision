@@ -18,6 +18,7 @@ from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 import supervision as sv
 from groundingdino.util.inference import Model
+from segment_anything import SamPredictor, sam_model_registry
 
 torch.set_num_threads(1)
 
@@ -45,10 +46,16 @@ class GroundedSAMRecognition(BaseRecognition):
 
     def loadModel(self):
         self.dino_model = Model(model_config_path=f"{self.pkg_path}/config/grounding_dino_network_config/{self.dino_config}", model_checkpoint_path=f"{self.pkg_path}/config/grounding_dino_network_config/{self.dino_checkpoint}")
-        print('Done loading model!')
+        print('Done loading GroundingDINO model!')
+        if self.use_sam:
+            sam = sam_model_registry[self.sam_model_type](checkpoint=f"{self.pkg_path}/config/sam_network_config/{self.sam_checkpoint}")
+            self.sam_model = SamPredictor(sam)
+            print('Done loading SAM model!')
 
     def unLoadModel(self):
         del self.dino_model
+        if self.use_sam:
+            del self.sam_model
         torch.cuda.empty_cache()
 
     @ifState
@@ -69,9 +76,11 @@ class GroundedSAMRecognition(BaseRecognition):
 
             results = self.dino_model.predict_with_classes(image=cv_img, classes=self.classes, box_threshold=self.box_threshold, text_threshold=self.text_threshold)
             results = results.with_nms(threshold=self.nms_threshold, class_agnostic=self.class_agnostic_nms)
-            annotator = sv.BoxAnnotator()
-            debug_img = annotator.annotate(scene=cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB), detections=results, labels=[self.classes[idx] for idx in results.class_id])
-
+            if len(results.class_id) > 0:
+                self.sam_model.set_image(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
+            box_annotator = sv.BoxAnnotator()
+            debug_img = box_annotator.annotate(scene=cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB), detections=results, labels=[self.classes[idx] for idx in results.class_id])
+            mask_annotator = sv.MaskAnnotator()
             objects_recognition = Recognitions2D()
             h = Header()
             h.seq = self.seq
@@ -86,6 +95,7 @@ class GroundedSAMRecognition(BaseRecognition):
 
             description_header = img.header
             description_header.seq = 0
+            mask_arr = []
             for i in range(len(results.class_id)):
                 class_id = int(results.class_id[i])
 
@@ -110,6 +120,23 @@ class GroundedSAMRecognition(BaseRecognition):
                 description.bbox.center.y = int(y1) + int(size[1]/2)
                 description.bbox.size_x = size[0]
                 description.bbox.size_y = size[1]
+                if self.use_sam:
+                    box_prompt = results.xyxy[i].astype(int)
+                    masks, scores, logits = self.sam_model.predict(
+                        point_coords=None,
+                        point_labels=None,
+                        box=box_prompt,
+                        multimask_output=False,
+                        hq_token_only=self.sam_hq_token_only
+                    )
+                    mask_image = np.zeros(shape=(*cv_img.shape[:2],), dtype=bool)
+                    for mask in masks:
+                        mask_image = mask_image + mask.reshape(*mask_image.shape)
+                    mask_msg = ros_numpy.msgify(Image, (mask_image*255).astype(np.uint8), 'mono8')
+                    description.mask = mask_msg
+                    mask_arr.append(mask_image)
+                
+                results.mask = np.asarray(mask_arr)
 
                 index = None
                 j = 0
@@ -122,6 +149,8 @@ class GroundedSAMRecognition(BaseRecognition):
                 objects_recognition.descriptions.append(description)
 
                 description_header.seq += 1
+            
+            debug_img = mask_annotator.annotate(debug_img, detections=results)
             
             self.debug_publisher.publish(ros_numpy.msgify(Image, np.flip(debug_img, 2), 'rgb8'))
 
@@ -142,6 +171,10 @@ class GroundedSAMRecognition(BaseRecognition):
         self.text_threshold = rospy.get_param("~text_threshold", 0.25)
         self.box_threshold = rospy.get_param("~box_threshold", 0.35)
 
+        self.use_sam = rospy.get_param("~use_sam", True)
+        self.sam_checkpoint = rospy.get_param("~sam_checkpoint", "sam_hq_vit_tiny.pth")
+        self.sam_model_type = rospy.get_param("~sam_model_type", "vit_tiny")
+        self.sam_hq_token_only = rospy.get_param("~sam_hq_token_only", False)
 
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
         self.classes = rospy.get_param("~classes", [])
