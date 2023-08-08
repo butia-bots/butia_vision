@@ -16,7 +16,6 @@
     <remap from="pub/recognitions3d"  to="/butia_vision/br/object_recognition3d"/>
     <remap from="pub/markers" to="/butia_vision/br/markers"/>
     <rosparam param="color">[255,0,0]</rosparam>
-    <rosparam param="fit_bbox" value="true"/>
   </node>
 
 </launch>
