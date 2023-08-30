@@ -1,4 +1,4 @@
-threshold: 0.5
+threshold: 0.3
 classes_by_category:
     Transportation: ['bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat']
     Traffic: ['traffic light', 'fire hydrant', 'stop sign', 'parking meter']
