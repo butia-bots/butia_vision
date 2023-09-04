@@ -18,7 +18,9 @@ publishers:
   face_recognition:
     topic: /butia_vision/br/face_recognition
     queue_size: 1
-
+  debug:
+    topic: /butia_vision/br/debug_face
+    queue_size: 1
 servers:
 
   list_classes:
