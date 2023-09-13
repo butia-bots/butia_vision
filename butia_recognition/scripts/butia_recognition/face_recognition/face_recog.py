@@ -13,8 +13,8 @@ import cv2
 import face_recognition
 import time
 import rospkg
-from collections import Counter
 import pickle
+import re
 
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
@@ -32,28 +32,29 @@ class FaceRecognition(BaseRecognition):
         self.readParameters()
 
         self.initRosComm()
-        starting_names = rospy.get_param('~name_list').lower()
+        self.starting_names = re.sub(r'[^a-zA-Z ]', '', rospy.get_param('~name_list').lower()).split()
+        known_faces_dict = self.loadVar('features')
+        self.current_names = [self.starting_names]
 
-        rospy.logerr(starting_names)
-        if starting_names == 'all':
-            known_faces_dict = self.loadVar('features')
+        if self.starting_names == 'all':
             self.know_faces = self.flatten(known_faces_dict)
             rospy.logerr(self.know_faces)
 
-        elif starting_names != 'none':
-            names = []
-            encondings = []
-            known_faces_dict = self.loadVar('features')
-            names_association = self.flatten(known_faces_dict)
-            for i, name in enumerate(names_association[0]):
-                if name in starting_names:
-                   names.append(name)
-                   encondings.append(names_association[1][i])
-            self.know_faces = (names, encondings)
-
-            rospy.logerr(self.know_faces)
+        elif self.starting_names != 'none':
+            filtered_dict = {}
+            for name in known_faces_dict.keys():
+                for starting in self.starting_names:
+                    if name == starting:
+                        filtered_dict[name] = known_faces_dict[name]
+            if len(filtered_dict.keys())>0:
+                self.know_faces = self.flatten(filtered_dict)
+                rospy.logerr('tem lista')
+            else:
+                rospy.logerr('tem lista mas não tem o nome')
+                self.know_faces = []
 
         else:
+            rospy.logerr('none')
             self.know_faces = []
 
     def initRosComm(self):
@@ -130,10 +131,24 @@ class FaceRecognition(BaseRecognition):
         self.saveVar(encoded_face, 'features')             
 
     def PeopleIntroducing(self, ros_srv):
-
         name = ros_srv.name
         num_images = ros_srv.num_images
         NAME_DIR = os.path.join(self.dataset_dir, name)
+        self.current_names.append(name)
+
+        if os.path.exists(NAME_DIR) and name not in self.current_names:
+            os.rmdir(NAME_DIR)
+        # elif name in self.current_names:
+        #     state = False
+        #     index = 2
+        #     while state == False:
+        #         if os.path.exists(NAME_DIR):
+        #             new_name = name + '_' + str(index)
+        #             NAME_DIR = os.path.join(self.dataset_dir, new_name)
+        #             index =+ 1
+        #         else:
+        #             state = True
+
         os.makedirs(NAME_DIR, exist_ok=True)
         os.makedirs(self.features_dir, exist_ok=True)
         image_type = '.jpg'
