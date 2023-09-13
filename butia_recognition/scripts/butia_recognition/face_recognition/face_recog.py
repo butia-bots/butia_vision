@@ -15,6 +15,7 @@ import time
 import rospkg
 import pickle
 import re
+import shutil
 
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
@@ -140,7 +141,7 @@ class FaceRecognition(BaseRecognition):
         self.current_names.append(name)
 
         if os.path.exists(NAME_DIR):
-            os.rmdir(NAME_DIR)
+            shutil.rmtree(NAME_DIR)
         # elif name in self.current_names:
         #     state = False
         #     index = 2
