@@ -29,18 +29,19 @@ class FaceRecognition(BaseRecognition):
         dataset_dir = os.path.join(PACK_DIR, 'dataset')
         self.features_dir = os.path.join(dataset_dir, 'features')
         self.dataset_dir = os.path.join(dataset_dir, 'people/')
-        self.readParameters()
 
+        self.readParameters()
         self.initRosComm()
+
         self.starting_names = re.sub(r'[^a-zA-Z ]', '', rospy.get_param('~name_list').lower()).split()
         known_faces_dict = self.loadVar('features')
         self.current_names = [self.starting_names]
-
-        if self.starting_names == 'all':
+        rospy.logwarn(self.starting_names)
+        if self.starting_names == ['all']:
             self.know_faces = self.flatten(known_faces_dict)
             rospy.logerr(self.know_faces)
 
-        elif self.starting_names != 'none':
+        elif self.starting_names != ['none']:
             filtered_dict = {}
             for name in known_faces_dict.keys():
                 for starting in self.starting_names:
@@ -57,10 +58,12 @@ class FaceRecognition(BaseRecognition):
             rospy.logerr('none')
             self.know_faces = self.flatten({})
 
+        rospy.loginfo('foi 3')
+
     def initRosComm(self):
         self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
         self.face_recognition_publisher = rospy.Publisher(self.face_recognition_topic, Recognitions2D, queue_size=self.face_recognition_qs)
-        self.introduct_person_service = rospy.Service(self.introduct_person_servername, PeopleIntroducing, self.PeopleIntroducing) #possivelmente trocar self.encode_faces
+        self.introduct_person_service = rospy.Service(self.introduct_person_servername, PeopleIntroducing, self.PeopleIntroducing)
 
         super().initRosComm(callbacks_obj=self)
         rospy.loginfo('foi 2')
@@ -230,14 +233,12 @@ class FaceRecognition(BaseRecognition):
 
         face_rec.header = h
         face_rec = BaseRecognition.addSourceData2Recognitions2D(source_data, face_rec)
-        
         #rospy.loginfo('Image ID: ' + str(img.header.seq))
 
         ros_img_small_frame = ros_numpy.numpify(img)
 
         current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'yolov8')
         current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
-
         debug_img = copy(ros_img_small_frame)
         names = []
         name_distance=[]
@@ -253,7 +254,6 @@ class FaceRecognition(BaseRecognition):
                 if min_distance < thold:
                     name = (self.know_faces[0][min_distance_idx])
             description.label = name
-
             names.append(name)
 
             description_header = img.header
