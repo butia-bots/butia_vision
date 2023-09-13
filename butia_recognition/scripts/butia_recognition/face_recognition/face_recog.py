@@ -51,11 +51,11 @@ class FaceRecognition(BaseRecognition):
                 rospy.logerr('tem lista')
             else:
                 rospy.logerr('tem lista mas não tem o nome')
-                self.know_faces = []
+                self.know_faces = {}
 
         else:
             rospy.logerr('none')
-            self.know_faces = []
+            self.know_faces = {}
 
     def initRosComm(self):
         self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
