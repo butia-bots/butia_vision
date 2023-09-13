@@ -2,7 +2,7 @@
   <arg name="machine" default="localhost"/>
   <arg name="use_machine" default="true"/>
   <arg name="output" default="screen"/>
-  <arg name="name_list" default="all"/>
+  <arg name="name_list" default="None"/>
 
   <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 

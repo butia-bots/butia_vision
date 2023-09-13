@@ -32,9 +32,29 @@ class FaceRecognition(BaseRecognition):
         self.readParameters()
 
         self.initRosComm()
+        starting_names = rospy.get_param('~name_list').lower()
 
-        known_faces_dict = self.loadVar('features')
-        self.know_faces = self.flatten(known_faces_dict)
+        rospy.logerr(starting_names)
+        if starting_names == 'all':
+            known_faces_dict = self.loadVar('features')
+            self.know_faces = self.flatten(known_faces_dict)
+            rospy.logerr(self.know_faces)
+
+        elif starting_names != 'none':
+            names = []
+            encondings = []
+            known_faces_dict = self.loadVar('features')
+            names_association = self.flatten(known_faces_dict)
+            for i, name in enumerate(names_association[0]):
+                if name in starting_names:
+                   names.append(name)
+                   encondings.append(names_association[1][i])
+            self.know_faces = (names, encondings)
+
+            rospy.logerr(self.know_faces)
+
+        else:
+            self.know_faces = []
 
     def initRosComm(self):
         self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
