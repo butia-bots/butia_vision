@@ -139,7 +139,7 @@ class FaceRecognition(BaseRecognition):
         NAME_DIR = os.path.join(self.dataset_dir, name)
         self.current_names.append(name)
 
-        if os.path.exists(NAME_DIR) and name not in self.current_names:
+        if os.path.exists(NAME_DIR):
             os.rmdir(NAME_DIR)
         # elif name in self.current_names:
         #     state = False
