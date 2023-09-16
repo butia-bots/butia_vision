@@ -17,8 +17,6 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 
-torch.set_num_threads(1)
-
 class YoloV5Recognition(BaseRecognition):
     def __init__(self, state=True):
         super().__init__(state=state)
@@ -67,8 +65,8 @@ class YoloV5Recognition(BaseRecognition):
 
             rospy.loginfo('Image ID: ' + str(img.header.seq))
 
+            #cv_img = np.flip(ros_numpy.numpify(img),2)
             cv_img = ros_numpy.numpify(img)
-
             results = self.model(cv_img)
   
             debug_img = copy(cv_img)
@@ -89,6 +87,7 @@ class YoloV5Recognition(BaseRecognition):
 
             description_header = img.header
             description_header.seq = 0
+
             for i in range(len(bbs_l)):
                 class_id = int(bbs_l['class'][i])
 
@@ -120,12 +119,12 @@ class YoloV5Recognition(BaseRecognition):
 
                 elif (label_class in [val for sublist in self.classes for val in sublist] or label_class in self.classes) and bbs_l['confidence'][i] >= self.threshold:
                     index = None
-                    j = 0
-                    for value in self.classes_by_category.values():
-                        if label_class in value:
-                            index = j
-                        j += 1
-                    description.label = self.classes[index] + '/' + label_class if index is not None else label_class
+                    
+                    for value in self.classes_by_category.items():
+                        if label_class in value[1]:
+                            index = value[0]
+
+                    description.label = index + '/' + label_class if index is not None else label_class
 
                     objects_recognition.descriptions.append(description)
 
@@ -133,7 +132,7 @@ class YoloV5Recognition(BaseRecognition):
                 debug_img = cv2.putText(debug_img, label_class, (int(bbs_l['xmin'][i]), int(bbs_l['ymin'][i])), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color=self.colors[label_class])
                 description_header.seq += 1
             
-            self.debug_publisher.publish(ros_numpy.msgify(Image, np.flip(debug_img, 2), 'rgb8'))
+            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
             if len(objects_recognition.descriptions) > 0:
                 self.object_recognition_publisher.publish(objects_recognition)

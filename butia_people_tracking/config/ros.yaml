@@ -4,7 +4,6 @@ services:
     stop_tracking: "/butia_vision/pt/stop"
     
 topics:
-  butia_recognition:
-    people_detection: "/butia_vision/br/people_detection"
   people_tracking:
+    people_detection: "/butia_vision/br/recognitions2D"
     people_tracking: "/butia_vision/pt/people_tracking"
