@@ -91,7 +91,7 @@ class YoloV8Recognition(BaseRecognition):
                 description.type = Description2D.DETECTION
                 description.id = description.header.seq
                 description.score = float(box.conf)
-                description.max_size = Vector3(*[0.5, 0.5, 0.5])
+                description.max_size = Vector3(*[0.05, 0.05, 0.05])
                 size = int(xyxy_box[2] - xyxy_box[0]), int(xyxy_box[3] - xyxy_box[1])
                 description.bbox.center.x = int(xyxy_box[0]) + int(size[0]/2)
                 description.bbox.center.y = int(xyxy_box[1]) + int(size[1]/2)
