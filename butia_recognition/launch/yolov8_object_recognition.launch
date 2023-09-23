@@ -11,11 +11,11 @@
     <rosparam command="load" file="$(find butia_recognition)/config/$(arg config_file)"/>
   </node>
 
-  <!-- <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_object_recognition_node" machine="$(arg machine)">
+  <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_object_recognition_node" machine="$(arg machine)">
     <remap from="sub/recognitions2d"  to="/butia_vision/br/object_recognition"/>
     <remap from="pub/recognitions3d"  to="/butia_vision/br/object_recognition3d"/>
     <remap from="pub/markers" to="/butia_vision/br/markers"/>
     <rosparam param="color">[255,0,0]</rosparam>
-  </node> -->
+  </node>
 
 </launch>
