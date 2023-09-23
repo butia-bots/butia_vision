@@ -16,13 +16,17 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
+from butia_vision_msgs.srv import SetClass, SetClassRequest, SetClassResponse
+from butia_vision_msgs.srv import VisualQuestionAnswering, VisualQuestionAnsweringRequest, VisualQuestionAnsweringResponse
 import supervision as sv
 from groundingdino.util.inference import Model
-from segment_anything import SamPredictor, sam_model_registry
+from segment_anything_hq import SamPredictor, sam_model_registry
 from ram.models import ram
 from ram import inference_ram
 from ram import get_transform as get_transform_ram
 from PIL import Image as PILImage
+from transformers import pipeline
+import gc
 
 torch.set_num_threads(1)
 
@@ -30,6 +34,8 @@ class GroundedSAMRecognition(BaseRecognition):
     def __init__(self, state=True):
         super().__init__(state=state)
 
+        self.current_img = None
+        self.detect_best_only = True
         self.readParameters()
 
         self.loadModel()
@@ -38,6 +44,8 @@ class GroundedSAMRecognition(BaseRecognition):
     def initRosComm(self):
         self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
         self.object_recognition_publisher = rospy.Publisher(self.object_recognition_topic, Recognitions2D, queue_size=self.object_recognition_qs)
+        self.set_class = rospy.Service(self.set_class_service, SetClass, self.handleSetClass)
+        self.visual_question_answering = rospy.Service(self.visual_question_answering_service, VisualQuestionAnswering, self.handleVisualQuestionAnswering)
         super().initRosComm(callbacks_obj=self)
 
     def serverStart(self, req):
@@ -47,6 +55,20 @@ class GroundedSAMRecognition(BaseRecognition):
     def serverStop(self, req):
         self.unLoadModel()
         return super().serverStop(req)
+
+    def handleSetClass(self, req):
+        self.classes = [req.class_name,]
+        self.box_threshold = req.confidence
+        self.detect_best_only = req.detect_best_only
+        return SetClassResponse()
+
+    def handleVisualQuestionAnswering(self, req):
+        question = req.question
+        image = PILImage.fromarray(self.current_img.copy())
+        result = self.vqa_model(question=question, image=image, top_k=1)[0]
+        answer = str(result['answer'])
+        confidence = result['score']
+        return VisualQuestionAnsweringResponse(answer=answer, confidence=confidence)
 
     def loadModel(self):
         self.dino_model = Model(model_config_path=f"{self.pkg_path}/config/grounding_dino_network_config/{self.dino_config}", model_checkpoint_path=f"{self.pkg_path}/config/grounding_dino_network_config/{self.dino_checkpoint}")
@@ -60,6 +82,8 @@ class GroundedSAMRecognition(BaseRecognition):
             self.ram_model.eval()
             self.ram_model = self.ram_model.to('cuda')
             self.ram_transform = get_transform_ram(image_size=384)
+        if self.use_vqa:
+            self.vqa_model = pipeline(model="dandelin/vilt-b32-finetuned-vqa")
 
     def unLoadModel(self):
         del self.dino_model
@@ -68,6 +92,9 @@ class GroundedSAMRecognition(BaseRecognition):
         if self.use_ram:
             del self.ram_model
             del self.ram_transform
+        if self.use_vqa:
+            del self.vqa_model
+        gc.collect()
         torch.cuda.empty_cache()
 
     @ifState
@@ -85,6 +112,7 @@ class GroundedSAMRecognition(BaseRecognition):
             rospy.loginfo('Image ID: ' + str(img.header.seq))
 
             cv_img = ros_numpy.numpify(img)
+            self.current_img = cv_img.copy()
 
             if self.use_ram:
                 ram_img = self.ram_transform(PILImage.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))).unsqueeze(0).to('cuda')
@@ -97,13 +125,15 @@ class GroundedSAMRecognition(BaseRecognition):
             results = self.dino_model.predict_with_classes(image=cv_img, classes=class_list, box_threshold=self.box_threshold, text_threshold=self.text_threshold)
             results = results.with_nms(threshold=self.nms_threshold, class_agnostic=self.class_agnostic_nms)
             if len(results.class_id) > 0:
+                if self.detect_best_only:
+                    results = results[results.confidence >= max(results.confidence)][:1]
                 self.sam_model.set_image(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
             box_annotator = sv.BoxAnnotator()
             print(results.class_id)
             labels = []
             for idx in results.class_id:
                 if idx is not None:
-                    labels.append(class_list[idx])
+                    labels.append(f"{class_list[idx]} {results.confidence[idx]:.2f}")
                 else:
                     labels.append('unknown')
             debug_img = box_annotator.annotate(scene=cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB), detections=results, labels=labels)
@@ -184,7 +214,7 @@ class GroundedSAMRecognition(BaseRecognition):
             
             debug_img = mask_annotator.annotate(debug_img, detections=results)
             
-            self.debug_publisher.publish(ros_numpy.msgify(Image, np.flip(debug_img, 2), 'rgb8'))
+            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
             if len(objects_recognition.descriptions) > 0:
                 self.object_recognition_publisher.publish(objects_recognition)
@@ -210,8 +240,12 @@ class GroundedSAMRecognition(BaseRecognition):
 
         self.use_ram = rospy.get_param("~use_ram", True)
 
+        self.use_vqa = rospy.get_param("~use_vqa", True)
+        self.visual_question_answering_service = rospy.get_param("~servers/visual_question_answering/service", "/butia_vision/br/object_recognition/visual_question_answering")
+
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
         self.classes = rospy.get_param("~classes", [])
+        self.set_class_service = rospy.get_param("~servers/set_class/service", "/butia_vision/br/object_recognition/set_class")
 
         self.max_sizes = list((rospy.get_param("~max_sizes", [])))
 

@@ -1,8 +1,9 @@
-classes:
-    - table
-    - chair
+use_ram: false
+use_sam: true
+box_threshold: 0.6
+
+classes: [bottle]
 max_sizes:
-    - [0.5, 0.5, 0.5]
     - [0.5, 0.5, 0.5]
 
 subscribers:
@@ -12,12 +13,14 @@ subscribers:
   slop: 0.2
 
   image_rgb: /camera/rgb/image_color
+  #image_rgb: /image_publisher/image_raw
 
   #points: /butia_vision/bvb/points
   
   image_depth: /camera/depth/image
 
   camera_info: /camera/rgb/camera_info
+  #camera_info: /image_publisher/camera_info
 
 publishers:
 
