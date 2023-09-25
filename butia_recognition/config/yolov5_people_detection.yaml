@@ -24,7 +24,7 @@ subscribers:
 publishers:
 
   people_detection:
-    topic: /butia_vision/br/face_recognition
+    topic: /butia_vision/br/recognition2D
     queue_size: 1
 
 servers:

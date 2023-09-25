@@ -13,7 +13,7 @@ import ros_numpy
 from butia_vision_bridge import VisionBridge
 
 from sensor_msgs.msg import PointCloud2
-from butia_vision_msgs.msg import Description2D, Recognitions2D, Description3D, Recognitions3D
+from butia_vision_msgs.msg import KeyPoint2D, Description2D, Recognitions2D, KeyPoint3D, Description3D, Recognitions3D
 from visualization_msgs.msg import Marker, MarkerArray
 
 #from tf.transformations (that it is not working on jetson)
@@ -47,7 +47,8 @@ class Image2World:
         self.DESCRIPTION_PROCESSING_ALGORITHMS = {
             Description2D.DETECTION: self.__detectionDescriptionProcessing,
             Description2D.INSTANCE_SEGMENTATION: self.__instanceSegmentationDescriptionProcessing,
-            Description2D.SEMANTIC_SEGMENTATION: self.__semanticSegmentationDescriptionProcessing
+            Description2D.SEMANTIC_SEGMENTATION: self.__semanticSegmentationDescriptionProcessing,
+            Description2D.POSE: self.__poseDescriptionProcessing
         }
 
         self.debug = rospy.Publisher('pub/debug', PointCloud2, queue_size=1)
@@ -297,16 +298,64 @@ class Image2World:
 
         return description3d
 
-
     def __semanticSegmentationDescriptionProcessing(self, source_data, description2d, header):
         return None
 
     def __instanceSegmentationDescriptionProcessing(self, source_data, description2d, header):
         return None
+    
+    def __poseDescriptionProcessing(self, data, description2d : Description2D, header):
+        description3d : Description3D = self.__detectionDescriptionProcessing(data, description2d ,header)
 
-    def __createDescription3D(self, source_data, description2d, header):
+        if 'image_depth' in data and 'camera_info' in data:
+            image_depth = data['image_depth']
+            camera_info = data['camera_info']
+
+            self.__mountLutTable(camera_info)
+
+            h, w = image_depth.shape
+
+            kpt : KeyPoint2D
+            for kpt in description2d.pose:
+                kpt3D = KeyPoint3D()
+                kpt3D.id = kpt.id
+
+                u = int(kpt.x)
+                v = int(kpt.y)
+
+                if u >= w or u < 0 or v >= h or v < 0:
+                    kpt3D.score = 0
+
+                else:
+                    depth = image_depth[v, u]
+
+                    if depth <= 0:
+                        kpt3D.score = 0
+
+                    else:
+                        kpt3D.score = kpt.score
+
+                        depth /= 1000.
+
+                        vertex_3d = np.zeros(3)
+                        vertex_3d[:2] = self.lut_table[v, u, :]*depth
+                        vertex_3d[2] = depth
+
+                        kpt3D.x = vertex_3d[0]
+                        kpt3D.y = vertex_3d[1]
+                        kpt3D.z = vertex_3d[2]
+
+                description3d.pose.append(kpt3D)
+
+            return description3d
+
+    def __createDescription3D(self, source_data, description2d : Description2D, header):
         if description2d.type in self.DESCRIPTION_PROCESSING_ALGORITHMS:
-            return self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
+            description3D : Description3D = self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
+            description3D.bbox2D = description2d.bbox
+            description3D.class_num = description2d.class_num
+            print(description3D.class_num)
+            return description3D
         else:
             return None
 
@@ -327,6 +376,7 @@ class Image2World:
         pc2 = data.points
         img_depth = data.image_depth
         camera_info = data.camera_info
+        image_rgb = data.image_rgb
         
         recognitions = Recognitions3D()
         if pc2.width*pc2.height > 0:
@@ -345,6 +395,7 @@ class Image2World:
         else:
             rospy.logwarn('Image2World cannot be used because pointcloud and depth images are void.')
 
+        recognitions.image_rgb = image_rgb
         if self.publish_markers:
             self.publishMarkers(recognitions.descriptions)
         return recognitions
@@ -397,6 +448,29 @@ class Image2World:
             marker.text = '{} ({:.2f})'.format(name, det.score)
             marker.lifetime = rospy.Time.from_sec(2)
             markers.markers.append(marker)
+
+            for idx, kpt3D in enumerate(det.pose):
+                if kpt3D.score > 0:
+                    marker = Marker()
+                    marker.header = det.poses_header
+                    marker.type = Marker.SPHERE
+                    marker.id = idx
+                    marker.color.r = color[1]
+                    marker.color.g = color[2]
+                    marker.color.b = color[0]
+                    marker.color.a = 1
+                    marker.scale.x = 0.05
+                    marker.scale.y = 0.05
+                    marker.scale.z = 0.05
+                    marker.pose.position.x = kpt3D.x
+                    marker.pose.position.y = kpt3D.y
+                    marker.pose.position.z = kpt3D.z
+                    marker.pose.orientation.x = 0.0
+                    marker.pose.orientation.y = 0.0
+                    marker.pose.orientation.z = 0.0
+                    marker.pose.orientation.w = 1.0
+                    marker.lifetime = rospy.Time.from_sec(2)
+                    markers.markers.append(marker)
         
         self.marker_publisher.publish(markers)
     

@@ -12,6 +12,7 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
+import torch
 
 
 class YoloV8Recognition(BaseRecognition):
@@ -46,6 +47,8 @@ class YoloV8Recognition(BaseRecognition):
 
     def unLoadModel(self):
         del self.model
+        torch.cuda.empty_cache()
+        self.model = None
 
     @ifState
     def callback(self, *args):
@@ -106,7 +109,7 @@ class YoloV8Recognition(BaseRecognition):
                 elif (label_class in [val for sublist in self.all_classes for val in sublist] or label_class in self.all_classes) and box.conf >= self.threshold:
                     index = None
 
-                    for value in self.classes_by_category.values():
+                    for value in self.classes_by_category.items():
                         if label_class in value[1]:
                             index = value[0]
 

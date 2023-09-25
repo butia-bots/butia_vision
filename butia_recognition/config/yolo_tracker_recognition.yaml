@@ -1,0 +1,53 @@
+debug_kpt_threshold: 0.5
+
+model_file: yolov8s-pose.pt
+
+subscribers:
+  
+  queue_size: 1
+  exact_time: false
+  slop: 0.5
+
+  image_rgb: /butia_vision/bvb/image_rgb
+
+  image_depth: /butia_vision/bvb/image_depth
+
+  camera_info: /butia_vision/bvb/camera_info
+
+
+publishers:
+
+  recognition:
+    topic: /butia_vision/br/recognitions2D
+    queue_size: 1
+    
+  debug:
+    topic: /butia_vision/br/debug
+    queue_size: 1
+
+  tracking: 
+    topic: /butia_vision/pt/tracking2D
+    queue_size: 1
+
+servers:
+  start:
+    service: /butia_vision/br/yolo_tracking/start
+
+  stop:
+    service: /butia_vision/br/yolo_tracking/stop
+
+services:
+  tracking:
+    start: /butia_vision/pt/start
+    stop: /butia_vision/pt/stop
+
+tracking:
+  start_on_init: false
+  use_boxmot: false
+  model_file: osnet_x0_25_msmt17.pt
+  thresholds:
+    reid_threshold: 0.3
+    det_threshold: 0.5
+    iou_threshold: 0.15
+    max_age: 10
+    max_time: 10

@@ -1,0 +1,21 @@
+<launch>
+  <arg name="machine" default="localhost"/>
+  <arg name="use_machine" default="true"/>
+  <arg name="output" default="screen"/>
+  <arg name="node_name" default="butia_bag_recognition"/>
+  <arg name="config_file" default="yolov8_bag_recognition.yaml"/>
+
+  <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+
+  <node pkg="butia_recognition" type="yolov8_recognition.py" output="$(arg output)" name="$(arg node_name)" machine="$(arg machine)">
+    <rosparam command="load" file="$(find butia_recognition)/config/$(arg config_file)"/>
+  </node>
+
+  <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_object_recognition_node" machine="$(arg machine)">
+    <remap from="sub/recognitions2d"  to="/butia_vision/br/object_recognition"/>
+    <remap from="pub/recognitions3d"  to="/butia_vision/br/object_recognition3d"/>
+    <remap from="pub/markers" to="/butia_vision/br/markers"/>
+    <rosparam param="color">[255,0,0]</rosparam>
+  </node>
+
+</launch>

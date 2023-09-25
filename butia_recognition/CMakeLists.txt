@@ -13,5 +13,6 @@ catkin_package(
 
 install(PROGRAMS
   scripts/butia_recognition/yolov5_recognition.py
+  scripts/butia_recognition/yolo_tracker_recognition.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
