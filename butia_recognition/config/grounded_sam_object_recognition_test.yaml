@@ -12,14 +12,14 @@ subscribers:
   exact_time: false
   slop: 0.2
 
-  image_rgb: /camera/rgb/image_color
+  image_rgb: /camera/color/image_raw
   #image_rgb: /image_publisher/image_raw
 
   #points: /butia_vision/bvb/points
   
-  image_depth: /camera/depth/image
+  image_depth: /camera/depth/image_rect_raw
 
-  camera_info: /camera/rgb/camera_info
+  camera_info: /camera/color/camera_info
   #camera_info: /image_publisher/camera_info
 
 publishers:

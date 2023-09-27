@@ -214,7 +214,7 @@ class GroundedSAMRecognition(BaseRecognition):
             
             debug_img = mask_annotator.annotate(debug_img, detections=results)
             
-            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
+            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img[:,:,::-1], 'rgb8'))
 
             if len(objects_recognition.descriptions) > 0:
                 self.object_recognition_publisher.publish(objects_recognition)
