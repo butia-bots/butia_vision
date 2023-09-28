@@ -239,12 +239,12 @@ class GroundedSAMRecognition(BaseRecognition):
         self.text_threshold = rospy.get_param("~text_threshold", 0.25)
         self.box_threshold = rospy.get_param("~box_threshold", 0.35)
 
-        self.use_sam = rospy.get_param("~use_sam", True)
+        self.use_sam = rospy.get_param("~use_sam", False)
         self.sam_checkpoint = rospy.get_param("~sam_checkpoint", "sam_hq_vit_tiny.pth")
         self.sam_model_type = rospy.get_param("~sam_model_type", "vit_tiny")
         self.sam_hq_token_only = rospy.get_param("~sam_hq_token_only", False)
 
-        self.use_ram = rospy.get_param("~use_ram", True)
+        self.use_ram = rospy.get_param("~use_ram", False)
 
         self.use_vqa = rospy.get_param("~use_vqa", True)
         self.visual_question_answering_service = rospy.get_param("~servers/visual_question_answering/service", "/butia_vision/br/object_recognition/visual_question_answering")

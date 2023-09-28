@@ -1,4 +1,11 @@
 threshold: 0.5
+use_ram: false
+use_sam: true
+box_threshold: 0.6
+
+classes: [bottle]
+max_sizes:
+    - [0.5, 0.5, 0.5]
 
 subscribers:
   

@@ -1,5 +1,6 @@
 use_ram: false
-use_sam: true
+use_sam: false
+use_dino: false
 box_threshold: 0.6
 
 classes: [bottle]
@@ -12,14 +13,14 @@ subscribers:
   exact_time: false
   slop: 0.2
 
-  image_rgb: /camera/color/image_raw
+  image_rgb: /butia_vision/bvb/image_rgb
   #image_rgb: /image_publisher/image_raw
 
   #points: /butia_vision/bvb/points
   
-  image_depth: /camera/depth/image_rect_raw
+  image_depth: /butia_vision/bvb/image_depth
 
-  camera_info: /camera/color/camera_info
+  camera_info: /butia_vision/bvb/camera_info
   #camera_info: /image_publisher/camera_info
 
 publishers:

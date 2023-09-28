@@ -8,7 +8,7 @@
     <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
 
     <node pkg="butia_recognition" type="grounded_sam_recognition.py" output="$(arg output)" name="$(arg node_name)" machine="$(arg machine)">
-        <!-- <rosparam command="load" file="$(find butia_recognition)/config/$(arg config_file)"/> -->
+        <rosparam command="load" file="$(find butia_recognition)/config/$(arg config_file)"/>
     </node>
 </launch>
 
