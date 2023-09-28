@@ -71,8 +71,9 @@ class GroundedSAMRecognition(BaseRecognition):
         return VisualQuestionAnsweringResponse(answer=answer, confidence=confidence)
 
     def loadModel(self):
-        self.dino_model = Model(model_config_path=f"{self.pkg_path}/config/grounding_dino_network_config/{self.dino_config}", model_checkpoint_path=f"{self.pkg_path}/config/grounding_dino_network_config/{self.dino_checkpoint}")
-        print('Done loading GroundingDINO model!')
+        if self.use_dino:
+            self.dino_model = Model(model_config_path=f"{self.pkg_path}/config/grounding_dino_network_config/{self.dino_config}", model_checkpoint_path=f"{self.pkg_path}/config/grounding_dino_network_config/{self.dino_checkpoint}")
+            print('Done loading GroundingDINO model!')
         if self.use_sam:
             sam = sam_model_registry[self.sam_model_type](checkpoint=f"{self.pkg_path}/config/sam_network_config/{self.sam_checkpoint}")
             self.sam_model = SamPredictor(sam)
@@ -86,7 +87,8 @@ class GroundedSAMRecognition(BaseRecognition):
             self.vqa_model = pipeline(model="dandelin/vilt-b32-finetuned-vqa")
 
     def unLoadModel(self):
-        del self.dino_model
+        if self.use_dino:
+            del self.dino_model
         if self.use_sam:
             del self.sam_model
         if self.use_ram:
@@ -122,8 +124,11 @@ class GroundedSAMRecognition(BaseRecognition):
                 class_list = self.classes
 
             print(class_list)
-            results = self.dino_model.predict_with_classes(image=cv_img, classes=class_list, box_threshold=self.box_threshold, text_threshold=self.text_threshold)
-            results = results.with_nms(threshold=self.nms_threshold, class_agnostic=self.class_agnostic_nms)
+            if self.use_dino:
+                results = self.dino_model.predict_with_classes(image=cv_img, classes=class_list, box_threshold=self.box_threshold, text_threshold=self.text_threshold)
+                results = results.with_nms(threshold=self.nms_threshold, class_agnostic=self.class_agnostic_nms)
+            else:
+                results = sv.Detections.empty()
             if len(results.class_id) > 0:
                 if self.detect_best_only:
                     results = results[results.confidence >= max(results.confidence)][:1]
@@ -226,6 +231,7 @@ class GroundedSAMRecognition(BaseRecognition):
         self.object_recognition_topic = rospy.get_param("~publishers/object_recognition/topic", "/butia_vision/br/object_recognition")
         self.object_recognition_qs = rospy.get_param("~publishers/object_recognition/queue_size", 1)
 
+        self.use_dino = rospy.get_param("~use_dino", False)
         self.dino_checkpoint = rospy.get_param("~dino_checkpoint", "groundingdino_swint_ogc.pth")
         self.dino_config = rospy.get_param("~dino_config", "GroundingDINO_SwinT_OGC.py")
         self.class_agnostic_nms = rospy.get_param("~class_agnostic_nms", True)
