@@ -97,13 +97,17 @@ class FaceRecognition(BaseRecognition):
         encodings = []
         names = []
         try:
-            encoded_face = self.loadVar('features')
+            all_encoded_face = self.loadVar('features')
+            for name in self.current_names:
+                for current_name in self.current_names:
+                    if name == current_name:
+                        encoded_face[name] = all_encoded_face[current_name]
         except:
             encoded_face = {}
         train_dir = os.listdir(self.dataset_dir)
 
         for person in train_dir:
-            if person not in self.know_faces[0]:   
+            if person not in self.know_faces[0] and person in self.current_names:
                 pix = os.listdir(self.dataset_dir + person)
 
                 for person_img in pix:
