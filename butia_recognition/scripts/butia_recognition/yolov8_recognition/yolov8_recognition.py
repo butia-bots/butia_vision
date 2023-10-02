@@ -13,7 +13,7 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 import torch
-
+import rospkg
 
 class YoloV8Recognition(BaseRecognition):
     def __init__(self, state=True):
@@ -41,7 +41,7 @@ class YoloV8Recognition(BaseRecognition):
         return super().serverStop(req)
 
     def loadModel(self): 
-        self.model = YOLO("yolov8n.pt")
+        self.model = YOLO(self.model_file)
         self.model.conf = self.threshold
         print('Done loading model!')
 
@@ -74,7 +74,7 @@ class YoloV8Recognition(BaseRecognition):
         description_header = img_rgb.header
         description_header.seq = 0
 
-        results = self.model.predict(cv_img)
+        results = self.model.predict(cv_img, conf=self.threshold, imgsz=max(*cv_img.shape), verbose=False)
         debug_img = cv_img
         boxes_ = results[0].boxes.cpu().numpy()
 
@@ -87,14 +87,14 @@ class YoloV8Recognition(BaseRecognition):
                     continue
 
                 label_class = self.all_classes[int(box.cls)]
-
+                max_size = self.max_sizes[label_class]
 
                 description = Description2D()
                 description.header = copy(description_header)
                 description.type = Description2D.DETECTION
                 description.id = description.header.seq
                 description.score = float(box.conf)
-                description.max_size = Vector3(*[0.05, 0.05, 0.05])
+                description.max_size = Vector3(*max_size)
                 size = int(xyxy_box[2] - xyxy_box[0]), int(xyxy_box[3] - xyxy_box[1])
                 description.bbox.center.x = int(xyxy_box[0]) + int(size[0]/2)
                 description.bbox.center.y = int(xyxy_box[1]) + int(size[1]/2)
@@ -145,7 +145,21 @@ class YoloV8Recognition(BaseRecognition):
 
         self.all_classes = list(rospy.get_param("~all_classes", []))
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
-        self.model_file = rospy.get_param("~model_file", "yolov8_lab_objects.pt")
+
+        r = rospkg.RosPack()
+        r.list()
+        self.model_file = r.get_path("butia_recognition") + "/weigths/" + rospy.get_param("~model_file", "yolov8n.pt")
+
+        max_sizes = rospy.get_param("~max_sizes", [[0.05, 0.05, 0.05]])
+
+        if len(max_sizes) == 1:
+            max_sizes = [max_sizes[0] for _ in self.all_classes]
+
+        if len(max_sizes) != len(self.all_classes):
+            rospy.logerr('Wrong definition of max_sizes in yaml of recognition node.')
+            assert False
+        
+        self.max_sizes = dict([(self.all_classes[i], max_sizes[i]) for i in range(len(max_sizes))])
 
         super().readParameters()
 

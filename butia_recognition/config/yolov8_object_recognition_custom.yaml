@@ -1,0 +1,48 @@
+threshold: 0.3
+classes_by_category:
+    Food: ['pringles', 'flakes']
+    Drink: ['guarana', 'tonic']
+    Hygiene: ['cleaner']
+
+all_classes:
+  - 'cleaner'
+  - 'flakes'
+  - 'guarana'
+  - 'pringles'
+  - 'tonic'
+  
+max_sizes:
+    - [0.06, 0.255, 0.06]
+    - [0.08, 0.18, 0.14]
+    - [0.045, 0.15, 0.045]
+    - [0.07, 0.20, 0.07]
+    - [0.075, 0.125, 0.075]
+
+model_file: yolov8-itec.pt
+
+subscribers:
+  
+  queue_size: 1
+  exact_time: false
+  slop: 0.2
+
+  image_rgb: /butia_vision/bvb/image_rgb
+  camera_info: /butia_vision/bvb/camera_info
+  image_depth: /butia_vision/bvb/image_depth
+  
+publishers:
+
+  object_recognition:
+    topic: /butia_vision/br/object_recognition
+    queue_size: 1
+
+servers:
+
+  list_classes:
+    service: /butia_vision/br/object_recognition/list_classes
+
+  start:
+    service: /butia_vision/br/object_recognition/start
+
+  stop:
+    service: /butia_vision/br/object_recognition/stop
