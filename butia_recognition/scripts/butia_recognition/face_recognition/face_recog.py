@@ -98,10 +98,10 @@ class FaceRecognition(BaseRecognition):
         names = []
         try:
             all_encoded_face = self.loadVar('features')
-            for name in self.current_names:
+            for name in list(all_encoded_face.keys()):
                 for current_name in self.current_names:
                     if name == current_name:
-                        encoded_face[name] = all_encoded_face[current_name]
+                        encoded_face[current_name] = all_encoded_face[name]
         except:
             encoded_face = {}
         train_dir = os.listdir(self.dataset_dir)
