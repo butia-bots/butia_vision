@@ -131,11 +131,11 @@ class GroundedSAMRecognition(BaseRecognition):
             box_annotator = sv.BoxAnnotator()
             print(results.class_id)
             labels = []
-            for idx in results.class_id:
+            for idx, conf in zip(results.class_id, results.confidence):
                 if idx is not None:
-                    labels.append(f"{class_list[idx]} {results.confidence[idx]:.2f}")
+                    labels.append(f"{class_list[idx]} {conf:.2f}")
                 else:
-                    labels.append('unknown')
+                    labels.append(f'unknown {conf:.2f}')
             debug_img = box_annotator.annotate(scene=cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB), detections=results, labels=labels)
             mask_annotator = sv.MaskAnnotator()
             objects_recognition = Recognitions2D()
@@ -226,8 +226,10 @@ class GroundedSAMRecognition(BaseRecognition):
         self.object_recognition_topic = rospy.get_param("~publishers/object_recognition/topic", "/butia_vision/br/object_recognition")
         self.object_recognition_qs = rospy.get_param("~publishers/object_recognition/queue_size", 1)
 
+        #tabletop recognition test: 8/14
         self.dino_checkpoint = rospy.get_param("~dino_checkpoint", "groundingdino_swint_ogc.pth")
         self.dino_config = rospy.get_param("~dino_config", "GroundingDINO_SwinT_OGC.py")
+        
         self.class_agnostic_nms = rospy.get_param("~class_agnostic_nms", True)
         self.nms_threshold = rospy.get_param("~nms_threshold", 0.5)
         self.text_threshold = rospy.get_param("~text_threshold", 0.25)
