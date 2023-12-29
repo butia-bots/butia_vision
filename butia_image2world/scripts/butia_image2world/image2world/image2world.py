@@ -488,7 +488,7 @@ class Image2World:
         self.publish_markers = rospy.get_param('~publish_markers', True)
         self.color = rospy.get_param('~color', [255, 0, 0])
         self.depth_mean_error = rospy.get_param('~depth_mean_error', 0.05)
-        self.fit_bbox = rospy.get_param('~fit_bbox', False)
+        self.fit_bbox = rospy.get_param('~fit_bbox', True)
 
 if __name__ == '__main__':
     rospy.init_node('image2world_node', anonymous = True)
