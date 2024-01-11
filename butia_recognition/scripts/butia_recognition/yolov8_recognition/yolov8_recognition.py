@@ -14,6 +14,7 @@ from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 import torch
 
+torch.set_num_threads(1)
 
 class YoloV8Recognition(BaseRecognition):
     def __init__(self, state=True):
@@ -41,7 +42,7 @@ class YoloV8Recognition(BaseRecognition):
         return super().serverStop(req)
 
     def loadModel(self): 
-        self.model = YOLO(self.pkg_path + "/config/yolov8_network_config/yolov8n.pt")
+        self.model = YOLO(self.pkg_path + "/config/yolov8_network_config/" + self.model_file)
         self.model.conf = self.threshold
         print('Done loading model!')
 
@@ -67,6 +68,7 @@ class YoloV8Recognition(BaseRecognition):
         h.seq = self.seq #id mensagem
         self.seq += 1 #prox id
         h.stamp = rospy.Time.now()
+        h.frame_id = img_rgb.header.frame_id
 
         objects_recognition.header = h
         objects_recognition = BaseRecognition.addSourceData2Recognitions2D(source_data, objects_recognition)
@@ -77,6 +79,10 @@ class YoloV8Recognition(BaseRecognition):
         results = self.model.predict(cv_img)
         debug_img = cv_img
         boxes_ = results[0].boxes.cpu().numpy()
+        if results[0].masks is not None:
+            masks_ = results[0].masks.cpu().numpy()
+        else:
+            masks_ = None
 
         if len(results[0].boxes):
             for i in range(len(results[0].boxes)):
@@ -91,7 +97,11 @@ class YoloV8Recognition(BaseRecognition):
 
                 description = Description2D()
                 description.header = copy(description_header)
-                description.type = Description2D.DETECTION
+                if masks_ is not None:
+                    description.type = Description2D.DETECTION
+                else:
+                    description.type = Description2D.INSTANCE_SEGMENTATION
+                    description.mask = ros_numpy.msgify(Image, masks_[i])
                 description.id = description.header.seq
                 description.score = float(box.conf)
                 description.max_size = Vector3(*[0.05, 0.05, 0.05])

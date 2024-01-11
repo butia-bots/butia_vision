@@ -18,8 +18,8 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 #from tf.transformations (that it is not working on jetson)
 def quaternion_from_matrix(matrix):
-    q = np.empty((4, ), dtype=np.float64)
-    M = np.array(matrix, dtype=np.float64, copy=False)[:4, :4]
+    q = np.empty((4, ), dtype=float)
+    M = np.array(matrix, dtype=float, copy=False)[:4, :4]
     t = np.trace(M)
     if t > M[3, 3]:
         q[3] = t
@@ -226,7 +226,8 @@ class Image2World:
             if center_depth <= 0:
                 rospy.logwarn('INVALID DEPTH VALUE')
             
-            center_depth/= 1000.
+            if self.convert_units:
+                center_depth/= 1000.
 
             limits = np.asarray([(bbox_limits[0], bbox_limits[2]), (bbox_limits[1], bbox_limits[3])])
 
@@ -267,7 +268,10 @@ class Image2World:
             max_bound = np.max(vertices_3d, axis=0)
 
             if self.fit_bbox:
-                box_depths = image_depth[limits[0, 1]:limits[1, 1], limits[0, 0]:limits[1, 0]]/1000.
+                if self.convert_units:
+                    box_depths = image_depth[limits[0, 1]:limits[1, 1], limits[0, 0]:limits[1, 0]]/1000.
+                else:
+                    box_depths = image_depth[limits[0, 1]:limits[1, 1], limits[0, 0]:limits[1, 0]]
                 box_lut = self.lut_table[limits[0, 1]:limits[1, 1], limits[0, 0]:limits[1, 0], :]
 
                 box_points = np.zeros((box_depths.size, 3))
@@ -335,7 +339,8 @@ class Image2World:
                     else:
                         kpt3D.score = kpt.score
 
-                        depth /= 1000.
+                        if self.convert_units:
+                            depth /= 1000.
 
                         vertex_3d = np.zeros(3)
                         vertex_3d[:2] = self.lut_table[v, u, :]*depth
@@ -350,13 +355,19 @@ class Image2World:
             return description3d
 
     def __createDescription3D(self, source_data, description2d : Description2D, header):
-        if description2d.type in self.DESCRIPTION_PROCESSING_ALGORITHMS:
-            description3D : Description3D = self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
-            description3D.bbox2D = description2d.bbox
-            description3D.class_num = description2d.class_num
-            print(description3D.class_num)
-            return description3D
-        else:
+        try:
+            if description2d.type in self.DESCRIPTION_PROCESSING_ALGORITHMS:
+                description3D : Description3D = self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
+                if description3D != None:
+                    description3D.bbox2D = description2d.bbox
+                    description3D.class_num = description2d.class_num
+                    print(description3D.class_num)
+                return description3D
+            else:
+                return None
+        except KeyboardInterrupt as e:
+            raise e
+        except:
             return None
 
     def __recognitions3DComputation(self, array_point_cloud, descriptions2d, recog_header, header):
@@ -489,6 +500,7 @@ class Image2World:
         self.color = rospy.get_param('~color', [255, 0, 0])
         self.depth_mean_error = rospy.get_param('~depth_mean_error', 0.05)
         self.fit_bbox = rospy.get_param('~fit_bbox', True)
+        self.convert_units = rospy.get_param('~convert_units', True)
 
 if __name__ == '__main__':
     rospy.init_node('image2world_node', anonymous = True)

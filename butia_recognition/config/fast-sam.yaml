@@ -4,7 +4,7 @@ classes_by_category: {}
 model_file: FastSAM-s.pt
 
 max_sizes:
-    - [2.5, 2.5, 2.5]
+    - [250, 250, 250]
 
 subscribers:
   
@@ -20,6 +20,7 @@ subscribers:
   image_rgb: /camera/color/image_raw
   camera_info: /camera/color/camera_info
   image_depth: /camera/depth/image_raw
+  points: /camera/depth/points
 
 publishers:
 
