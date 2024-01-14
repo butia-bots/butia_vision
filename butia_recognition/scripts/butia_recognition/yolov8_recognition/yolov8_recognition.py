@@ -76,7 +76,7 @@ class YoloV8Recognition(BaseRecognition):
         description_header = img_rgb.header
         description_header.seq = 0
 
-        results = self.model.predict(cv_img)
+        results = self.model.track(cv_img, persist=True)
         debug_img = cv_img
         boxes_ = results[0].boxes.cpu().numpy()
         if results[0].masks is not None:
@@ -88,6 +88,7 @@ class YoloV8Recognition(BaseRecognition):
             for i in range(len(results[0].boxes)):
                 box = results[0].boxes[i]
                 xyxy_box = list(boxes_[i].xyxy.astype(int)[0])
+                global_id = int(boxes_[i].id)
                 
                 if int(box.cls) >= len(self.all_classes):
                     continue
@@ -103,6 +104,7 @@ class YoloV8Recognition(BaseRecognition):
                     description.type = Description2D.INSTANCE_SEGMENTATION
                     description.mask = ros_numpy.msgify(Image, masks_[i])
                 description.id = description.header.seq
+                description.global_id = global_id
                 description.score = float(box.conf)
                 description.max_size = Vector3(*[0.05, 0.05, 0.05])
                 size = int(xyxy_box[2] - xyxy_box[0]), int(xyxy_box[3] - xyxy_box[1])
@@ -130,6 +132,7 @@ class YoloV8Recognition(BaseRecognition):
                 description_header.seq += 1
             
             self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
+            objects_recognition.image_set_of_marks = ros_numpy.msgify(Image, debug_img, 'rgb8')
 
             if len(objects_recognition.descriptions) > 0:
                 self.object_recognition_publisher.publish(objects_recognition)

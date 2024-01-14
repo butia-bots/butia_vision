@@ -388,6 +388,7 @@ class Image2World:
         img_depth = data.image_depth
         camera_info = data.camera_info
         image_rgb = data.image_rgb
+        image_set_of_marks = data.image_set_of_marks
         
         recognitions = Recognitions3D()
         if pc2.width*pc2.height > 0:
@@ -407,6 +408,7 @@ class Image2World:
             rospy.logwarn('Image2World cannot be used because pointcloud and depth images are void.')
 
         recognitions.image_rgb = image_rgb
+        recognitions.image_set_of_marks = image_set_of_marks
         if self.publish_markers:
             self.publishMarkers(recognitions.descriptions)
         return recognitions
