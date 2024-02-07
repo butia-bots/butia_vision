@@ -1,0 +1,11 @@
+<launch>
+    <arg name="machine" default="localhost"/>
+    <arg name="use_machine" default="true"/>
+    <arg name="output" default="screen"/>
+
+    <machine name="localhost" address="localhost" if="$(arg use_machine)"/>
+
+    <node name="owl_vit_node" pkg="butia_recognition" type="owl_vit_node.py" output="$(arg output)" machine="$(arg machine)">
+        <rosparam command="load" ns="butia_recognition" file="$(find butia_recognition)/config/owl_vit.yaml"/>
+    </node>
+</launch>
