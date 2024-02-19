@@ -4,7 +4,7 @@ import rospy
 
 import ros_numpy
 
-from butia_recognition import BaseRecognition, ifState
+from butia_recognition import BaseRecognition, ifState, QueueFaceRecogNoDuplicate
 
 import numpy as np
 import os
@@ -34,6 +34,7 @@ class FaceRecognition(BaseRecognition):
         self.initRosComm()
 
         known_faces_dict = self.loadVar('features')
+        self.saved_faces_encodes = known_faces_dict
         self.know_faces = self.flatten(known_faces_dict)
 
     def initRosComm(self):
@@ -199,14 +200,19 @@ class FaceRecognition(BaseRecognition):
         #rospy.loginfo('Image ID: ' + str(img.header.seq))
 
         ros_img_small_frame = ros_numpy.numpify(img)
-
-        current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'yolov8')
-        current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
+        
+        #current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'yolov8')
+        #current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
 
         debug_img = copy(ros_img_small_frame)
         names = []
         name_distance=[]
-        for idx in range(len(current_faces_encodings)):
+        
+        qf = QueueFaceRecogNoDuplicate(threshold=thold)
+        qf.loadSavedEncodings(self.saved_faces_encodes)
+        result = qf.runFaceRecognition(ros_img_small_frame)
+        
+        '''for idx in range(len(current_faces_encodings)):
             current_encoding = current_faces_encodings[idx]
             top, right, bottom, left = current_faces[idx]
             description = Description2D()
@@ -217,8 +223,14 @@ class FaceRecognition(BaseRecognition):
                 min_distance = face_distances[min_distance_idx]
                 if min_distance < thold:
                     name = (self.know_faces[0][min_distance_idx])
+            description.label = name'''
+        for _ , fila in result.items():
+            
+            top, right, bottom, left = fila[2][1]
+            description = Description2D()
+            name = fila[1]
             description.label = name
-
+            
             names.append(name)
 
             description_header = img.header
