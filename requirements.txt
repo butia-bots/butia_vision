@@ -15,7 +15,6 @@ props
 librosa==0.9.2
 multipledispatch==0.6.0
 yolov5==7.0.9
-open3d==0.15.2
 open3d
 face_recognition
 ultralytics
