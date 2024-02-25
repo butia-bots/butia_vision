@@ -33,7 +33,9 @@ class FaceRecognition(BaseRecognition):
 
         self.initRosComm()
 
-        known_faces_dict = self.loadVar('features')
+        known_faces_dict = self.loadVar('encondings')
+        if known_faces_dict != {}:
+            rospy.loginfo('Loaded known faces from file')
         self.saved_faces_encodes = known_faces_dict
         self.know_faces = self.flatten(known_faces_dict)
 
@@ -249,10 +251,12 @@ class FaceRecognition(BaseRecognition):
             cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
             
             font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(debug_img, name, (left + 4, bottom - 4), font, 0.5, (0,0,255), 2)
+            cv2.putText(debug_img, name, (left + 4, bottom - 4), font, 0.5, (255,0,0), 2)
             description_header.seq += 1
 
             face_rec.descriptions.append(description)
+            
+            cv2.cvtColor(debug_img, cv2.COLOR_BGR2RGB, debug_img)
             
         self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'bgr8'))
         if len(face_rec.descriptions) > 0:
@@ -276,5 +280,5 @@ if __name__ == '__main__':
     rospy.init_node('face_recognition_node', anonymous = True)
     
     face_rec = FaceRecognition()
-
+    
     rospy.spin()

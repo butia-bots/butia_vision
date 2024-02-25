@@ -2,11 +2,14 @@ import numpy as np
 from PIL import Image
 import face_recognition
 from queue import Queue
+import pyflann
 
 
 class QueueFaceRecogNoDuplicate:
-    def __init__(self, threshold=0.85):
+    def __init__(self, threshold=0.85, otimized='None'):
         self.threshold = threshold
+        self.method = otimized
+        self.flann = pyflann.FLANN()
         
     def loadSavedEncodings(self, encondings_location) -> dict:
         self.saved_faces_encodes = encondings_location
@@ -46,17 +49,19 @@ class QueueFaceRecogNoDuplicate:
             for label, saved_encodings in self.saved_faces_encodes.items():
                 for saved_encoding in saved_encodings:
                     if len(saved_encoding) != 0:
-                        similar = self._calculateSimilarity(saved_encoding, encoding[0])
-                        if len(similar) != 1:
-                                for i in range(len(similar)):
-                                    if similar[i] >= self.threshold:
-                                        sim_encode = [similar[i], label, encoding[i]]
-                                        filas[actual_face].append(sim_encode)
-                                    else:
-                                        pass
-                        else:
+                        if self.method == 'None':
+                            similar = self._calculateSimilarity(saved_encoding, encoding[0])
                             if similar > self.threshold:
                                 sim_encode = [similar, label, encoding]
+                                filas[actual_face].append(sim_encode)
+                            else:
+                                continue
+                        elif self.method == 'flann':
+                            similar = self.flann.nn(saved_encoding.reshape(1, -1), encoding[0].reshape(1, -1), 1)
+                            similarity = 1 - similar[1]
+                        
+                            if similarity >= self.threshold:
+                                sim_encode = [similarity, label, encoding]
                                 filas[actual_face].append(sim_encode)
                             else:
                                 continue
@@ -76,10 +81,10 @@ class QueueFaceRecogNoDuplicate:
             return final_list
         
         elif len(queued_filas) == 1:
-            for face, fila in queued_filas.items():
-                if fila.empty():
-                    fila.put([[0.0], "Unknown", ([0.0], [[0.0], [0.0], [0.0], [0.0]])])
-                final_list[face] = fila.queue[0]
+            for queued, saved in zip(queued_filas.items(), self.current_faces_encodes.items()):
+                if queued[1].empty():
+                    queued[1].put([[0.0], "Unknown", (saved[1][0], saved[1][1])])
+                final_list[queued[0]] = queued[1].queue[0]
             return final_list
         
         else:
@@ -107,14 +112,14 @@ class QueueFaceRecogNoDuplicate:
                         if c > 10:
                             done = True
                         if not q_fila.empty() and not temp_fila == []:
-                            print('Fila not empty')
+                            #print('Fila not empty')
                             # Check if the queue is not empty and the temporary list is not empty
                             if q_face != temp_face:
-                                print('Different faces')
+                                #print('Different faces')
                                 c+=1
                                 # Check label repitition
                                 if q_fila.queue[0][1] == temp_fila[1]:
-                                    print('Labels repeated')
+                                    #print('Labels repeated')
                                     # Check similarity
                                     if q_fila.queue[0][0] < temp_fila[0]:
                                         #print('3')
@@ -135,10 +140,10 @@ class QueueFaceRecogNoDuplicate:
                         else:
                             done = True
                         
-            for face, fila in queued_filas.items():
-                if fila.empty():
-                    fila.put([[0.0], "Unknown", ([0.0], [[0.0], [0.0], [0.0], [0.0]])])
-                final_list[face] = fila.queue[0]
+            for queued, saved in zip(queued_filas.items(), self.current_faces_encodes.items()):
+                if queued[1].empty():
+                    queued[1].put([[0.0], "Unknown", (saved[1][0], saved[1][1])])
+                final_list[queued[0]] = queued[1].queue[0]
         # Retorna o dicionário de faces com as labels resolvidas
             return final_list
         
