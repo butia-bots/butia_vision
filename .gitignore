@@ -10,3 +10,4 @@
 *.caffemodel
 *.pbtxt
 *.prototxt
+*.pkl
