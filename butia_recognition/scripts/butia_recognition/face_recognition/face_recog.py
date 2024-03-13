@@ -203,29 +203,13 @@ class FaceRecognition(BaseRecognition):
 
         ros_img_small_frame = ros_numpy.numpify(img)
         
-        #current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'yolov8')
-        #current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
-
         debug_img = copy(ros_img_small_frame)
         names = []
         name_distance=[]
         
-        qf = QueueFaceRecogNoDuplicate(threshold=thold)
-        qf.loadSavedEncodings(self.saved_faces_encodes)
+        qf = QueueFaceRecogNoDuplicate(threshold=thold, otimized='knn', encodes=self.saved_faces_encodes, n_neighbors=5, algorithm='auto')
         result = qf.runFaceRecognition(ros_img_small_frame)
         
-        '''for idx in range(len(current_faces_encodings)):
-            current_encoding = current_faces_encodings[idx]
-            top, right, bottom, left = current_faces[idx]
-            description = Description2D()
-            name = 'unknown'
-            if(len(self.know_faces[0]) > 0):
-                face_distances = np.linalg.norm(self.know_faces[1] - current_encoding, axis = 1)
-                min_distance_idx = np.argmin(face_distances)
-                min_distance = face_distances[min_distance_idx]
-                if min_distance < thold:
-                    name = (self.know_faces[0][min_distance_idx])
-            description.label = name'''
         for _ , fila in result.items():
             
             top, right, bottom, left = fila[2][1]

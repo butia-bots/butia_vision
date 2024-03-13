@@ -3,17 +3,36 @@ from PIL import Image
 import face_recognition
 from queue import Queue
 import pyflann
+from sklearn.neighbors import KNeighborsClassifier
 
 
 class QueueFaceRecogNoDuplicate:
-    def __init__(self, threshold=0.85, otimized='None'):
+    def __init__(self, threshold=0.85, otimized='None', encodes=None, n_neighbors=5, algorithm='auto'):
         self.threshold = threshold
         self.method = otimized
-        self.flann = pyflann.FLANN()
+        self.n_neighbors = n_neighbors
+        self.algorithm = algorithm
         
-    def loadSavedEncodings(self, encondings_location) -> dict:
+        self._loadSavedEncodings(encodes)
+        
+        if self.method == 'knn':
+            self.knn = KNeighborsClassifier(n_neighbors=self.n_neighbors, algorithm=self.algorithm)
+            self._trainKNN()
+        elif self.method == 'flann':
+            self.flann = pyflann.FLANN()
+        
+    def _loadSavedEncodings(self, encondings_location) -> dict:
         self.saved_faces_encodes = encondings_location
         return 
+    
+    def _trainKNN(self):
+        self.encodings, self.labels = [], []
+        for label, encodings_list in self.saved_faces_encodes.items():
+            self.labels.extend([label] * len(encodings_list))
+            self.encodings.extend(encodings_list)
+        self.knn.fit(self.encodings, self.labels)
+        
+        return
         
     def _processImage(self, image_frame: np.ndarray) -> dict:
         imagem = Image.fromarray(image_frame)
@@ -46,27 +65,36 @@ class QueueFaceRecogNoDuplicate:
         for actual_face, encoding in self.current_faces_encodes.items():
             if actual_face not in filas:
                 filas[actual_face] = []
-            for label, saved_encodings in self.saved_faces_encodes.items():
-                for saved_encoding in saved_encodings:
-                    if len(saved_encoding) != 0:
-                        if self.method == 'None':
-                            similar = self._calculateSimilarity(saved_encoding, encoding[0])
-                            if similar > self.threshold:
-                                sim_encode = [similar, label, encoding]
-                                filas[actual_face].append(sim_encode)
-                            else:
-                                continue
-                        elif self.method == 'flann':
-                            similar = self.flann.nn(saved_encoding.reshape(1, -1), encoding[0].reshape(1, -1), 1)
-                            similarity = 1 - similar[1]
-                        
-                            if similarity >= self.threshold:
-                                sim_encode = [similarity, label, encoding]
-                                filas[actual_face].append(sim_encode)
-                            else:
-                                continue
-                    else:
-                        pass
+                
+            if self.method == 'knn':
+                distances, indices = self.knn.kneighbors(encoding[0].reshape(1, -1), n_neighbors=self.n_neighbors)
+                for distance, index in zip(distances[0], indices[0]):
+                    similarity = 1 - distance
+                    if similarity >= self.threshold:
+                        sim_encode = [similarity, self.labels[index], encoding]
+                        filas[actual_face].append(sim_encode)
+            else:
+                for label, saved_encodings in self.saved_faces_encodes.items():
+                    for saved_encoding in saved_encodings:
+                        if len(saved_encoding) != 0:
+                            if self.method == 'None':
+                                similar = self._calculateSimilarity(saved_encoding, encoding[0])
+                                if similar > self.threshold:
+                                    sim_encode = [similar, label, encoding]
+                                    filas[actual_face].append(sim_encode)
+                                else:
+                                    continue
+                            elif self.method == 'flann':
+                                similar = self.flann.nn(saved_encoding.reshape(1, -1), encoding[0].reshape(1, -1), 1)
+                                similarity = 1 - similar[1]
+                            
+                                if similarity >= self.threshold:
+                                    sim_encode = [similarity, label, encoding]
+                                    filas[actual_face].append(sim_encode)
+                                else:
+                                    continue
+                        else:
+                            pass
 
         sorted_filas = {key: sorted(value, key=self._sortFunc) for key, value in filas.items()}
 
