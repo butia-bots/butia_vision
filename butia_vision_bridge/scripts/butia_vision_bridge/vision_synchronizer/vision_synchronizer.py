@@ -11,8 +11,8 @@ class VisionSynchronizer:
         subscribers = []
         for source in VisionSynchronizer.POSSIBLE_SOURCES:
             if source in source_topic_dict.keys():
-            	subscribers.append((source, message_filters.Subscriber(source_topic_dict[source], VisionBridge.SOURCES_TYPES[source])))
-        
+                subscribers.append((source, message_filters.Subscriber(source_topic_dict[source], VisionBridge.SOURCES_TYPES[source])))
+             
         ts = None
         if exact_time:
             ts = message_filters.TimeSynchronizer([x[1] for x in subscribers], queue_size=queue_size)
@@ -20,6 +20,6 @@ class VisionSynchronizer:
             print([x[0] for x in subscribers])
             ts = message_filters.ApproximateTimeSynchronizer([x[1] for x in subscribers], queue_size=queue_size, slop=slop)
         ts.registerCallback(callback)
-
+        
         return dict(subscribers)
         
