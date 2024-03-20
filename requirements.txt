@@ -1,8 +1,8 @@
 base
-numpy==1.21.6
+numpy==1.22.0
 tensorflow==2.8.0
 protobuf==3.19.4
-tensorboard==2.10.0
+tensorboard==2.8
 espnet==202207
 pandas==1.3.5
 matplotlib==3.5.3
@@ -15,4 +15,6 @@ props
 librosa==0.9.2
 multipledispatch==0.6.0
 yolov5==7.0.9
-open3d==0.15.2
+python-dateutil==2.8.2  
+setuptools==67.3.1 
+open3d==0.13.0

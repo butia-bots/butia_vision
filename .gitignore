@@ -10,3 +10,6 @@
 *.caffemodel
 *.pbtxt
 *.prototxt
+butia_grasp_generator/checkpoints/*
+
+
