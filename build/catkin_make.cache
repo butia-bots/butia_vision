@@ -1,2 +1,2 @@
 
--DCATKIN_DEVEL_PREFIX=/home/andremaurell/butia_ws/src/butia_vision/devel -DCMAKE_INSTALL_PREFIX=/home/andremaurell/butia_ws/src/butia_vision/install -G Unix Makefiles
+-DCATKIN_DEVEL_PREFIX=/home/eduardo/butia_ws/src/butia_vision/devel -DCMAKE_INSTALL_PREFIX=/home/eduardo/butia_ws/src/butia_vision/install -G Unix Makefiles
