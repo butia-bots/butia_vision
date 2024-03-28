@@ -8,7 +8,6 @@ import os
 from copy import copy
 import cv2
 from ultralytics import YOLO
-from cv_bridge import CvBridge
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Vector3
@@ -32,7 +31,6 @@ class YoloV8Recognition(BaseRecognition):
 
         self.loadModel()
         self.initRosComm()
-        self.cv_bridge = CvBridge()
 
     def initRosComm(self):
         self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
@@ -177,7 +175,7 @@ class YoloV8Recognition(BaseRecognition):
                 description.bbox.size_x = size[0]
                 description.bbox.size_y = size[1]
 
-                description.mask = self.cv_bridge.cv2_to_imgmsg(mask_data, encoding="passthrough")
+                description.mask = ros_numpy.msgify(Image, mask_data, 'mono8')
 
                 if box.conf >= self.threshold:
                     description.label = label_class
