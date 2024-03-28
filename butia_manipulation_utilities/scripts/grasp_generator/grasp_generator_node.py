@@ -132,7 +132,7 @@ class GraspGeneratorNode:
  
         self.ckpt_dir = rospy.get_param(
             "~ckpt_dir",
-            os.path.dirname(os.path.abspath(__file__)).replace("/scripts/grasp_generator", "") + "/checkpoints/scene_test_2048_bs3_hor_sigma_001")        
+            os.path.dirname(os.path.abspath(__file__)).replace("/scripts/butia_manipulation_utilities", "") + "/checkpoints/scene_test_2048_bs3_hor_sigma_001")        
         self.z_range = rospy.get_param("~z_range", [0.2, 1.1])
         self.local_regions = rospy.get_param("~local_regions", False)
         self.filter_grasps = rospy.get_param("~filter_grasps", True)

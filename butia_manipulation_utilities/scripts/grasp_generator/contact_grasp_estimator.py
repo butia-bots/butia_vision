@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT_DIR = os.path.dirname(os.path.dirname(BASE_DIR))
                            
 sys.path.append(os.path.join(BASE_DIR))
-sys.path.append(os.path.join(ROOT_DIR, 'butia_grasp_generator', 'pointnet2', 'utils'))
+sys.path.append(os.path.join(ROOT_DIR, 'butia_manipulation_utilities', 'pointnet2', 'utils'))
 sys.path.append(os.path.abspath(__file__))
 
 from tf_train_ops import get_bn_decay
