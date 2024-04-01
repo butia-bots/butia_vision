@@ -47,7 +47,7 @@ class YoloV8Recognition(BaseRecognition):
         return super().serverStop(req)
 
     def loadModel(self): 
-        self.model = YOLO("yolov8n-seg.pt") #Need to make this available by parameter
+        self.model = YOLO(self.model_file) 
         self.task = self.model.task 
         self.model.conf = self.threshold
         print('Done loading model!')
@@ -206,7 +206,7 @@ class YoloV8Recognition(BaseRecognition):
 
         self.all_classes = list(rospy.get_param("~all_classes", []))
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
-        self.model_file = rospy.get_param("~model_file", "yolov8_lab_objects.pt")
+        self.model_file = rospy.get_param("~model_file", "yolov8n-seg.pt")
 
         super().readParameters()
 

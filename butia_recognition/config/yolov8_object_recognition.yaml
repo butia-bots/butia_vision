@@ -95,7 +95,7 @@ all_classes:
 max_sizes:
     - [0.4, 2.5, 0.5]
 
-model_file: yolov8n.pt
+model_file: yolov8n-seg.pt
 
 subscribers:
   
