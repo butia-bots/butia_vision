@@ -152,7 +152,7 @@ class YoloV8Recognition(BaseRecognition):
             for i in range(len(boxes_)):
                 box = results[0].boxes[i]
                 xyxy_box = list(boxes_[i].xyxy.astype(int)[0])
-                mask = results[0].masks[i]
+                mask = results[0].masks[i].cpu().numpy()
                 mask_data = mask.data
 
                 if int(box.cls) >= len(self.all_classes):
