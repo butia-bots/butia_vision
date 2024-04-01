@@ -1,0 +1,44 @@
+<launch>
+    <arg name="machine" default="localhost"/>
+    <arg name="bvb_machine" default="$(arg machine)"/>
+    <arg name="br_machine" default="$(arg machine)"/>
+    <arg name="i2w_machine" default="$(arg machine)"/>
+    <arg name="use_machine" default="true"/>
+    <arg name="output" default="screen"/>
+    <arg name="use_bridge" default="false"/>
+    <arg name="use_image2world" default="true"/>
+    <arg name="publish_tf" default="true"/>
+    <arg name="config_file" default="yolov8_object_recognition_custom.yaml"/>
+    <arg name="node_name" default="butia_object_recognition_node"/>
+    <arg name="camera" default="kinect"/>
+
+    <include file="$(find butia_vision_launchfiles)/butia_recognition.launch">
+        <arg name="machine" value="$(arg machine)"/>
+        <arg name="bvb_machine" value="$(arg bvb_machine)"/>
+        <arg name="br_machine" value="$(arg br_machine)"/>
+        <arg name="i2w_machine" value="$(arg i2w_machine)"/>
+        <arg name="use_machine" value="$(arg use_machine)"/>
+        <arg name="output" value="$(arg output)"/>
+        <arg name="use_bridge" value="$(arg use_bridge)"/>
+        <arg name="publish_tf" value="$(arg publish_tf)"/>
+        <arg name="config_file" value="$(arg config_file)"/>
+        <arg name="node_name" value="$(arg node_name)"/>
+        <arg name="camera" value="$(arg camera)"/>
+    </include>
+
+    <include file="$(find butia_recognition)/launch/face_rec.launch">
+        <arg name="machine" value="$(arg br_machine)" />
+        <arg name="use_machine" value="$(arg use_machine)"/>
+        <arg name="output" value="$(arg output)"/>
+    </include>
+
+    <group if="$(arg use_image2world)">
+        <node pkg="butia_image2world" type="image2world.py" output="$(arg output)" name="image2world_$(arg node_name)" machine="$(arg i2w_machine)">
+            <remap from="sub/recognitions2d"  to="/butia_vision/br/object_recognition"/>
+            <remap from="pub/recognitions3d"  to="/butia_vision/br/object_recognition3d"/>
+            <remap from="pub/markers" to="/butia_vision/br/object_recognition_markers"/>
+            <rosparam param="color">[255,0,0]</rosparam>
+        </node>
+    </group>
+
+</launch>

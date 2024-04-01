@@ -47,7 +47,7 @@ class YoloV8Recognition(BaseRecognition):
         return super().serverStop(req)
 
     def loadModel(self): 
-        self.model = YOLO("yolov8n-seg.pt") #Need to make this available by parameter
+        self.model = YOLO("yolov8n.pt") #Need to make this available by parameter
         self.task = self.model.task 
         self.model.conf = self.threshold
         print('Done loading model!')
