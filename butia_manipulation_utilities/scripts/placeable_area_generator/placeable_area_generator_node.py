@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from typing import List
 from matplotlib import pyplot as plt
 import numpy as np
@@ -10,11 +10,13 @@ import cv2
 
 class PlaceableAreaNode:
 
-    def __init__(self, init_node=True):
+    def _init_(self, init_node=True):
         self.initRosComm()
 
     def callback(self, data: PlaceableArea):
+        print('opaaa')
         rospy.loginfo(rospy.get_caller_id() + "I heard %s", data)
+        print('beleza?')
 
         cloud = data.cloud # Read cloud with o3d.io.read_point_cloud
 
@@ -296,8 +298,11 @@ class PlaceableAreaNode:
         
 
 if __name__ == '__main__':
+    print('oi1')
     rospy.init_node('placeable_area_node', anonymous = True)
+    print('eai1')
     
-    placeable_area = PlaceableAreaNode()
+    # placeable_area = PlaceableAreaNode()
+    print('eai')
 
     rospy.spin()
