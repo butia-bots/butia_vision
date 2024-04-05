@@ -17,7 +17,7 @@ from cv_bridge import CvBridge, CvBridgeError
 #from butia_vision_bridge import VisionBridge
 
 #from sensor_msgs.msg import PointCloud2
-from butia_vision_msgs.msg import Recognitions2D, Recognitions3D, GraspPose
+from butia_vision_msgs.msg import Recognitions2D, Recognitions3D, Description2D, GraspPose
 from butia_vision_msgs.srv import GraspGenerator, GraspGeneratorResponse
 from visualization_msgs.msg import Marker, MarkerArray
 
@@ -64,15 +64,32 @@ class GraspGeneratorNode:
 
     def process_info(self, request):
         try:
-            image_rgb = self.bridge.imgmsg_to_cv2(request.rgb, "rgb8")
-            segmap = self.bridge.imgmsg_to_cv2(request.seg, "passthrough")
-            cam_K = np.array(request.K).reshape(3, 3)
-            image_depth = self.bridge.imgmsg_to_cv2(request.depth, "passthrough").copy()
+            image_rgb = self.bridge.imgmsg_to_cv2(request.recognitions.image_rgb, "rgb8")
+            cam_K = np.array(request.recognitions.camera_info.K).reshape(3, 3)
+            image_depth = self.bridge.imgmsg_to_cv2(request.recognitions.image_depth, "passthrough").copy()
             image_depth[np.isnan(image_depth)] = 0.
-            segmap_id = request.segmap_id
+            image_depth = image_depth/1000
+            segmap = self.multiple_segmentations_to_image(request.recognitions)
+            segmap_id = 1
             return self.inference(image_rgb, image_depth, segmap, cam_K, segmap_id)
         except CvBridgeError as e:
             rospy.logerr(e)
+
+    def multiple_segmentations_to_image(self, data: Recognitions2D):
+        """
+        Converts multiple segmentations to a single mask
+        """
+        size = (data.descriptions[0].mask.height, data.descriptions[0].mask.width)
+        final_image = np.zeros(size, dtype=np.uint8)
+        for description in data.descriptions:
+            if description.type == Description2D.SEMANTIC_SEGMENTATION:
+                index = description.id
+                mask = self.bridge.imgmsg_to_cv2(description.mask, desired_encoding="passthrough")
+                for i in range(mask.shape[0]):
+                    for j in range(mask.shape[1]):
+                        if mask[i, j] > 0:  
+                            final_image[i, j] = index+1
+        return final_image  
 
     def inference(self, rgb, depth, segmap, cam_K, segmap_id):
         begin = time.time()
@@ -80,11 +97,12 @@ class GraspGeneratorNode:
         pc_full, pc_segments, pc_colors = self.grasp_estimator.extract_point_clouds(
             depth, cam_K, segmap=segmap, rgb=rgb,
             skip_border_objects=self.skip_border_objects, z_range=self.z_range)
-
+        
         rospy.loginfo('Generating Grasps...')
         pred_grasps_cam, scores, contact_pts, _ = self.grasp_estimator.predict_scene_grasps(
             self.sess, pc_full, pc_segments=pc_segments,
             local_regions=self.local_regions, filter_grasps=self.filter_grasps, forward_passes=self.forward_passes)
+        rospy.loginfo('Grasps generated!')
 
         reponse = GraspGeneratorResponse()
         target_id = segmap_id if (self.local_regions or self.filter_grasps) else -1
@@ -133,19 +151,19 @@ class GraspGeneratorNode:
         self.ckpt_dir = rospy.get_param(
             "~ckpt_dir",
             os.path.dirname(os.path.abspath(__file__)).replace("/scripts/butia_manipulation_utilities", "") + "/checkpoints/scene_test_2048_bs3_hor_sigma_001")        
-        self.z_range = rospy.get_param("~z_range", [0.2, 1.1])
-        self.local_regions = rospy.get_param("~local_regions", False)
+        self.z_range = rospy.get_param("~z_range", [0.2, 1.8])
+        self.local_regions = rospy.get_param("~local_regions", True)
         self.filter_grasps = rospy.get_param("~filter_grasps", True)
         self.skip_border_objects = rospy.get_param("~skip_border_objects", False)
         self.visulize = rospy.get_param("~visulize", False)
-        self.forward_passes = rospy.get_param("~forward_passes", 5)
+        self.forward_passes = rospy.get_param("~forward_passes", 1)
         self.arg_configs = rospy.get_param("~arg_configs", [])
         
         global_config = config_utils.load_config(self.ckpt_dir, batch_size=self.forward_passes, arg_configs=self.arg_configs)
         print(str(global_config))
 
 if __name__ == '__main__':
-    rospy.init_node('face_recognition_node', anonymous = True)
+    rospy.init_node('grasp_generator_node', anonymous = True)
     
     grasp_generator = GraspGeneratorNode()
 
