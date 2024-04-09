@@ -18,9 +18,12 @@ import pickle
 
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
-from butia_vision_msgs.msg import Description2D, Recognitions2D
+from butia_vision_msgs.msg import Description2D, Recognitions2D, FaceEncoding, FaceDescription
 from butia_vision_msgs.srv import PeopleIntroducing, PeopleIntroducingResponse
 from geometry_msgs.msg import Vector3
+
+from butia_world_msgs.srv import RedisCacheReaderSrv, RedisCacheWriterSrv
+from std_msgs.msg import Empty
 
 PACK_DIR = rospkg.RosPack().get_path('butia_recognition')
 class FaceRecognition(BaseRecognition):
@@ -33,8 +36,10 @@ class FaceRecognition(BaseRecognition):
 
         self.initRosComm()
 
+        self.cache = self.getCache()
         known_faces_dict = self.loadVar('features')
         self.know_faces = self.flatten(known_faces_dict)
+        #self.encode_faces()
 
     def initRosComm(self):
         self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
@@ -76,14 +81,14 @@ class FaceRecognition(BaseRecognition):
         except:
             encoded_face = {}
         train_dir = os.listdir(self.dataset_dir)
-
         for person in train_dir:
-            if person not in self.know_faces[0]:   
+            if person not in self.know_faces[0] or person not in self.cache.keys():   
                 pix = os.listdir(self.dataset_dir + person)
-
+                
                 for person_img in pix:
                     face = face_recognition.load_image_file(self.dataset_dir + person + "/" + person_img)
-                    face_bounding_boxes = face_recognition.face_locations(face, model = 'yolov8')
+                    shape = face.shape
+                    face_bounding_boxes = face_recognition.face_locations(face, model='yolov8')
 
                     M_face = None
                     M_area = -float('inf')
@@ -96,6 +101,13 @@ class FaceRecognition(BaseRecognition):
                     if M_face is not None:
                         face_enc = face_recognition.face_encodings(face, known_face_locations=[M_face])[0]
                         encodings.append(face_enc)
+                        
+                        # Database saving service
+                        data = [person, list(face_enc)]
+                        try:
+                            self.saveToDB(data)
+                        except rospy.ServiceException as e:
+                            rospy.logerr('Service call failed: %s' % e)
 
                         if person not in names:
                             names.append(person)
@@ -109,6 +121,64 @@ class FaceRecognition(BaseRecognition):
                 pass
         self.saveVar(encoded_face, 'features')             
 
+    def _encapsulateDataRequest(self, data):
+        h = Header()
+        h.stamp = rospy.Time.now()
+        h.seq = self.seq
+        
+        description = FaceDescription()
+        description.header = h
+    
+        description.label = data[0]
+        description.encoding = data[1]
+        
+        request = FaceEncoding()
+        request.header = h
+        request.descriptions.append(description)
+        
+        return request
+    
+    def saveToDB(self, data):
+        rospy.wait_for_service(self.cache_writer_servername)
+        try:
+            self.cache_writer_service = rospy.ServiceProxy(self.cache_writer_servername, RedisCacheWriterSrv)
+            request = self._encapsulateDataRequest(data)
+            response = self.cache_writer_service(request)
+            if response.response:
+                rospy.loginfo('New face was saved in database.')
+            else:
+                rospy.logerr('New face was not saved in database.')
+        except rospy.ServiceException as e:
+            rospy.logerr("Service call failed: %s" % e)
+
+    def getCache(self):
+        rospy.wait_for_service(self.cache_reader_servername)
+        try:
+            self.cache_reader = rospy.ServiceProxy(self.cache_reader_servername, RedisCacheReaderSrv)
+            cache = self._saveCache(self.cache_reader(Empty()))
+        except rospy.ServiceException as e:
+            cache = {}
+            rospy.logerr("Service call failed: %s" % e)
+            
+        return cache
+    
+    def _saveCache(self, response):
+        cache = {}
+        
+        data = response.response
+        data_header = data.header
+        descriptions = data.descriptions
+        
+        for item in descriptions:
+            h = item.header
+            if item.label not in cache.keys():
+                cache[item.label] = []
+            cache[item.label].append(list(item.encoding))
+        if cache != {}:
+            rospy.loginfo('Cache was saved and is not empty.')
+        #print(cache.keys())
+        return self.flatten(cache)
+    
     def PeopleIntroducing(self, ros_srv):
 
         name = ros_srv.name
@@ -211,7 +281,15 @@ class FaceRecognition(BaseRecognition):
             top, right, bottom, left = current_faces[idx]
             description = Description2D()
             name = 'unknown'
-            if(len(self.know_faces[0]) > 0):
+            if(len(self.cache[0]) > 0):
+                #rospy.loginfo('Using cache')
+                face_distances = np.linalg.norm(self.cache[1] - current_encoding, axis = 1)
+                min_distance_idx = np.argmin(face_distances)
+                min_distance = face_distances[min_distance_idx]
+                if min_distance < thold:
+                    name = (self.cache[0][min_distance_idx])
+            elif(len(self.know_faces[0]) > 0):
+                #rospy.loginfo('Using pkl file')
                 face_distances = np.linalg.norm(self.know_faces[1] - current_encoding, axis = 1)
                 min_distance_idx = np.argmin(face_distances)
                 min_distance = face_distances[min_distance_idx]
@@ -255,6 +333,10 @@ class FaceRecognition(BaseRecognition):
         self.face_recognition_qs = rospy.get_param("~publishers/face_recognition/queue_size", 1)
 
         self.introduct_person_servername = rospy.get_param("~servers/introduct_person/servername", "/butia_vision/br/introduct_person")
+        
+        self.cache_writer_servername = "redis_cache_writer_srv"
+        
+        self.cache_reader_servername = "redis_cache_reader_srv"
 
         super().readParameters()
         rospy.loginfo('foi 1')
