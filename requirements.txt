@@ -12,7 +12,6 @@ idna==3.3
 pyparsing==3.0.9
 props
 librosa==0.9.2
-multipledispatch==0.6.0
 yolov5==7.0.9
 open3d
 face_recognition
@@ -21,5 +20,4 @@ torch
 torchvision
 multipledispatch
 numpy==1.22.2
-matplotlib!=3.1.2
 rosnumpy
