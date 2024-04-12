@@ -82,7 +82,7 @@ class FaceRecognition(BaseRecognition):
             encoded_face = {}
         train_dir = os.listdir(self.dataset_dir)
         for person in train_dir:
-            if person not in self.know_faces[0] or person not in self.cache.keys():   
+            if person not in self.know_faces[0] or person not in self.cache[0]:   
                 pix = os.listdir(self.dataset_dir + person)
                 
                 for person_img in pix:
@@ -105,7 +105,8 @@ class FaceRecognition(BaseRecognition):
                         # Database saving service
                         data = [person, list(face_enc)]
                         try:
-                            self.saveToDB(data)
+                            if person not in self.cache[0]:
+                                self.saveToDB(data)
                         except rospy.ServiceException as e:
                             rospy.logerr('Service call failed: %s' % e)
 
@@ -146,6 +147,8 @@ class FaceRecognition(BaseRecognition):
             response = self.cache_writer_service(request)
             if response.response:
                 rospy.loginfo('New face was saved in database.')
+                self.getCache()
+                
             else:
                 rospy.logerr('New face was not saved in database.')
         except rospy.ServiceException as e:
@@ -164,6 +167,7 @@ class FaceRecognition(BaseRecognition):
     
     def _saveCache(self, response):
         cache = {}
+        cache_global_id = []
         
         data = response.response
         data_header = data.header
@@ -174,16 +178,23 @@ class FaceRecognition(BaseRecognition):
             if item.label not in cache.keys():
                 cache[item.label] = []
             cache[item.label].append(list(item.encoding))
+            cache_global_id.append(item.global_id)
         if cache != {}:
             rospy.loginfo('Cache was saved and is not empty.')
         #print(cache.keys())
-        return self.flatten(cache)
+        formated_cache = self.flatten(cache)
+        formated_cache_final = formated_cache + tuple(cache_global_id)
+        return formated_cache_final
     
     def PeopleIntroducing(self, ros_srv):
 
         name = ros_srv.name
         num_images = ros_srv.num_images
         NAME_DIR = os.path.join(self.dataset_dir, name)
+        
+        if os.path.exists(NAME_DIR):
+            NAME_DIR = os.path.join(self.dataset_dir, name + '_1')
+        
         os.makedirs(NAME_DIR, exist_ok=True)
         os.makedirs(self.features_dir, exist_ok=True)
         image_type = '.jpg'
@@ -230,9 +241,9 @@ class FaceRecognition(BaseRecognition):
             face_locations = face_recognition.face_locations(ros_image, model='yolov8')
                 
             if len(face_locations) > 0:
-                ros_image = cv2.cvtColor(ros_image, cv2.COLOR_BGR2RGB)
-                cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), ros_image)
                 rospy.logwarn('Picture ' + add_image_labels[i] + ' was  saved.')
+                cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), ros_image)
+                ros_image = cv2.cvtColor(ros_image, cv2.COLOR_BGR2RGB)
                 i+= 1
             else:
                 rospy.logerr("The face was not detected.")
@@ -242,7 +253,6 @@ class FaceRecognition(BaseRecognition):
         response.response = True
 
         self.encode_faces()
-
         known_faces_dict = self.loadVar('features')
         self.know_faces = self.flatten(known_faces_dict)
         return response
@@ -281,13 +291,16 @@ class FaceRecognition(BaseRecognition):
             top, right, bottom, left = current_faces[idx]
             description = Description2D()
             name = 'unknown'
+            global_id = ""
             if(len(self.cache[0]) > 0):
                 #rospy.loginfo('Using cache')
                 face_distances = np.linalg.norm(self.cache[1] - current_encoding, axis = 1)
+                #print(self.cache[0])
                 min_distance_idx = np.argmin(face_distances)
                 min_distance = face_distances[min_distance_idx]
                 if min_distance < thold:
                     name = (self.cache[0][min_distance_idx])
+                    global_id = self.cache[2][min_distance_idx]
             elif(len(self.know_faces[0]) > 0):
                 #rospy.loginfo('Using pkl file')
                 face_distances = np.linalg.norm(self.know_faces[1] - current_encoding, axis = 1)
@@ -302,6 +315,7 @@ class FaceRecognition(BaseRecognition):
             description_header = img.header
             description_header.seq = 0
             description.header = copy(description_header)
+            description.global_id = global_id
             description.type = Description2D.DETECTION
             description.id = description.header.seq
             description.score = 1
