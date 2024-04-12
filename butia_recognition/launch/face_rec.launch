@@ -8,5 +8,6 @@
   <node pkg="butia_recognition" type="face_recog.py" output="$(arg output)" name="face_recognition_node" machine="$(arg machine)">
     <rosparam command="load" file="$(find butia_recognition)/config/face_rec.yaml"/>
   </node>
-  
+  <include file="$(find butia_world)/launch/redis_cache_reader.launch" />
+  <include file="$(find butia_world)/launch/redis_cache_writer.launch" />
 </launch>

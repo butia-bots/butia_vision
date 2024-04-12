@@ -1,5 +1,4 @@
 base
-numpy==1.21.6
 tensorflow==2.8.0
 protobuf==3.19.4
 tensorboard==2.10.0
@@ -13,6 +12,12 @@ idna==3.3
 pyparsing==3.0.9
 props
 librosa==0.9.2
-multipledispatch==0.6.0
 yolov5==7.0.9
-open3d==0.15.2
+open3d
+face_recognition
+ultralytics
+torch 
+torchvision
+multipledispatch
+numpy==1.22.2
+rosnumpy
