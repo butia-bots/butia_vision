@@ -104,7 +104,7 @@ class GraspGeneratorNode:
             local_regions=self.local_regions, filter_grasps=self.filter_grasps, forward_passes=self.forward_passes)
         rospy.loginfo('Grasps generated!')
 
-        reponse = GraspGeneratorResponse()
+        response = GraspGeneratorResponse()
         target_id = segmap_id if (self.local_regions or self.filter_grasps) else -1
         for k in pred_grasps_cam:
             if k != target_id:
@@ -114,17 +114,20 @@ class GraspGeneratorNode:
                 grasp_pose.pred_grasps_cam = pose_cam.flatten()
                 grasp_pose.score = score
                 grasp_pose.contact_pt = contact_pt
-                reponse.grasp_poses.append(grasp_pose)
+                response.grasp_poses.append(grasp_pose)
 
         # Visualize results
-        if self.visulize:
-            self.main_vis = True
-            self.tmp_img = (rgb, segmap)
-            self.tmp_grasp = (pc_full, pred_grasps_cam, scores, True, pc_colors)
+        pose_score = 0
+        best_pose = GraspPose()
+        for pose in response.grasp_poses:
+            if pose_score < pose.score:
+                pose_score = pose.score
+                best_pose = pose
+        print("Best pose: ", best_pose)
 
         print("inference time: ", time.time() - begin)
 
-        return reponse
+        return response
 
     
     def initRosComm(self):
