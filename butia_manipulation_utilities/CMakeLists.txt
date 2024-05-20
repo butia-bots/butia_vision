@@ -3,13 +3,13 @@ project(butia_manipulation_utilities)
 
 add_compile_options(-std=c++11)
 
-find_package(catkin REQUIRED rospy butia_vision_msgs std_msgs sensor_msgs)
+find_package(catkin REQUIRED rospy butia_vision_msgs std_msgs sensor_msgs tf2 tf2_ros tf2_msgs tf2_sensor_msgs)
 
 find_package(OpenCV REQUIRED)
 
 catkin_package(
   LIBRARIES butia_manipulation_utilities
-  CATKIN_DEPENDS rospy butia_vision_msgs std_msgs sensor_msgs
+  CATKIN_DEPENDS rospy butia_vision_msgs std_msgs sensor_msgs tf2 tf2_ros tf2_msgs tf2_sensor_msgs
 )
 
 include_directories(
@@ -21,5 +21,6 @@ include_directories(
 install(PROGRAMS
   scripts/grasp_generator/grasp_generator_node.py
   scripts/placeable_area_generator/placeable_area_generator_node.py
+  scripts/placeable_area_generator/call_service.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
