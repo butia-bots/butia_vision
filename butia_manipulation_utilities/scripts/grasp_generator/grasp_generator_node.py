@@ -38,7 +38,7 @@ class GraspGeneratorNode:
         self.__readParameters()
         self.initRosComm()
 
-        self.marker_publisher = rospy.Publisher('pub/markers', MarkerArray, queue_size=self.queue_size)
+        self.marker_publisher = rospy.Publisher('pub/marker', Marker, queue_size=self.queue_size)
 
         global_config = config_utils.load_config(self.ckpt_dir, batch_size=self.forward_passes, arg_configs=self.arg_configs)
         print(str(global_config))
@@ -92,7 +92,7 @@ class GraspGeneratorNode:
                             final_image[i, j] = index+1
         return final_image  
     
-    def transform_matrix_to_pose_vector(transform_matrix):
+    def transform_matrix_to_pose_vector(self, transform_matrix):
         """
         Converts a transformation matrix to a pose vector.
 
@@ -108,6 +108,32 @@ class GraspGeneratorNode:
         quaternion = rotation.as_quat()
         pose_vector = np.concatenate((translation, quaternion))
         return pose_vector
+    
+    
+    def create_marker(self, pose):
+        marker = Marker()
+        marker.header.frame_id = "map" #Have to change this
+        marker.header.stamp = rospy.Time.now()
+        marker.action = Marker.ADD
+        marker.color.r = 0
+        marker.color.g = 1
+        marker.color.b = 0
+        marker.color.a = 0.7
+        marker.ns = "area"
+        marker.id = 1
+        marker.type = Marker.ARROW
+        marker.scale.x = 0.2
+        marker.scale.y = 0.02
+        marker.scale.z = 0.02
+        marker.pose.position.x = pose[0]
+        marker.pose.position.y = pose[1]
+        marker.pose.position.z = pose[2]
+        marker.pose.orientation.x = pose[3]
+        marker.pose.orientation.y = pose[4]
+        marker.pose.orientation.z = pose[5]
+        marker.pose.orientation.w = pose[6]
+        marker.lifetime = rospy.Time.from_sec(20)
+        return marker
 
     def inference(self, rgb, depth, segmap, cam_K, segmap_id):
         begin = time.time()
@@ -141,7 +167,8 @@ class GraspGeneratorNode:
             if pose_score < pose.score:
                 pose_score = pose.score
                 best_pose = pose
-        print("Best pose: ", best_pose)
+        #add transform
+        self.marker_publisher.publish(self.create_marker(best_pose.pred_grasps_cam))
 
         print("inference time: ", time.time() - begin)
 
