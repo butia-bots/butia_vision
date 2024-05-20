@@ -47,7 +47,7 @@ class Image2World:
         self.DESCRIPTION_PROCESSING_ALGORITHMS = {
             Description2D.DETECTION: self.__detectionDescriptionProcessing,
             Description2D.INSTANCE_SEGMENTATION: self.__instanceSegmentationDescriptionProcessing,
-            Description2D.SEMANTIC_SEGMENTATION: self.__semanticSegmentationDescriptionProcessing,
+            Description2D.SEMANTIC_SEGMENTATION: self.__detectionDescriptionProcessing,
             Description2D.POSE: self.__poseDescriptionProcessing
         }
 

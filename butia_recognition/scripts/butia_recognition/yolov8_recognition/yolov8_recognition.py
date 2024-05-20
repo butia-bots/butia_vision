@@ -21,6 +21,12 @@ class YoloV8Recognition(BaseRecognition):
 
         self.readParameters()
 
+        self.PROCESSING_ALGORITHMS = {
+            'segment': self.segmentation,
+            'detect': self.detection,
+            'NONE': self.detection
+        }
+
         self.colors = dict([(k, np.random.randint(low=0, high=256, size=(3,)).tolist()) for k in self.classes])
 
         self.loadModel()
@@ -41,7 +47,8 @@ class YoloV8Recognition(BaseRecognition):
         return super().serverStop(req)
 
     def loadModel(self): 
-        self.model = YOLO("yolov8n.pt")
+        self.model = YOLO(self.model_file) 
+        self.task = self.model.task 
         self.model.conf = self.threshold
         print('Done loading model!')
 
@@ -76,6 +83,14 @@ class YoloV8Recognition(BaseRecognition):
 
         results = self.model.predict(cv_img)
         debug_img = cv_img
+        
+        if self.task == 'segment':
+            self.segmentation(results, description_header, people_recognition, objects_recognition)
+        else:
+            self.detection(results, description_header, people_recognition, objects_recognition)
+
+
+    def detection(self, results, description_header, people_recognition, objects_recognition):
         boxes_ = results[0].boxes.cpu().numpy()
 
         if len(results[0].boxes):
@@ -130,6 +145,53 @@ class YoloV8Recognition(BaseRecognition):
             debug_img = results[0].plot()            
             self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
+    def segmentation(self, results, description_header, people_recognition, objects_recognition):
+        boxes_ = results[0].boxes.cpu().numpy()
+
+        if len(results[0].masks):
+            for i in range(len(boxes_)):
+                box = results[0].boxes[i]
+                xyxy_box = list(boxes_[i].xyxy.astype(int)[0])
+                mask = results[0].masks[i].cpu().numpy()
+                mask_data = mask.data
+
+                if int(box.cls) >= len(self.all_classes):
+                    continue
+                    
+                mask_data = np.squeeze(mask_data)
+                mask_data = np.uint8(mask_data * 255)
+
+                label_class = self.all_classes[int(box.cls)]
+
+                description = Description2D()
+                description.header = copy(description_header)
+                description.type = Description2D.SEMANTIC_SEGMENTATION
+                description.id = description.header.seq
+                description.score = float(box.conf)
+                description.max_size = Vector3(*[0.05, 0.05, 0.05])
+                size = int(xyxy_box[2] - xyxy_box[0]), int(xyxy_box[3] - xyxy_box[1])
+                description.bbox.center.x = int(xyxy_box[0]) + int(size[0]/2)
+                description.bbox.center.y = int(xyxy_box[1]) + int(size[1]/2)
+                description.bbox.size_x = size[0]
+                description.bbox.size_y = size[1]
+
+                description.mask = ros_numpy.msgify(Image, mask_data, 'mono8')
+
+                if box.conf >= self.threshold:
+                    description.label = label_class
+
+                    objects_recognition.descriptions.append(description)
+
+                debug_img = results[0].plot()
+                description_header.seq += 1
+            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
+
+            if len(objects_recognition.descriptions) > 0:
+                self.object_recognition_publisher.publish(objects_recognition)
+        else:
+            debug_img = results[0].plot()            
+            self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
+
     def readParameters(self):
         self.debug_topic = rospy.get_param("~publishers/debug/topic", "/butia_vision/br/debug")
         self.debug_qs = rospy.get_param("~publishers/debug/queue_size", 1)
@@ -142,10 +204,9 @@ class YoloV8Recognition(BaseRecognition):
 
         self.threshold = rospy.get_param("~threshold", 0.5)
 
-
         self.all_classes = list(rospy.get_param("~all_classes", []))
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
-        self.model_file = rospy.get_param("~model_file", "yolov8_lab_objects.pt")
+        self.model_file = rospy.get_param("~model_file", "yolov8n-seg.pt")
 
         super().readParameters()
 
