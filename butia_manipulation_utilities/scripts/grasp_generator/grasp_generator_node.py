@@ -11,6 +11,7 @@ import numpy as np
 import math
 import time
 from cv_bridge import CvBridge, CvBridgeError
+from scipy.spatial.transform import Rotation
 
 #import ros_numpy
 
@@ -90,6 +91,23 @@ class GraspGeneratorNode:
                         if mask[i, j] > 0:  
                             final_image[i, j] = index+1
         return final_image  
+    
+    def transform_matrix_to_pose_vector(transform_matrix):
+        """
+        Converts a transformation matrix to a pose vector.
+
+        Args:
+            transform_matrix (numpy.ndarray): The transformation matrix to be converted.
+
+        Returns:
+            numpy.ndarray: The pose vector representing the translation and rotation of the transformation matrix.
+        """
+        translation = transform_matrix[:3, 3]
+        rotation_matrix = transform_matrix[:3, :3]
+        rotation = Rotation.from_matrix(rotation_matrix)
+        quaternion = rotation.as_quat()
+        pose_vector = np.concatenate((translation, quaternion))
+        return pose_vector
 
     def inference(self, rgb, depth, segmap, cam_K, segmap_id):
         begin = time.time()
@@ -111,7 +129,7 @@ class GraspGeneratorNode:
                 continue
             for pose_cam, score, contact_pt in zip(pred_grasps_cam[k], scores[k], contact_pts[k]):
                 grasp_pose = GraspPose()
-                grasp_pose.pred_grasps_cam = pose_cam.flatten()
+                grasp_pose.pred_grasps_cam = self.transform_matrix_to_pose_vector(pose_cam)
                 grasp_pose.score = score
                 grasp_pose.contact_pt = contact_pt
                 response.grasp_poses.append(grasp_pose)
