@@ -7,11 +7,12 @@ import numpy as np
 import os
 from copy import copy
 import cv2
-from ultralytics import YOLO
+from ultralytics import YOLO, YOLOWorld
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
+from butia_vision_msgs.srv import SetClass, SetClassRequest, SetClassResponse
 import torch
 
 torch.set_num_threads(1)
@@ -31,8 +32,18 @@ class YoloV8Recognition(BaseRecognition):
         self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
         self.object_recognition_publisher = rospy.Publisher(self.object_recognition_topic, Recognitions2D, queue_size=self.object_recognition_qs)
         self.people_detection_publisher = rospy.Publisher(self.people_detection_topic, Recognitions2D, queue_size=self.people_detection_qs)
+        self.set_class_server = rospy.Service(self.set_class_service, SetClass, self.handle_set_class)
         super().initRosComm(callbacks_obj=self)
 
+    def handle_set_class(self, req: SetClassRequest):
+        if isinstance(self.model, YOLOWorld):
+            if req.class_name != '' and req.class_name not in self.all_classes:
+                self.all_classes.append(req.class_name)
+            self.model.set_classes(self.all_classes)
+        if req.confidence > 0.0:
+            self.threshold = req.confidence
+        return SetClassResponse()
+    
     def serverStart(self, req):
         self.loadModel()
         return super().serverStart(req)
@@ -44,6 +55,8 @@ class YoloV8Recognition(BaseRecognition):
     def loadModel(self): 
         self.model = YOLO(self.pkg_path + "/config/yolov8_network_config/" + self.model_file)
         self.model.conf = self.threshold
+        if isinstance(self.model, YOLOWorld):
+            self.model.set_classes(self.all_classes)
         print('Done loading model!')
 
     def unLoadModel(self):
@@ -88,7 +101,10 @@ class YoloV8Recognition(BaseRecognition):
             for i in range(len(results[0].boxes)):
                 box = results[0].boxes[i]
                 xyxy_box = list(boxes_[i].xyxy.astype(int)[0])
-                global_id = int(boxes_[i].id)
+                if boxes_[i].id != None:
+                    global_id = int(boxes_[i].id)
+                else:
+                    global_id = -1
                 
                 if int(box.cls) >= len(self.all_classes):
                     continue
@@ -159,6 +175,8 @@ class YoloV8Recognition(BaseRecognition):
         self.all_classes = list(rospy.get_param("~all_classes", []))
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
         self.model_file = rospy.get_param("~model_file", "yolov8_lab_objects.pt")
+
+        self.set_class_service = rospy.get_param("~servers/set_class", "/butia_vision/br/object_recognition/set_class")
 
         super().readParameters()
 
