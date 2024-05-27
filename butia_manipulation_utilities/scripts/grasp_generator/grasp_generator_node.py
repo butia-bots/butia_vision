@@ -10,6 +10,10 @@ import open3d as o3d
 import numpy as np
 import math
 import time
+import PyQt5 
+import tf2_ros
+import tf2_geometry_msgs
+from geometry_msgs.msg import Pose
 from cv_bridge import CvBridge, CvBridgeError
 from scipy.spatial.transform import Rotation
 
@@ -62,6 +66,12 @@ class GraspGeneratorNode:
         self.main_vis = False
         self.tmp_img = ()
         self.tmp_grasp = ()
+
+        #Transform
+
+        self.tf2_buffer = tf2_ros.Buffer(rospy.Duration(1200.0))
+        self.listener = tf2_ros.TransformListener(self.tf2_buffer)
+        self.transform = self.tf2_buffer.lookup_transform('map', 'camera_color_optical_frame', rospy.Time(0), rospy.Duration(3.0))
 
     def process_info(self, request):
         try:
@@ -122,18 +132,31 @@ class GraspGeneratorNode:
         marker.ns = "area"
         marker.id = 1
         marker.type = Marker.ARROW
-        marker.scale.x = 0.2
-        marker.scale.y = 0.02
-        marker.scale.z = 0.02
-        marker.pose.position.x = pose[0]
-        marker.pose.position.y = pose[1]
-        marker.pose.position.z = pose[2]
-        marker.pose.orientation.x = pose[3]
-        marker.pose.orientation.y = pose[4]
-        marker.pose.orientation.z = pose[5]
-        marker.pose.orientation.w = pose[6]
-        marker.lifetime = rospy.Time.from_sec(20)
+        marker.scale.x = 0.07
+        marker.scale.y = 0.01
+        marker.scale.z = 0.01
+        marker.pose = pose
+        marker.lifetime = rospy.Time.from_sec(60)
         return marker
+    
+    def transform_pose(self, input_pose, from_frame, to_frame):
+
+        # **Assuming /tf2 topic is being broadcasted
+        tf_buffer = tf2_ros.Buffer()
+        listener = tf2_ros.TransformListener(tf_buffer)
+
+        pose_stamped = tf2_geometry_msgs.PoseStamped()
+        pose_stamped.pose = input_pose
+        pose_stamped.header.frame_id = from_frame
+        pose_stamped.header.stamp = rospy.Time.now()
+
+        try:
+            # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+            output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+            return output_pose_stamped.pose
+
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            raise
 
     def inference(self, rgb, depth, segmap, cam_K, segmap_id):
         begin = time.time()
@@ -168,7 +191,16 @@ class GraspGeneratorNode:
                 pose_score = pose.score
                 best_pose = pose
         #add transform
-        self.marker_publisher.publish(self.create_marker(best_pose.pred_grasps_cam))
+        my_pose = Pose()
+        my_pose.position.x = best_pose.pred_grasps_cam[0]
+        my_pose.position.y = best_pose.pred_grasps_cam[1]
+        my_pose.position.z = best_pose.pred_grasps_cam[2]
+        my_pose.orientation.x = best_pose.pred_grasps_cam[3]
+        my_pose.orientation.y = best_pose.pred_grasps_cam[4]
+        my_pose.orientation.z = best_pose.pred_grasps_cam[5]
+        my_pose.orientation.w = best_pose.pred_grasps_cam[6]
+        transformed_pose = self.transform_pose(my_pose, "camera_color_optical_frame", "map")
+        self.marker_publisher.publish(self.create_marker(transformed_pose))
 
         print("inference time: ", time.time() - begin)
 
