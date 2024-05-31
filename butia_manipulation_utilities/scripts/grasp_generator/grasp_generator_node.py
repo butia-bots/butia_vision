@@ -42,7 +42,7 @@ class GraspGeneratorNode:
         self.__readParameters()
         self.initRosComm()
 
-        self.marker_publisher = rospy.Publisher('pub/marker', Marker, queue_size=self.queue_size)
+        self.marker_publisher = rospy.Publisher('visualization_marker', Marker, queue_size=self.queue_size)
 
         global_config = config_utils.load_config(self.ckpt_dir, batch_size=self.forward_passes, arg_configs=self.arg_configs)
         print(str(global_config))
@@ -71,7 +71,7 @@ class GraspGeneratorNode:
 
         self.tf2_buffer = tf2_ros.Buffer(rospy.Duration(1200.0))
         self.listener = tf2_ros.TransformListener(self.tf2_buffer)
-        self.transform = self.tf2_buffer.lookup_transform('map', 'camera_color_optical_frame', rospy.Time(0), rospy.Duration(3.0))
+        self.transform = self.tf2_buffer.lookup_transform('world', 'camera_color_optical_frame', rospy.Time.now(), rospy.Duration(1.0))
 
     def process_info(self, request):
         try:
@@ -120,9 +120,9 @@ class GraspGeneratorNode:
         return pose_vector
     
     
-    def create_marker(self, pose):
+    def create_grasp_marker(self, pose):
         marker = Marker()
-        marker.header.frame_id = "map" #Have to change this
+        marker.header.frame_id = "camera_color_optical_frame" #Have to change this
         marker.header.stamp = rospy.Time.now()
         marker.action = Marker.ADD
         marker.color.r = 0
@@ -132,13 +132,32 @@ class GraspGeneratorNode:
         marker.ns = "area"
         marker.id = 1
         marker.type = Marker.ARROW
-        marker.scale.x = 0.07
-        marker.scale.y = 0.01
-        marker.scale.z = 0.01
+        marker.scale.x = 0.1
+        marker.scale.y = 0.02
+        marker.scale.z = 0.02
         marker.pose = pose
         marker.lifetime = rospy.Time.from_sec(60)
         return marker
     
+    def create_point_marker(self, point, marker_id=2):
+        marker = Marker()
+        marker.header.frame_id = "camera_color_optical_frame" #Have to change this
+        marker.header.stamp = rospy.Time.now()
+        marker.action = Marker.ADD
+        marker.color.r = 1
+        marker.color.g = 0
+        marker.color.b = 0
+        marker.color.a = 0.7
+        marker.ns = "point"
+        marker.id = 2
+        marker.type = Marker.SPHERE
+        marker.scale.x = 0.02
+        marker.scale.y = 0.02
+        marker.scale.z = 0.02
+        marker.pose = point
+        marker.lifetime = rospy.Time.from_sec(60)
+        return marker
+        
     def transform_pose(self, input_pose, from_frame, to_frame):
 
         # **Assuming /tf2 topic is being broadcasted
@@ -152,7 +171,8 @@ class GraspGeneratorNode:
 
         try:
             # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-            output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+            #output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+            output_pose_stamped = tf2_geometry_msgs.do_transform_pose(pose_stamped, self.transform)
             return output_pose_stamped.pose
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
@@ -190,6 +210,7 @@ class GraspGeneratorNode:
             if pose_score < pose.score:
                 pose_score = pose.score
                 best_pose = pose
+        print("Best Score: ", pose_score)
         #add transform
         my_pose = Pose()
         my_pose.position.x = best_pose.pred_grasps_cam[0]
@@ -199,8 +220,18 @@ class GraspGeneratorNode:
         my_pose.orientation.y = best_pose.pred_grasps_cam[4]
         my_pose.orientation.z = best_pose.pred_grasps_cam[5]
         my_pose.orientation.w = best_pose.pred_grasps_cam[6]
-        transformed_pose = self.transform_pose(my_pose, "camera_color_optical_frame", "map")
-        self.marker_publisher.publish(self.create_marker(transformed_pose))
+        transformed_pose = self.transform_pose(my_pose, "camera_color_optical_frame", "world")
+        self.marker_publisher.publish(self.create_grasp_marker(my_pose))
+        rospy.sleep(0.01)
+        my_point = Pose()
+        my_point.position.x = best_pose.contact_pt[0]
+        my_point.position.y = best_pose.contact_pt[1]
+        my_point.position.z = best_pose.contact_pt[2]
+        my_point.orientation.x = 0.0
+        my_point.orientation.y = 0.0
+        my_point.orientation.z = 0.0
+        my_point.orientation.w = 1.0
+        self.marker_publisher.publish(self.create_point_marker(my_point))
 
         print("inference time: ", time.time() - begin)
 
