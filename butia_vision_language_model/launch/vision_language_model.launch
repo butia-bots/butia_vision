@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="butia_vision_language_model" type="vision_language_model_node.py" name="vision_language_model_node">
+        <rosparam file="$(find butia_vision_language_model)/config/vision_language_model_node.yaml" command="load" ns="" />
+    </node>
+</launch>
