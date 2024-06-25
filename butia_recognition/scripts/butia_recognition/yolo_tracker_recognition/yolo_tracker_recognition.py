@@ -247,7 +247,7 @@ class YoloTrackerRecognition(BaseRecognition):
                     counter +=1
 
         track_recognition.descriptions.append(tracked_description)
-        debug_msg = ros_numpy.msgify(Image, debug_img, encoding='bgr')
+        debug_msg = ros_numpy.msgify(Image, debug_img, encoding='bgr8')
         debug_msg.header = HEADER
         self.debugPub.publish(debug_msg)
         
