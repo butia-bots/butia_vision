@@ -1,0 +1,45 @@
+threshold: 0.3
+classes_by_category:
+    Transportation: ['bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat']
+    Traffic: ['traffic light', 'fire hydrant', 'stop sign', 'parking meter']
+    Furniture: ['bench', 'chair', 'couch', 'plant', 'bed', 'table', 'toilet']
+    Electronics: ['tv', 'laptop', 'mouse', 'remote', 'keyboard', 'phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'clock', 'drier']
+    Sports: ['frisbee', 'skis', 'snowboard', 'ball', 'kite', 'bat', 'glove', 'skateboard', 'surfboard', 'racket']
+    Utensils: ['bottle', 'glass', 'cup', 'fork', 'knife', 'spoon', 'bowl']
+    Fruits: ['banana', 'apple', 'orange', 'broccoli', 'carrot', 'hotdog', 'pizza', 'donut', 'cake', 'grape', 'pineapple']
+    Animals: ['bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'teddybear']
+    Household: ['backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'vase', 'scissors', 'book', 'toothbrush']
+all_classes: ['pringles',]
+
+  
+max_sizes:
+    - [0.4, 2.5, 0.5]
+
+subscribers:
+  
+  queue_size: 1
+  exact_time: false
+  slop: 0.2
+
+  image_rgb: /butia_vision/bvb/image_rgb
+  camera_info: /butia_vision/bvb/camera_info
+  image_depth: /butia_vision/bvb/image_depth
+  
+publishers:
+
+  object_recognition:
+    topic: /butia_vision/br/object_recognition
+    queue_size: 1
+
+servers:
+  set_class:
+    service: /butia_vision/br/object_recognition/set_class
+
+  list_classes:
+    service: /butia_vision/br/object_recognition/list_classes
+
+  start:
+    service: /butia_vision/br/object_recognition/start
+
+  stop:
+    service: /butia_vision/br/object_recognition/stop
