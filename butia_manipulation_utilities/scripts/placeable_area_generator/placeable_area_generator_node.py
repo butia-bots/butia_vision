@@ -4,16 +4,22 @@ import copy
 from typing import List
 from matplotlib import pyplot as plt
 import numpy as np
+from torch import randint
+import yaml
 import rospy
 import cv2
 import open3d as o3d
 from butia_vision_msgs.srv import PlaceableArea, PlaceableAreaResponse, PlaceableAreaRequest
 from scipy.spatial import ConvexHull
-from visualization_msgs.msg import MarkerArray
+from sensor_msgs.msg import PointCloud2
+from visualization_msgs.msg import MarkerArray, Marker
 from cv_bridge import CvBridge
 from butia_vision_bridge import VisionBridge
 import tf2_ros
 from geometry_msgs.msg import Pose
+
+SHELF_HEIGHT = 0.5
+Z_VARIATION = SHELF_HEIGHT + 0.01 # Define how much z will vary for each marker
 
 class PlaceableAreaNode:
     def __init__(self, init_node=False):
@@ -21,18 +27,19 @@ class PlaceableAreaNode:
         self.x_max = None
         self.y_min = None
         self.y_max = None
-        self.target_label = 'Utelsils'
-        self.shelf_id = 1
+        self.targe_label = 'Utensils'
         self.radius = 0.1
         self.resolution = 1000
         self.step_size = 50
         self.justObjectImage = None
         self.tf2_buffer = tf2_ros.Buffer(rospy.Duration(1200.0))
         self.listener = tf2_ros.TransformListener(self.tf2_buffer)
-        self.transform = self.tf2_buffer.lookup_transform('map', 'camera_color_optical_frame', rospy.Time(0), rospy.Duration(3.0))
+        self.transform = self.tf2_buffer.lookup_transform('world', 'camera_color_optical_frame', rospy.Time(0), rospy.Duration(3.0))
 
         self.cv_bridge = CvBridge()
         self.initRosComm()
+
+        self.create_shelf_marker()
 
     def normalize(self, xy_hull):
         print("Normalizing")
@@ -53,6 +60,88 @@ class PlaceableAreaNode:
         xy_hull['y'] = ((xy_hull['y'] - 0) / self.resolution * (self.y_max - self.y_min) + self.y_min)
         return xy_hull
 
+    def read_yaml_config(self, file_path):
+        with open(file_path, 'r') as file:
+            config = yaml.safe_load(file)
+        return config
+
+    def get_shelf_props(self):
+        # config_path = rospy.get_param('~config_path')
+        config_path = '/home/eduardo/butia_ws/src/butia_vision/butia_manipulation_utilities/scripts/placeable_area_generator/config.yaml'
+        config = self.read_yaml_config(config_path)
+
+        # Calculating the center of the shelf area
+        shelf_area = config['shelf_area']
+
+        p1 = shelf_area[0]
+        p2 = shelf_area[1]
+        p3 = shelf_area[2]
+        p4 = shelf_area[3]
+
+        x = (p1[0] + p2[0] + p3[0] + p4[0]) / 4
+        y = (p1[1] + p2[1] + p3[1] + p4[1]) / 4
+        z = (p1[2] + p2[2] + p3[2] + p4[2]) / 4 + SHELF_HEIGHT * 2
+
+        # Calculating the scale of the shelf area (in meters) of x, y and z is 10 meters + mean of z points
+
+        x_scale = (p1[0] + p2[0]) / 2
+        y_scale = (p1[1] + p4[1]) / 2
+        z_scale = SHELF_HEIGHT # height of the shelf
+        print([x, y, z], [x_scale, y_scale, z_scale], config['num_shelves'], config['objects'])
+        return ([x, y, z], [x_scale, y_scale, z_scale], config['num_shelves'], config['objects'])
+
+    def create_shelf_marker(self):
+        marker_array = MarkerArray()
+
+        shelf_area_center, shelf_area_scale, num_shelves, objects = self.get_shelf_props()
+
+        for i in range(num_shelves):
+            marker = self.create_marker(i, shelf_area_center, shelf_area_scale)
+            marker_array.markers.append(marker)
+
+        return marker_array, num_shelves, objects
+
+    def create_marker(self, z, center, scale):
+        """
+        Create a marker object with the specified parameters.
+
+        Args:
+            z (int or str): The z-coordinate or namespace of the marker.
+            center (list): The x, y, and z coordinates of the marker's center.
+            scale (list): The x, y, and z scales of the marker.
+
+        Returns:
+            Marker: The created marker object.
+        """
+        # cube marker
+
+        marker = Marker()
+        marker.header.frame_id = "map"
+        marker.action = Marker.ADD
+        marker.pose.position.x = center[0]
+        marker.pose.position.y = center[1]
+        marker.pose.position.z = center[2] - z * Z_VARIATION if isinstance(z, int) else center[2]
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+        # Set the color
+        marker.color.r = 0.0
+        marker.color.g = 1.0
+        marker.color.b = 0.0
+        marker.color.a = 1.0
+        if isinstance(z, int):
+            marker.ns = "shelf_area" + str(z)
+        else:
+            marker.ns = z
+
+        marker.id = 0
+        marker.type = Marker.CUBE
+        marker.scale.x = scale[0]
+        marker.scale.y = scale[1]
+        marker.scale.z = scale[2]
+        marker.lifetime = rospy.Duration()
+        return marker
     
     def initRosComm(self):
         self.grasp_generator_srv = rospy.Service('butia_vision_msgs/placeable_area', PlaceableArea, self.callback)
@@ -81,6 +170,8 @@ class PlaceableAreaNode:
         # Transform the cloud to the map frame
         cloud = self.transform_pcd(copy.deepcopy(t_cloud), self.transform)    
 
+        self.save_ply(cloud, '~/cloud.ply')
+
         # Segment the plane
         plane_model, inliers = self.filter_normals(cloud) # a*x + b*y + c*z + d = 0
 
@@ -98,6 +189,10 @@ class PlaceableAreaNode:
         union_markers = o3d.geometry.PointCloud()
         for marker in markers:
             union_markers += marker  
+
+        cloud.paint_uniform_color([0.5, 0.5, 0.5])
+
+        o3d.visualization.draw_geometries([union_markers, cloud])
 
         x_center = np.mean(np.asarray(union_markers.points)[:, 0])
         y_center = np.mean(np.asarray(union_markers.points)[:, 1])
@@ -149,7 +244,20 @@ class PlaceableAreaNode:
         for y in xy_hull['y']:
             xy_hull_all['y'].append(y)
 
-        
+        #   plane = [
+        #     [2.001011 -1.393388 -0.177392], # Esquerda trás
+        #     [1.832372 -1.391613 -0.106312], # Esquerda frente
+        #     [1.872976 -0.840142 -0.124781], # Direita frente
+        #     [2.033025 -0.867732 -0.196236]  # Direita trás
+        # ]
+
+        plane = {'x': [2.001011, 1.832372, 1.872976, 2.033025], 'y': [-1.393388, -1.391613, -0.840142, -0.867732]}
+
+        for point in plane['x']:
+            for point_y in plane['y']:
+                sphere, _ = self.point_to_sphere(plane_model, [point, point_y, 0])
+                self.visualize_3d([union_markers, sphere])
+                
         self.normalize(plane)
 
         self.normalize(xy_hull_all)
@@ -350,7 +458,9 @@ class PlaceableAreaNode:
         temp = pcd.select_by_index(indexes_to_paint)
         temp.paint_uniform_color([1, 0, 0])
 
-        # o3d.visualization.draw_geometries([pcd, temp])
+        pcd.paint_uniform_color([0.5, 0.5, 0.5])
+
+        o3d.visualization.draw_geometries([pcd, temp])
 
         return plane_model, inliers
     
@@ -420,14 +530,6 @@ class PlaceableAreaNode:
         return hull_ls
     
     def to2d(self, plane_model: List[float], cloud: o3d.geometry.PointCloud):
-        # Calculate the plane orientation
-        # plane_normal = np.array([plane_model[0], plane_model[1], plane_model[2]])
-        # plane_orientation = np.arccos(plane_normal.dot([0, 0, 1]))
-
-        # # Calculate the rotation matrix to align the plane with the XY plane
-        # rotation_matrix = o3d.geometry.get_rotation_matrix_from_xyz((plane_orientation, 0, 0))
-
-        # # Project the points of the point cloud onto the XY plane
         try:
             points = np.asarray(cloud.points)
         except:
@@ -437,18 +539,6 @@ class PlaceableAreaNode:
         return points
 
     def to3d(self, plane_model, vertices):
-        # Calculate the plane orientation
-        # plane_normal = np.array([plane_model[0], plane_model[1], plane_model[2]])
-        # plane_orientation = np.arccos(plane_normal.dot([0, 0, 1]))
-
-        # # Calculate the rotation matrix to align the XY plane with the original plane
-        # rotation_matrix = o3d.geometry.get_rotation_matrix_from_xyz((0, 0, -plane_orientation))
-
-        # # Transform the vertices back to the 3D world
-        # print("Vertices", vertices, vertices.shape)
-        # vertices += plane_model[:3] * plane_model[3]  # Apply the translation
-        # vertices = vertices.dot(rotation_matrix.T)  # Apply the rotation
-
         vertices_list = [vertices]
 
         cloud = o3d.geometry.PointCloud()
@@ -495,15 +585,6 @@ class PlaceableAreaNode:
                 for x in range(image.shape[1]):
                     if self.point_in_hull((x, y), hull_points):
                         image[y, x] = 0
-        # # Normalizar os pontos do polígono para caber na imagem
-        # hull_points = np.array([xy_hull['x'], xy_hull['y']]).T
-        # hull_points = hull_points.astype(int)
-
-        # # Preencher os pontos dentro do polígono com preto
-        # for y in range(image.shape[0]):
-        #     for x in range(image.shape[1]):
-        #         if self.point_in_hull((x, y), hull_points):
-        #             image[y, x] = 0 
 
         plt.imshow(image, cmap='gray')
         plt.savefig('justObjects.png')
@@ -603,6 +684,9 @@ class PlaceableAreaNode:
 
     def visualize_3d(self, pcds):
         o3d.visualization.draw_geometries(pcds)
+
+    def save_ply(self, cloud, filename):
+        o3d.io.write_point_cloud(filename, cloud)
 
 if __name__ == '__main__':
     rospy.init_node('placeable_area_node', anonymous = False)
