@@ -3,21 +3,16 @@
 import copy
 from typing import List
 from matplotlib import pyplot as plt
-from networkx import center
 import numpy as np
-from torch import randint
 import rospy
 import cv2
 import open3d as o3d
 from butia_vision_msgs.srv import PlaceableArea, PlaceableAreaResponse, PlaceableAreaRequest
 from scipy.spatial import ConvexHull
-from sensor_msgs.msg import PointCloud2
 from visualization_msgs.msg import MarkerArray
 from cv_bridge import CvBridge
 from butia_vision_bridge import VisionBridge
 import tf2_ros
-from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
-from sensor_msgs.point_cloud2 import read_points
 from geometry_msgs.msg import Pose
 
 class PlaceableAreaNode:
@@ -26,7 +21,8 @@ class PlaceableAreaNode:
         self.x_max = None
         self.y_min = None
         self.y_max = None
-        self.targe_label = 'Drinks'
+        self.target_label = 'Utelsils'
+        self.shelf_id = 1
         self.radius = 0.1
         self.resolution = 1000
         self.step_size = 50
@@ -63,8 +59,19 @@ class PlaceableAreaNode:
 
     def callback(self, data: PlaceableAreaRequest):
         # Read cloud with o3d.io.read_point_cloud
-        point_cloud: PointCloud2 = data.point_cloud 
+        # point_cloud: PointCloud2 = data.point_cloud 
         markers: MarkerArray = data.markers
+
+        #   plane = [
+        #     [2.001011 -1.393388 -0.177392], # Esquerda trás
+        #     [1.832372 -1.391613 -0.106312], # Esquerda frente
+        #     [1.872976 -0.840142 -0.124781], # Direita frente
+        #     [2.033025 -0.867732 -0.196236]  # Direita trás
+        # ]
+
+        plane = {
+            'x': [2.001011, 1.832372, 1.872976, 2.033025], 'y': [-1.393388, -1.391613, -0.840142, -0.867732],
+            }
         
         # TODO: check if the markers are aligned with the point cloud
         markers, others_objs = self.transform_markers_in_pcds(markers)
@@ -142,14 +149,7 @@ class PlaceableAreaNode:
         for y in xy_hull['y']:
             xy_hull_all['y'].append(y)
 
-        #   plane = [
-        #     [2.001011 -1.393388 -0.177392], # Esquerda trás
-        #     [1.832372 -1.391613 -0.106312], # Esquerda frente
-        #     [1.872976 -0.840142 -0.124781], # Direita frente
-        #     [2.033025 -0.867732 -0.196236]  # Direita trás
-        # ]
-
-        plane = {'x': [2.001011, 1.832372, 1.872976, 2.033025], 'y': [-1.393388, -1.391613, -0.840142, -0.867732]}
+        
         self.normalize(plane)
 
         self.normalize(xy_hull_all)

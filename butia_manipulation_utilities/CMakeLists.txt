@@ -22,5 +22,7 @@ install(PROGRAMS
   scripts/grasp_generator/grasp_generator_node.py
   scripts/placeable_area_generator/placeable_area_generator_node.py
   scripts/placeable_area_generator/call_service.py
+  scripts/placeable_area_generator/shelf_call_service.py
+  scripts/placeable_area_generator/shelf_classification_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

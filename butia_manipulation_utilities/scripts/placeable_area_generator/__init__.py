@@ -1,1 +1,2 @@
 from .placeable_area_generator_node import PlaceableAreaNode
+from .shelf_classifiation_node import ShelfClassificationNode
