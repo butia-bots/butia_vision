@@ -135,7 +135,8 @@ class PaliGemmaRecognition(BaseRecognition):
                     description.label = index + '/' + label_class if index is not None else label_class
                     objects_recognition.descriptions.append(description)
 
-                debug_img = sv.BoundingBoxAnnotator().annotate(debug_img, boxes_)
+                debug_img = sv.MaskAnnotator().annotate(debug_img, boxes_)
+                debug_img = sv.LabelAnnotator().annotate(debug_img, boxes_, [self.all_classes[idx] for idx in boxes_.class_id])
                 description_header.seq += 1
             
             self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
@@ -146,7 +147,8 @@ class PaliGemmaRecognition(BaseRecognition):
             if len(people_recognition.descriptions) > 0:
                 self.people_detection_publisher.publish(people_recognition)       
         else:
-            debug_img = sv.BoundingBoxAnnotator().annotate(debug_img, boxes_)            
+            debug_img = sv.MaskAnnotator().annotate(debug_img, boxes_)
+            debug_img = sv.LabelAnnotator().annotate(debug_img, boxes_, [self.all_classes[idx] for idx in boxes_.class_id])
             self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
     def readParameters(self):
