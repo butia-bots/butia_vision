@@ -35,6 +35,9 @@ servers:
   set_class:
     service: /butia_vision/br/object_recognition/set_class
 
+  visual_question_answering:
+    service: /butia_vision/br/object_recognition/visual_question_answering
+
   list_classes:
     service: /butia_vision/br/object_recognition/list_classes
 

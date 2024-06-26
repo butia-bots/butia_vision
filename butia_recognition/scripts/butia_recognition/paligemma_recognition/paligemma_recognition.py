@@ -14,6 +14,7 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 from butia_vision_msgs.srv import SetClass, SetClassRequest, SetClassResponse
+from butia_vision_msgs.srv import VisualQuestionAnswering, VisualQuestionAnsweringRequest, VisualQuestionAnsweringResponse
 import torch
 import gc
 import PIL
@@ -36,11 +37,18 @@ class PaliGemmaRecognition(BaseRecognition):
         self.object_recognition_publisher = rospy.Publisher(self.object_recognition_topic, Recognitions2D, queue_size=self.object_recognition_qs)
         self.people_detection_publisher = rospy.Publisher(self.people_detection_topic, Recognitions2D, queue_size=self.people_detection_qs)
         self.set_class_service_server = rospy.Service(self.set_class_service, SetClass, self.serverSetClass)
+        self.visual_question_answering_service_server = rospy.Service(self.visual_question_answering_service, VisualQuestionAnswering, self.serverVisualQuestionAnswering)
         super().initRosComm(callbacks_obj=self)
 
-    def serverSetClass(self, req: SetClassRequest):
+    def serverSetClass(self, req):
         self.all_classes = [req.class_name,]
         return SetClassResponse()
+
+    def serverVisualQuestionAnswering(self, req):
+        result = self.model.predict(image_in=self.cv_img, prompt=res.question)
+        res = VisualQuestionAnsweringResponse()
+        res.answer = result[0]
+        return res
 
     def serverStart(self, req):
         self.loadModel()
@@ -72,6 +80,7 @@ class PaliGemmaRecognition(BaseRecognition):
         
         img_rgb = source_data['image_rgb']
         cv_img = ros_numpy.numpify(img_rgb)
+        self.cv_img = cv_img
         rospy.loginfo('Image ID: ' + str(img_rgb.header.seq))
         
         objects_recognition = Recognitions2D()
@@ -162,6 +171,7 @@ class PaliGemmaRecognition(BaseRecognition):
         self.people_detection_qs = rospy.get_param("~publishers/people_detection/queue_size", 1)
 
         self.set_class_service = rospy.get_param("~servers/set_class/service", "/butia_vision/br/object_recognition/set_class")
+        self.visual_question_answering_service = rospy.get_param("~servers/visual_question_answering/service", "/butia_vision/br/object_recognition/visual_question_answering")
 
         self.all_classes = list(rospy.get_param("~all_classes", []))
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
