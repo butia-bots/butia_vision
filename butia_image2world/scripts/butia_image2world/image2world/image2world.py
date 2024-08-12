@@ -18,8 +18,8 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 #from tf.transformations (that it is not working on jetson)
 def quaternion_from_matrix(matrix):
-    q = np.empty((4, ), dtype=np.float64)
-    M = np.array(matrix, dtype=np.float64, copy=False)[:4, :4]
+    q = np.empty((4, ), dtype=float)
+    M = np.array(matrix, dtype=float, copy=False)[:4, :4]
     t = np.trace(M)
     if t > M[3, 3]:
         q[3] = t
@@ -225,7 +225,8 @@ class Image2World:
             if center_depth <= 0:
                 rospy.logwarn('INVALID DEPTH VALUE')
             
-            center_depth/= 1000.
+            if self.convert_units:
+                center_depth/= 1000.
 
             limits = np.asarray([(bbox_limits[0], bbox_limits[2]), (bbox_limits[1], bbox_limits[3])])
 
@@ -266,7 +267,10 @@ class Image2World:
             max_bound = np.max(vertices_3d, axis=0)
 
             if self.fit_bbox:
-                box_depths = image_depth[limits[0, 1]:limits[1, 1], limits[0, 0]:limits[1, 0]]/1000.
+                if self.convert_units:
+                    box_depths = image_depth[limits[0, 1]:limits[1, 1], limits[0, 0]:limits[1, 0]]/1000.
+                else:
+                    box_depths = image_depth[limits[0, 1]:limits[1, 1], limits[0, 0]:limits[1, 0]]
                 box_lut = self.lut_table[limits[0, 1]:limits[1, 1], limits[0, 0]:limits[1, 0], :]
 
                 box_points = np.zeros((box_depths.size, 3))
@@ -341,7 +345,8 @@ class Image2World:
                     else:
                         kpt3D.score = kpt.score
 
-                        depth /= 1000.
+                        if self.convert_units:
+                            depth /= 1000.
 
                         vertex_3d = np.zeros(3)
                         vertex_3d[:2] = self.lut_table[v, u, :]*depth
@@ -382,6 +387,7 @@ class Image2World:
         img_depth = data.image_depth
         camera_info = data.camera_info
         image_rgb = data.image_rgb
+        image_set_of_marks = data.image_set_of_marks
         
         recognitions = Recognitions3D()
         if pc2.width*pc2.height > 0:
@@ -401,6 +407,7 @@ class Image2World:
             rospy.logwarn('Image2World cannot be used because pointcloud and depth images are void.')
 
         recognitions.image_rgb = image_rgb
+        recognitions.image_set_of_marks = image_set_of_marks
         if self.publish_markers:
             self.publishMarkers(recognitions.descriptions)
         return recognitions
@@ -494,6 +501,7 @@ class Image2World:
         self.color = rospy.get_param('~color', [255, 0, 0])
         self.depth_mean_error = rospy.get_param('~depth_mean_error', 0.05)
         self.fit_bbox = rospy.get_param('~fit_bbox', True)
+        self.convert_units = rospy.get_param('~convert_units', True)
 
 if __name__ == '__main__':
     rospy.init_node('image2world_node', anonymous = True)

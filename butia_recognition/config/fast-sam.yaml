@@ -1,0 +1,40 @@
+all_classes: ["entity"]
+classes_by_category: {}
+
+model_file: FastSAM-s.pt
+
+max_sizes:
+    - [250, 250, 250]
+
+subscribers:
+  
+  queue_size: 1
+  exact_time: false
+  slop: 0.2
+
+  # image_rgb: /butia_vision/bvb/image_rgb
+  # camera_info: /butia_vision/bvb/camera_info
+  # image_depth: /butia_vision/bvb/image_depth
+  #points: /butia_vision/bvb/points
+
+  image_rgb: /camera/color/image_raw
+  camera_info: /camera/color/camera_info
+  image_depth: /camera/depth/image_raw
+  points: /camera/depth/points
+
+publishers:
+
+  object_recognition:
+    topic: /butia_vision/br/object_recognition
+    queue_size: 1
+
+servers:
+
+  list_classes:
+    service: /butia_vision/br/object_recognition/list_classes
+
+  start:
+    service: /butia_vision/br/object_recognition/start
+
+  stop:
+    service: /butia_vision/br/object_recognition/stop
