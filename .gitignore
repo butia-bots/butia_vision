@@ -6,7 +6,7 @@
 *.lua
 *.csv
 *.dat
-*.pt
 *.caffemodel
+*.pt
 *.pbtxt
 *.prototxt

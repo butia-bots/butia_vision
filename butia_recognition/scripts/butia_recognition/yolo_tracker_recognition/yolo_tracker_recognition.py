@@ -125,6 +125,7 @@ class YoloTrackerRecognition(BaseRecognition):
         img = ros_numpy.numpify(img)        
 
         debug_img = deepcopy(img)
+        debug_img = cv.cvtColor(debug_img, cv.COLOR_BGR2RGB)
         results = None
         bboxs   = None
 

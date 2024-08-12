@@ -123,7 +123,6 @@ class Image2World:
     def __detectionDescriptionProcessing(self, data, description2d, header):
         center_x, center_y = description2d.bbox.center.x, description2d.bbox.center.y
         bbox_size_x, bbox_size_y = description2d.bbox.size_x, description2d.bbox.size_y
-        print(bbox_size_x, bbox_size_y)
         if bbox_size_x == 0 or bbox_size_y == 0:
             rospy.logwarn('BBox with zero size.')
             return None
@@ -280,7 +279,14 @@ class Image2World:
                 box_points = box_points[np.logical_and(np.all(box_points > min_bound, axis=1),
                                                     np.all(box_points < max_bound, axis=1))]
                 
-                box = o3d.geometry.AxisAlignedBoundingBox().create_from_points(o3d.utility.Vector3dVector(box_points))
+                box_pcd = o3d.geometry.PointCloud()
+                box_pcd.points = o3d.utility.Vector3dVector(box_points)
+
+                box_pcd, _ = box_pcd.remove_statistical_outlier(20, 2.0)
+
+                # TODO: add a clustering algorithm and pick the closest cluster 
+
+                box = o3d.geometry.AxisAlignedBoundingBox().create_from_points(box_pcd.points)
             
             else:
                 box = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
@@ -354,7 +360,6 @@ class Image2World:
             description3D : Description3D = self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
             description3D.bbox2D = description2d.bbox
             description3D.class_num = description2d.class_num
-            print(description3D.class_num)
             return description3D
         else:
             return None
