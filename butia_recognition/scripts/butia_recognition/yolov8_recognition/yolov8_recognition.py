@@ -14,8 +14,7 @@ from geometry_msgs.msg import Vector3
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 from butia_vision_msgs.srv import SetClass, SetClassRequest, SetClassResponse
 import torch
-
-torch.set_num_threads(1)
+import rospkg
 
 class YoloV8Recognition(BaseRecognition):
     def __init__(self, state=True):
@@ -53,7 +52,7 @@ class YoloV8Recognition(BaseRecognition):
         return super().serverStop(req)
 
     def loadModel(self): 
-        self.model = YOLO(self.pkg_path + "/config/yolov8_network_config/" + self.model_file)
+        self.model = YOLO(self.model_file)
         self.model.conf = self.threshold
         if isinstance(self.model, YOLOWorld):
             self.model.set_classes(self.all_classes)
@@ -89,8 +88,7 @@ class YoloV8Recognition(BaseRecognition):
         description_header = img_rgb.header
         description_header.seq = 0
 
-        results = self.model.track(cv_img, persist=True)
-        debug_img = cv_img
+        results = self.model.predict(cv_img[:, :, ::-1], conf=self.threshold, verbose=True)
         boxes_ = results[0].boxes.cpu().numpy()
         if results[0].masks is not None:
             masks_ = results[0].masks.cpu().numpy()
@@ -110,7 +108,7 @@ class YoloV8Recognition(BaseRecognition):
                     continue
 
                 label_class = self.all_classes[int(box.cls)]
-
+                max_size = self.max_sizes[label_class]
 
                 description = Description2D()
                 description.header = copy(description_header)
@@ -122,7 +120,7 @@ class YoloV8Recognition(BaseRecognition):
                 description.id = description.header.seq
                 description.global_id = global_id
                 description.score = float(box.conf)
-                description.max_size = Vector3(*[0.05, 0.05, 0.05])
+                description.max_size = Vector3(*max_size)
                 size = int(xyxy_box[2] - xyxy_box[0]), int(xyxy_box[3] - xyxy_box[1])
                 description.bbox.center.x = int(xyxy_box[0]) + int(size[0]/2)
                 description.bbox.center.y = int(xyxy_box[1]) + int(size[1]/2)
@@ -144,7 +142,7 @@ class YoloV8Recognition(BaseRecognition):
                     description.label = index + '/' + label_class if index is not None else label_class
                     objects_recognition.descriptions.append(description)
 
-                debug_img = results[0].plot()
+                debug_img = results[0].plot()[:, :, ::-1]
                 description_header.seq += 1
             
             self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
@@ -156,7 +154,7 @@ class YoloV8Recognition(BaseRecognition):
             if len(people_recognition.descriptions) > 0:
                 self.people_detection_publisher.publish(people_recognition)       
         else:
-            debug_img = results[0].plot()            
+            debug_img = results[0].plot()[:, :, ::-1]          
             self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
 
     def readParameters(self):
@@ -174,7 +172,21 @@ class YoloV8Recognition(BaseRecognition):
 
         self.all_classes = list(rospy.get_param("~all_classes", []))
         self.classes_by_category = dict(rospy.get_param("~classes_by_category", {}))
-        self.model_file = rospy.get_param("~model_file", "yolov8_lab_objects.pt")
+
+        r = rospkg.RosPack()
+        r.list()
+        self.model_file = r.get_path("butia_recognition") + "/weigths/" + rospy.get_param("~model_file", "yolov8n.pt")
+
+        max_sizes = rospy.get_param("~max_sizes", [[0.05, 0.05, 0.05]])
+
+        if len(max_sizes) == 1:
+            max_sizes = [max_sizes[0] for _ in self.all_classes]
+
+        if len(max_sizes) != len(self.all_classes):
+            rospy.logerr('Wrong definition of max_sizes in yaml of recognition node.')
+            assert False
+        
+        self.max_sizes = dict([(self.all_classes[i], max_sizes[i]) for i in range(len(max_sizes))])
 
         self.set_class_service = rospy.get_param("~servers/set_class", "/butia_vision/br/object_recognition/set_class")
 
