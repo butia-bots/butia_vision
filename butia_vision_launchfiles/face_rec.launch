@@ -26,6 +26,12 @@
         <rosparam param="color">[255,0,0]</rosparam>
     </node>
 
+    <include file="$(find butia_recognition)/launch/yolov5_people_detection.launch">
+        <arg name="machine" value="$(arg br_machine)" />
+        <arg name="use_machine" value="$(arg use_machine)"/>
+        <arg name="output" value="$(arg output)"/>
+    </include>
+
     <include file="$(find butia_vision_bridge)/launch/butia_vision_bridge.launch">
         <arg name="machine" value="$(arg bvb_machine)" />
         <arg name="use_machine" value="$(arg use_machine)"/>
