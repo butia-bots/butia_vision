@@ -1,0 +1,8 @@
+prefix=/home/fbotathome/fbot_ws/src/butia_vision/butia_vision_launchfiles/build/devel
+
+Name: butia_vision_launchfiles
+Description: Description of butia_vision_launchfiles
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

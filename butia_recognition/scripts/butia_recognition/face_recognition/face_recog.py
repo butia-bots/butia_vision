@@ -110,7 +110,7 @@ class FaceRecognition(BaseRecognition):
         self.saveVar(encoded_face, 'features')             
 
     def PeopleIntroducing(self, ros_srv):
-
+        rospy.logerr("The face miscamusca.")
         name = ros_srv.name
         num_images = ros_srv.num_images
         NAME_DIR = os.path.join(self.dataset_dir, name)
@@ -156,7 +156,7 @@ class FaceRecognition(BaseRecognition):
             ros_image = ros_numpy.numpify(ros_image_aux)
             ros_image = np.flip(ros_image)
             ros_image = np.flipud(ros_image)
-            
+            rospy.logerr("The face was not dAAAAAAAAAAAAetected.")
             face_locations = face_recognition.face_locations(ros_image, model='yolov8')
                 
             if len(face_locations) > 0:
@@ -175,6 +175,7 @@ class FaceRecognition(BaseRecognition):
 
         known_faces_dict = self.loadVar('features')
         self.know_faces = self.flatten(known_faces_dict)
+        rospy.logerr("The face was not detect111111111111ed.")
         return response
 
     @ifState

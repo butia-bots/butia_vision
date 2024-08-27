@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="(empty)"
+	BuildStamp="20240703-1634-Experimental"
+	Name="fbotathome"
+	Generator="ctest-3.16.3"
+	CompilerName="/usr/bin/c++"
+	CompilerVersion="9.4.0"
+	OSName="Linux"
+	Hostname="fbotathome"
+	OSRelease="5.15.0-101-generic"
+	OSVersion="#111~20.04.1-Ubuntu SMP Mon Mar 11 15:44:43 UTC 2024"
+	OSPlatform="x86_64"
+	Is64Bits="1"
+	VendorString="GenuineIntel"
+	VendorID="Intel Corporation"
+	FamilyID="6"
+	ModelID="158"
+	ProcessorCacheSize="8192"
+	NumberOfLogicalCPU="8"
+	NumberOfPhysicalCPU="4"
+	TotalVirtualMemory="2047"
+	TotalPhysicalMemory="32009"
+	LogicalProcessorsPerPhysical="2"
+	ProcessorClockFrequency="2610.81"
+	>
+	<Testing>
+		<StartDateTime>Jul 03 13:34 -03</StartDateTime>
+		<StartTestTime>1720024487</StartTestTime>
+		<TestList/>
+		<EndDateTime>Jul 03 13:34 -03</EndDateTime>
+		<EndTestTime>1720024487</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>

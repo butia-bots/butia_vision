@@ -1,0 +1,101 @@
+threshold: 0.3
+classes_by_category:
+  Drinks:
+    ["cola", "dubbelfris", "fanta", "ice_tea"]
+  Cleaning supplies: ["sponges", "dishwasher_tab", "washcloth"]
+  Dishes: ["plate", "bowl", "cup", "fork", "knife", "spoon"]
+  Fruits:
+    [
+      "apple",
+      "banana",
+      "lemon",
+      "orange",
+      "peach",
+      "pear",
+      "plum",
+      "strawberry",
+    ]
+  Food:
+    [
+      "cornflakes",
+      "curry",
+      "pancake_mix",
+      "pea_soup",
+      "sausages",
+      "mayonaise",
+      "hagelslag",
+    ]
+  Decorations: ["candle"]
+  Snacks: ["crisps", "pringles", "tictac"]
+
+all_classes:
+  [
+    "apple",
+    "banana",
+    "big_coke",
+    "bowl",
+    "candle",
+    "candy",
+    "cola",
+    "cornflakes",
+    "crisps",
+    "cup",
+    "curry",
+    "dishwasher_tab",
+    "dubbelfris",
+    "fanta",
+    "fork",
+    "hagelslag",
+    "ice_tea",
+    "knife",
+    "lemon",
+    "liquorice",
+    "mayonaise",
+    "milk",
+    "orange",
+    "pancake_mix",
+    "pea_soup",
+    "peach",
+    "pear",
+    "plate",
+    "plum",
+    "pringles",
+    "sausages",
+    "soap",
+    "sponges",
+    "spoon",
+    "strawberry",
+    "stroopwafel",
+    "tictac",
+    "washcloth",
+    "water",
+  ]
+
+max_sizes:
+  - [0.05, 0.05, 0.05]
+
+model_file: robocup_2024_v4_small_parcial.pt
+
+subscribers:
+  queue_size: 1
+  exact_time: false
+  slop: 0.2
+
+  image_rgb: /butia_vision/bvb/image_rgb
+  camera_info: /butia_vision/bvb/camera_info
+  image_depth: /butia_vision/bvb/image_depth
+
+publishers:
+  object_recognition:
+    topic: /butia_vision/br/object_recognition
+    queue_size: 1
+
+servers:
+  list_classes:
+    service: /butia_vision/br/object_recognition/list_classes
+
+  start:
+    service: /butia_vision/br/object_recognition/start
+
+  stop:
+    service: /butia_vision/br/object_recognition/stop

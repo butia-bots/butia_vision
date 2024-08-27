@@ -8,7 +8,7 @@
     <arg name="use_bridge" default="false"/>
     <arg name="use_image2world" default="true"/>
     <arg name="publish_tf" default="true"/>
-    <arg name="config_file" default="yolov8_object_recognition.yaml"/>
+    <arg name="config_file" default="robocup_2024.yaml"/>
     <arg name="node_name" default="butia_object_recognition_node"/>
     <arg name="camera" default="kinect"/>
 
