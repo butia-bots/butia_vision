@@ -4,7 +4,7 @@ import rospy
 
 import ros_numpy
 
-from butia_recognition import BaseRecognition, ifState
+from butia_recognition import BaseRecognition, ifState, QueueFaceRecogNoDuplicate
 
 import numpy as np
 import os
@@ -33,7 +33,10 @@ class FaceRecognition(BaseRecognition):
 
         self.initRosComm()
 
-        known_faces_dict = self.loadVar('features')
+        known_faces_dict = self.loadVar('encondings')
+        if known_faces_dict != {}:
+            rospy.loginfo('Loaded known faces from file')
+        self.saved_faces_encodes = known_faces_dict
         self.know_faces = self.flatten(known_faces_dict)
 
     def initRosComm(self):
@@ -199,26 +202,21 @@ class FaceRecognition(BaseRecognition):
         #rospy.loginfo('Image ID: ' + str(img.header.seq))
 
         ros_img_small_frame = ros_numpy.numpify(img)
-
-        current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'yolov8')
-        current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
-
+        
         debug_img = copy(ros_img_small_frame)
         names = []
         name_distance=[]
-        for idx in range(len(current_faces_encodings)):
-            current_encoding = current_faces_encodings[idx]
-            top, right, bottom, left = current_faces[idx]
+        
+        qf = QueueFaceRecogNoDuplicate(threshold=thold, otimized='knn', encodes=self.saved_faces_encodes, n_neighbors=5, algorithm='auto')
+        result = qf.runFaceRecognition(ros_img_small_frame)
+        
+        for _ , fila in result.items():
+            
+            top, right, bottom, left = fila[2][1]
             description = Description2D()
-            name = 'unknown'
-            if(len(self.know_faces[0]) > 0):
-                face_distances = np.linalg.norm(self.know_faces[1] - current_encoding, axis = 1)
-                min_distance_idx = np.argmin(face_distances)
-                min_distance = face_distances[min_distance_idx]
-                if min_distance < thold:
-                    name = (self.know_faces[0][min_distance_idx])
+            name = fila[1]
             description.label = name
-
+            
             names.append(name)
 
             description_header = img.header
@@ -237,10 +235,12 @@ class FaceRecognition(BaseRecognition):
             cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
             
             font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(debug_img, name, (left + 4, bottom - 4), font, 0.5, (0,0,255), 2)
+            cv2.putText(debug_img, name, (left + 4, bottom - 4), font, 0.5, (255,0,0), 2)
             description_header.seq += 1
 
             face_rec.descriptions.append(description)
+            
+            cv2.cvtColor(debug_img, cv2.COLOR_BGR2RGB, debug_img)
             
         self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'bgr8'))
         if len(face_rec.descriptions) > 0:
@@ -264,5 +264,5 @@ if __name__ == '__main__':
     rospy.init_node('face_recognition_node', anonymous = True)
     
     face_rec = FaceRecognition()
-
+    
     rospy.spin()

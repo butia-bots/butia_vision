@@ -33,6 +33,13 @@ The vision system has main packages, helpers and 3rd helpers.
 - [libfreenect2](https://github.com/butia-bots/libfreenect2);
 - [yolov5](https://github.com/butia-bots/yolov5).
 
+## Workspace directory ( If there's none )
+Create a workspace
+```
+mkdir -p ~/butia_ws/src
+cd ~/butia_ws/src
+```
+
 ## Clone
 
 Clone this repository using the follow command:
@@ -74,5 +81,17 @@ source ~/.zshrc
 Run catkin_make
 
 ```
+cd ~/butia_ws/
 catkin_make
+```
+
+Source setup
+
+For bash users:
+```
+source ~/butia_ws/devel/setup.bash
+```
+For zsh users:
+```
+source ~/butia_ws/devel/setup.zsh
 ```
