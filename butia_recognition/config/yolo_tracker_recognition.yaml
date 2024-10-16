@@ -44,10 +44,15 @@ services:
 tracking:
   start_on_init: false
   use_boxmot: false
-  model_file: osnet_x0_25_msmt17.pt
+  model_name: resnet50
+  model_file: resnet_reid_model.pt
   thresholds:
-    reid_threshold: 0.3
+    reid_threshold: 0.75
+    reid_add_feature_threshold: 0.7
     det_threshold: 0.5
     iou_threshold: 0.15
     max_age: 10
     max_time: 10
+  reid_img_size:
+    height: 256
+    width: 128

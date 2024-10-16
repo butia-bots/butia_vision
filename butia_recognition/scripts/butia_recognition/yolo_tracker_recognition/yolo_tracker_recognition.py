@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from butia_recognition import BaseRecognition, ifState
-
+from ReIDManager import ReIDManager
 import rospy
 import cv2 as cv
 import numpy as np
@@ -30,10 +30,7 @@ class YoloTrackerRecognition(BaseRecognition):
         self.readParameters()
         self.loadModel()
         self.initRosComm()
-        if self.use_boxmot:
-            import boxmot
-            global DeepOCSORT
-            DeepOCSORT = boxmot.DeepOCSORT
+       
         if self.tracking_on_init:
             self.startTracking(None)
         
@@ -80,21 +77,16 @@ class YoloTrackerRecognition(BaseRecognition):
             self.loadTrackerModel()
     
     def loadTrackerModel(self):
-        if self.use_boxmot:
-            self.tracker = DeepOCSORT(
-                model_weights=Path(self.reid_model_file),
-                device="cuda:0",
-                fp16=True,
-                det_thresh=self.det_threshold,
-                max_age=self.max_age,
-                iou_threshold=self.iou_threshold)
+        self.reid_manager = ReIDManager(
+            self.reid_model_file,
+            self.reid_model_name,
+            self.reid_threshold,
+            self.reid_add_feature_threshold,
+            self.reid_img_size)
         return
     
     def unLoadTrackerModel(self):
-        if self.use_boxmot:
-            del self.tracker
-            torch.cuda.empty_cache()
-            self.tracker = None
+        del self.__reid_manager
         return
             
     
@@ -129,10 +121,7 @@ class YoloTrackerRecognition(BaseRecognition):
         results = None
         bboxs   = None
 
-        if tracking and self.use_boxmot:
-            results = list(self.model.predict(img, verbose=False, stream=True))
-            bboxs  = self.tracker.update(results[0].boxes.data.cpu().numpy(),img)
-        elif tracking:
+        if tracking:
             results = list(self.model.track(img, persist=True,
                                         conf=self.det_threshold,
                                         iou=self.iou_threshold,
@@ -174,6 +163,7 @@ class YoloTrackerRecognition(BaseRecognition):
 
             box_label = ""
             if tracking:
+                ID  = self.reid_manager.extract_id(ID, img[Y1:Y2,X1:X2])
                 description.global_id = ID
                 if description.label == "person":
                     people_ids.append(ID)                 
@@ -276,14 +266,18 @@ class YoloTrackerRecognition(BaseRecognition):
         r.list()
         self.model_file = r.get_path("butia_recognition") + "/weigths/" + rospy.get_param("~model_file","yolov8n-pose")
         self.reid_model_file = rospy.get_param("~tracking/model_file","osnet_x0_25_msmt17.pt")
+        self.reid_model_name = rospy.get_param("~tracking/model_name","resnet50.pt")
 
         self.det_threshold = rospy.get_param("~tracking/thresholds/det_threshold", 0.5)
-        self.reid_threshold = rospy.get_param("~tracking/thresholds/reid_threshold", 0.3)
+        self.reid_threshold = rospy.get_param("~tracking/thresholds/reid_threshold", 0.75)
+        self.reid_add_feature_threshold = rospy.get_param("~tracking/thresholods/reid_",0.7)
         self.iou_threshold = rospy.get_param('~tracking/thresholds/iou_threshold',0.5)
         self.max_time = rospy.get_param("~tracking/thresholds/max_time",60)
         self.max_age = rospy.get_param("~tracking/thresholds/max_age",5)
         self.tracking_on_init = rospy.get_param("~tracking/start_on_init", False)
         self.use_boxmot = rospy.get_param("~tracking/use_boxmot", False)
+
+        self.reid_img_size = (rospy.get_param("~tracking/reid_img_size/height",256),rospy.get_param("~tracking/reid_img_size/width",128))
 
         self.tracker_cfg_file = r.get_path("butia_recognition") + "/" + rospy.get_param("~tracker-file","")
 
