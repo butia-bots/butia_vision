@@ -51,7 +51,7 @@ tracking:
     reid_add_feature_threshold: 0.7
     det_threshold: 0.5
     iou_threshold: 0.15
-    max_age: 10
+    max_age: 60
     max_time: 10
   reid_img_size:
     height: 256
