@@ -38,20 +38,16 @@ class FaceRecognition(BaseRecognition):
     def initRosComm(self):
         self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
         self.face_recognition_publisher = rospy.Publisher(self.face_recognition_topic, Recognitions2D, queue_size=self.face_recognition_qs)
-        self.introduct_person_service = rospy.Service(self.introduct_person_servername, PeopleIntroducing, self.PeopleIntroducing) #possivelmente trocar self.encode_faces
+        self.introduct_person_service = rospy.Service(self.introduct_person_servername, PeopleIntroducing, self.PeopleIntroducing) 
 
         super().initRosComm(callbacks_obj=self)
         rospy.loginfo('foi 2')
 
     def regressiveCounter(self, sec):
-        try:
-            sec = int(sec)
-            for i  in range(0, sec):
-                rospy.logwarn(str(sec-i) + '...')
-                time.sleep(1)
-        except KeyError as e:
-            while True:
-                rospy.logwarn(f"Regressive counte erro {e}")
+        sec = int(sec)
+        for i  in range(0, sec):
+            rospy.logwarn(str(sec-i) + '...')
+            time.sleep(1)
     
     def saveVar(self, variable, filename):
         try:
@@ -176,8 +172,7 @@ class FaceRecognition(BaseRecognition):
                     if faceInfos.label == 'unknown':
     
                         bbox = faceInfos.bbox
-                        facesBbox.append([bbox.center.y - int(bbox.size_y/2),bbox.center.y + int(bbox.size_y/2), bbox.center.x - int(bbox.size_x/2),bbox.center.x + int(bbox.size_x/2)])
-                
+                        facesBbox.append([int(bbox.center.y - int(bbox.size_y/2)),int(bbox.center.y + int(bbox.size_y/2)), int(bbox.center.x - int(bbox.size_x/2)),int(bbox.center.x + int(bbox.size_x/2))])
             if len(facesBbox) > 0:
                 ros_image = cv2.cvtColor(ros_image, cv2.COLOR_BGR2RGB)
                 cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), ros_image)
@@ -219,7 +214,6 @@ class FaceRecognition(BaseRecognition):
             #rospy.loginfo('Image ID: ' + str(img.header.seq))
 
             ros_img_small_frame = ros_numpy.numpify(img)
-            rospy.logwarn(ros_img_small_frame.shape)
             current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'yolov8')
             current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
             debug_img = copy(ros_img_small_frame)
