@@ -265,7 +265,7 @@ class YoloTrackerRecognition(BaseRecognition):
 
         r.list()
         self.model_file = r.get_path("butia_recognition") + "/weigths/" + rospy.get_param("~model_file","yolov8n-pose")
-        self.reid_model_file = rospy.get_param("~tracking/model_file","osnet_x0_25_msmt17.pt")
+        self.reid_model_file = r.get_path("butia_recognition") + "/weigths/" + rospy.get_param("~tracking/model_file","resnet_reid_model.pt")
         self.reid_model_name = rospy.get_param("~tracking/model_name","resnet50.pt")
 
         self.det_threshold = rospy.get_param("~tracking/thresholds/det_threshold", 0.5)
