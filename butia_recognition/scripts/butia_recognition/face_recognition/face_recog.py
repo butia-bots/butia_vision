@@ -12,20 +12,16 @@ from copy import copy
 import cv2
 import time
 import rospkg
-import pickle
 from deepface import DeepFace
-
-
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
 from butia_vision_msgs.msg import Description2D, Recognitions2D
 from butia_vision_msgs.srv import PeopleIntroducing, PeopleIntroducingResponse
 from geometry_msgs.msg import Vector3
 from cv_bridge import CvBridge
-
 import os
-
 import sys
+
 bridge = CvBridge()
 
 PACK_DIR = rospkg.RosPack().get_path('butia_recognition')
@@ -38,7 +34,7 @@ class SuppressOutput:
         sys.stderr = open(os.devnull, 'w')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout.close()  # Fechar o arquivo devnull
+        sys.stdout.close()
         sys.stderr.close()
         sys.stdout = self._stdout
         sys.stderr = self._stderr
@@ -116,8 +112,6 @@ class FaceRecognition(BaseRecognition):
         num_images = ros_srv.num_images
 
         i = 0
-        facesBbox = []
-        #Iterate over the number of images to be taken
         while i < num_images:
 
             self.regressiveCounter(ros_srv.interval)
@@ -158,7 +152,8 @@ class FaceRecognition(BaseRecognition):
         response.response = True
 
         return response
-
+    
+    @ifState
     def callback(self, args):
         thold = 0.5
         names = []
@@ -231,7 +226,6 @@ class FaceRecognition(BaseRecognition):
             description.bbox.size_x = w
             description.bbox.size_y = h
 
-
             cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
             cv2.putText(debug_img, name, (left + 4, bottom - 4), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0,0,255), 2)
             description_header.seq += 1
@@ -239,7 +233,6 @@ class FaceRecognition(BaseRecognition):
             face_rec.image_rgb = args
             
         self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
-
         if len(face_rec.descriptions) > 0:
             self.face_recognition_publisher.publish(face_rec)
 
