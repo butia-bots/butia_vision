@@ -38,7 +38,7 @@ class SuppressOutput:
         sys.stderr.close()
         sys.stdout = self._stdout
         sys.stderr = self._stderr
-
+ 
 class FaceRecognition(BaseRecognition):
     def __init__(self, state=True):
         super().__init__(state=state)
@@ -58,7 +58,6 @@ class FaceRecognition(BaseRecognition):
         self.debug_publisher = rospy.Publisher(self.debug_topic, Image, queue_size=self.debug_qs)
         self.face_recognition_publisher = rospy.Publisher(self.face_recognition_topic, Recognitions2D, queue_size=self.face_recognition_qs)
         self.introduct_person_service = rospy.Service(self.introduct_person_servername, PeopleIntroducing, self.PeopleIntroducing)
-        self.image_subscriber = rospy.Subscriber('/usb_cam/image_raw', Image, self.callback)
 
         super().initRosComm(callbacks_obj=self)
         rospy.loginfo('foi 2')
@@ -154,7 +153,16 @@ class FaceRecognition(BaseRecognition):
         return response
     
     @ifState
-    def callback(self, args):
+    def callback(self, *args):
+        count += 1
+        source_data = self.sourceDataFromArgs(args)
+
+        if 'image_rgb' not in source_data:
+            rospy.logwarn('Souce data has no image_rgb.')
+            return None
+        
+        img = source_data['image_rgb']
+
         thold = 0.5
         names = []
         h = Header()
@@ -163,7 +171,7 @@ class FaceRecognition(BaseRecognition):
         h.stamp = rospy.Time.now()
         face_rec = Recognitions2D()
         face_rec.header = h
-        ros_img_small_frame = ros_numpy.numpify(args)
+        ros_img_small_frame = ros_numpy.numpify(img)
 
         with SuppressOutput():
             current_faces = DeepFace.extract_faces(
@@ -214,7 +222,7 @@ class FaceRecognition(BaseRecognition):
             description.label = name
             names.append(name)
 
-            description_header = args.header
+            description_header = img.header
             description_header.seq = 0
             description.header = copy(description_header)
             description.type = Description2D.DETECTION
@@ -230,7 +238,7 @@ class FaceRecognition(BaseRecognition):
             cv2.putText(debug_img, name, (left + 4, bottom - 4), cv2.FONT_HERSHEY_DUPLEX, 0.5, (0,0,255), 2)
             description_header.seq += 1
             face_rec.descriptions.append(description)
-            face_rec.image_rgb = args
+            face_rec.image_rgb = img
             
         self.debug_publisher.publish(ros_numpy.msgify(Image, debug_img, 'rgb8'))
         if len(face_rec.descriptions) > 0:
@@ -247,7 +255,6 @@ class FaceRecognition(BaseRecognition):
         self.introduct_person_servername = rospy.get_param("~servers/introduct_person/servername", "/butia_vision/br/introduct_person")
 
         super().readParameters()
-        rospy.loginfo('foi 1')
 
 
 if __name__ == '__main__':
