@@ -154,7 +154,6 @@ class FaceRecognition(BaseRecognition):
     
     @ifState
     def callback(self, *args):
-        count += 1
         source_data = self.sourceDataFromArgs(args)
 
         if 'image_rgb' not in source_data:
