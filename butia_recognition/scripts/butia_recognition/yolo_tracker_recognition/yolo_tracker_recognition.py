@@ -163,7 +163,7 @@ class YoloTrackerRecognition(BaseRecognition):
 
             box_label = ""
             if tracking:
-                ID  = self.reid_manager.extract_id(ID, img[Y1:Y2,X1:X2])
+                ID  = self.reid_manager.extract_id(ID, img[int(Y1):int(Y2),int(X1):int(X2)])
                 description.global_id = ID
                 if description.label == "person":
                     people_ids.append(ID)                 
