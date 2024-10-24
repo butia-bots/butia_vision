@@ -176,7 +176,8 @@ class FaceRecognition(BaseRecognition):
             current_faces = DeepFace.extract_faces(
                 ros_img_small_frame,
                 detector_backend='yolov8',
-                enforce_detection=False
+                enforce_detection=False,
+                align=False
             )
 
         debug_img = copy(ros_img_small_frame)
@@ -206,8 +207,8 @@ class FaceRecognition(BaseRecognition):
                 detected_face_result = DeepFace.find(
                     img_path=face,
                     db_path=self.dataset_dir,
-                    model_name='Facenet512',
-                    detector_backend='yolov8',
+                    model_name="Dlib",  
+                    detector_backend = 'skip',
                     enforce_detection=False,
                     threshold=thold
                 )
