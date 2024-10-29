@@ -219,7 +219,8 @@ class FaceRecognition(BaseRecognition):
             else:
                 final_image_path = detected_face_result[0].iloc[0]['identity']
                 name = final_image_path.split("/")[-2]
-
+                if name == "test":
+                    name = "unknown"
             description.label = name
             names.append(name)
 
