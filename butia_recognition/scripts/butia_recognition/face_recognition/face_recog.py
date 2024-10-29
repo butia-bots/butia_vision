@@ -170,6 +170,7 @@ class FaceRecognition(BaseRecognition):
         h.stamp = rospy.Time.now()
         face_rec = Recognitions2D()
         face_rec.header = h
+        face_rec = BaseRecognition.addSourceData2Recognitions2D(source_data, face_rec)
         ros_img_small_frame = ros_numpy.numpify(img)
 
         with SuppressOutput():
