@@ -145,15 +145,15 @@ class YoloTrackerRecognition(BaseRecognition):
         ids = []
         if results[0].boxes.is_track:
             img_patchs = []
-            for x1,y1,x2,y2 in results[0].boxes.xyxy().cpu().numpy():
-                img_patchs.append(img[y1:y2,x1:x2])
-            ids = self.reid_manager.extract_ids(results[0].boxes.id.cpu().numpy())
+            for x1,y1,x2,y2 in results[0].boxes.xyxy.cpu().numpy():
+                img_patchs.append(img[int(y1):int(y2),int(x1):int(x2)])
+            ids = self.reid_manager.extract_ids(results[0].boxes.id.cpu().numpy(),img_patchs)
         for i, box in enumerate(bboxs):
             description = Description2D()
             description.header = HEADER
 
             X1,Y1,X2,Y2 = box[:4]
-            ID = int(ids[4]) if self.tracking and len(box) == 7 else -1
+            ID = int(ids[i]) if self.tracking and len(box) == 7 else -1
             score = box[-2]
             clss = int(box[-1])
 
