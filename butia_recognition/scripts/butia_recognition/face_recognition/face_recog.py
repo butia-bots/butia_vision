@@ -174,7 +174,7 @@ class FaceRecognition(BaseRecognition):
                         bbox = faceInfos.bbox
                         facesBbox.append([int(bbox.center.y - int(bbox.size_y/2)),int(bbox.center.y + int(bbox.size_y/2)), int(bbox.center.x - int(bbox.size_x/2)),int(bbox.center.x + int(bbox.size_x/2))])
             if len(facesBbox) > 0:
-                ros_image = cv2.cvtColor(ros_image, cv2.COLOR_BGR2RGB)
+                ros_image = cv2.cvtColor(ros_image, cv2.COLOR_RGB2BGR)
                 cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), ros_image)
                 rospy.logwarn('Picture ' + add_image_labels[i] + ' was  saved.')
                 i+= 1
@@ -196,7 +196,7 @@ class FaceRecognition(BaseRecognition):
     @ifState
     def callback(self, *args):
         try:
-            thold = 0.5
+            thold = 0.75
             face_rec = Recognitions2D()
             source_data = self.sourceDataFromArgs(args)
 
@@ -228,9 +228,12 @@ class FaceRecognition(BaseRecognition):
                     face_distances = np.linalg.norm(self.know_faces[1] - current_encoding, axis = 1)
                     min_distance_idx = np.argmin(face_distances)
                     min_distance = face_distances[min_distance_idx]
+                    rospy.logwarn(min_distance)
                     if min_distance < thold:
                         name = (self.know_faces[0][min_distance_idx])
                 description.label = name
+
+                
 
                 names.append(name)
 
