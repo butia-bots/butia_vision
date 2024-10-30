@@ -142,12 +142,18 @@ class YoloTrackerRecognition(BaseRecognition):
         previus_size = float("-inf")
         new_id = -1
         # descriptions = []
+        ids = []
+        if results[0].boxes.is_track:
+            img_patchs = []
+            for x1,y1,x2,y2 in results[0].boxes.xyxy().cpu().numpy():
+                img_patchs.append(img[y1:y2,x1:x2])
+            ids = self.reid_manager.extract_ids(results[0].boxes.id.cpu().numpy())
         for i, box in enumerate(bboxs):
             description = Description2D()
             description.header = HEADER
 
             X1,Y1,X2,Y2 = box[:4]
-            ID = int(box[4]) if self.tracking and len(box) == 7 else -1
+            ID = int(ids[4]) if self.tracking and len(box) == 7 else -1
             score = box[-2]
             clss = int(box[-1])
 
@@ -163,7 +169,6 @@ class YoloTrackerRecognition(BaseRecognition):
 
             box_label = ""
             if tracking:
-                ID  = self.reid_manager.extract_id(ID, img[int(Y1):int(Y2),int(X1):int(X2)])
                 description.global_id = ID
                 if description.label == "person":
                     people_ids.append(ID)                 
