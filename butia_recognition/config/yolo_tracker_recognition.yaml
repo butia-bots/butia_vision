@@ -45,7 +45,7 @@ tracking:
   start_on_init: false
   use_boxmot: false
   model_name: resnet50
-  model_file: resnet_reid_model.pt
+  model_file: reid_osnet_x1_0.pt
   thresholds:
     reid_threshold: 0.75
     reid_add_feature_threshold: 0.7

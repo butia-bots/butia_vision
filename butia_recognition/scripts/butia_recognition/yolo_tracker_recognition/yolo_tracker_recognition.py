@@ -86,7 +86,7 @@ class YoloTrackerRecognition(BaseRecognition):
         return
     
     def unLoadTrackerModel(self):
-        del self.__reid_manager
+        del self.reid_manager
         return
             
     
