@@ -47,8 +47,8 @@ tracking:
   model_name: osnet_x1_0
   model_file: reid_osnet_x1_0.pt
   thresholds:
-    reid_threshold: 0.75
-    reid_add_feature_threshold: 0.7
+    reid_threshold: 0.9
+    reid_add_feature_threshold: 0.6
     det_threshold: 0.5
     iou_threshold: 0.15
     max_age: 60
