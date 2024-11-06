@@ -17,7 +17,7 @@ import pickle
 
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
-from butia_vision_msgs.msg import Description2D, Recognitions2D
+from butia_vision_msgs.msg import Description2D, Recognitions2D, KeyPoint2D
 from butia_vision_msgs.srv import PeopleIntroducing, PeopleIntroducingResponse
 from geometry_msgs.msg import Vector3
 
@@ -163,18 +163,20 @@ class FaceRecognition(BaseRecognition):
                 image = faceMessage.image_rgb
 
                 ros_image = ros_numpy.numpify(image)
-                ros_image = np.flip(ros_image)
-                ros_image = np.flipud(ros_image)
+                ros_image = cv2.cvtColor(ros_image, cv2.COLOR_RGB2BGR)
+
             except (Exception) as e:
                 break
             for faceInfos in faceMessage.descriptions:
     
                     if faceInfos.label == 'unknown':
+                        top = int(faceInfos.pose[0].y)
+                        right = int(faceInfos.pose[1].x)
+                        bottom = int(faceInfos.pose[1].y)
+                        left = int(faceInfos.pose[0].x)
+                        facesBbox.append((top, right, bottom, left))
     
-                        bbox = faceInfos.bbox
-                        facesBbox.append([int(bbox.center.y - int(bbox.size_y/2)),int(bbox.center.y + int(bbox.size_y/2)), int(bbox.center.x - int(bbox.size_x/2)),int(bbox.center.x + int(bbox.size_x/2))])
             if len(facesBbox) > 0:
-                ros_image = cv2.cvtColor(ros_image, cv2.COLOR_RGB2BGR)
                 cv2.imwrite(os.path.join(NAME_DIR, add_image_labels[i]), ros_image)
                 rospy.logwarn('Picture ' + add_image_labels[i] + ' was  saved.')
                 i+= 1
@@ -188,7 +190,6 @@ class FaceRecognition(BaseRecognition):
 
         self.encode_faces(facesBbox, ros_image)
 
-
         known_faces_dict = self.loadVar('features')
         self.know_faces = self.flatten(known_faces_dict)
         return response
@@ -196,7 +197,7 @@ class FaceRecognition(BaseRecognition):
     @ifState
     def callback(self, *args):
         try:
-            thold = 0.75
+            thold = 0.55
             face_rec = Recognitions2D()
             source_data = self.sourceDataFromArgs(args)
 
@@ -214,6 +215,7 @@ class FaceRecognition(BaseRecognition):
             #rospy.loginfo('Image ID: ' + str(img.header.seq))
 
             ros_img_small_frame = ros_numpy.numpify(img)
+            ros_img_small_frame = cv2.cvtColor(ros_img_small_frame, cv2.COLOR_RGB2BGR)
             current_faces = face_recognition.face_locations(ros_img_small_frame, model = 'yolov8')
             current_faces_encodings = face_recognition.face_encodings(ros_img_small_frame, current_faces)
             debug_img = copy(ros_img_small_frame)
@@ -228,7 +230,6 @@ class FaceRecognition(BaseRecognition):
                     face_distances = np.linalg.norm(self.know_faces[1] - current_encoding, axis = 1)
                     min_distance_idx = np.argmin(face_distances)
                     min_distance = face_distances[min_distance_idx]
-                    rospy.logwarn(min_distance)
                     if min_distance < thold:
                         name = (self.know_faces[0][min_distance_idx])
                 description.label = name
@@ -249,6 +250,10 @@ class FaceRecognition(BaseRecognition):
                 description.bbox.center.y = int(top) + int(size[0]/2)
                 description.bbox.size_x = bottom-top
                 description.bbox.size_y = right-left
+                description.pose = [
+                    KeyPoint2D(x=left, y=top),
+                    KeyPoint2D(x=right, y=bottom),
+                ]
                 cv2.rectangle(debug_img, (left, top), (right, bottom), (0, 255, 0), 2)
                 
                 font = cv2.FONT_HERSHEY_DUPLEX
