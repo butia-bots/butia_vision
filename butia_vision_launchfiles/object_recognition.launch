@@ -8,9 +8,9 @@
     <arg name="use_bridge" default="false"/>
     <arg name="use_image2world" default="true"/>
     <arg name="publish_tf" default="true"/>
-    <arg name="config_file" default="yolov8_object_recognition.yaml"/>
+    <arg name="config_file" default="yolov8_object_recognition_custom.yaml"/>
     <arg name="node_name" default="butia_object_recognition_node"/>
-    <arg name="camera" default="kinect"/>
+    <arg name="camera" default="realsense"/>
 
     <include file="$(find butia_vision_launchfiles)/butia_recognition.launch">
         <arg name="machine" value="$(arg machine)"/>
