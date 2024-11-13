@@ -224,6 +224,7 @@ class Image2World:
 
             if center_depth <= 0:
                 rospy.logwarn('INVALID DEPTH VALUE')
+                return None
             
             center_depth/= 1000.
 
@@ -311,7 +312,9 @@ class Image2World:
         return None
     
     def __poseDescriptionProcessing(self, data, description2d : Description2D, header):
-        description3d : Description3D = self.__detectionDescriptionProcessing(data, description2d ,header)
+        description3d = self.__detectionDescriptionProcessing(data, description2d ,header)
+        if description3d is None:
+            return None
 
         if 'image_depth' in data and 'camera_info' in data:
             image_depth = data['image_depth']
@@ -357,9 +360,10 @@ class Image2World:
 
     def __createDescription3D(self, source_data, description2d : Description2D, header):
         if description2d.type in self.DESCRIPTION_PROCESSING_ALGORITHMS:
-            description3D : Description3D = self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
-            description3D.bbox2D = description2d.bbox
-            description3D.class_num = description2d.class_num
+            description3D = self.DESCRIPTION_PROCESSING_ALGORITHMS[description2d.type](source_data, description2d, header)
+            if description3D is not None:
+                description3D.bbox2D = description2d.bbox
+                description3D.class_num = description2d.class_num
             return description3D
         else:
             return None
