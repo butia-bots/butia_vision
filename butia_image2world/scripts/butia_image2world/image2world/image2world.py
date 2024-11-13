@@ -222,6 +222,14 @@ class Image2World:
 
             center_depth = image_depth[int(center_y), int(center_x)]
 
+            #TODO:
+            '''
+                - important to apply a more suited error handling here
+                - in this current state the algorithm depends on the depth of the center pixel of the bounding box
+                - if it is invalid, the algorithm will return None
+                - a window around the center pixel of the bounding box can be used to get a valid depth value
+                - the window size can be increased until a valid depth value is found, or something like that
+            '''
             if center_depth <= 0:
                 rospy.logwarn('INVALID DEPTH VALUE')
                 return None
