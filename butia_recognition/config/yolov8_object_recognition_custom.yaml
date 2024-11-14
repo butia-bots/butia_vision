@@ -1,35 +1,39 @@
 threshold: 0.3
 classes_by_category:
-    Drinks: ['nescau', 'kuat', 'cononut water', 'fanta']
-    Cleaning supplies: ['detergent', 'sponge', 'cloth']
-    Pantry items: ['gelatin', 'mustard', 'shoyo', 'sauce', 'tea']
-    Fruits: ['apple', 'pear', 'tangerine']
-    Snacks: ['treloso', 'chocolate', 'peanut']
+    Drinks: ['Banana', 'Coke', 'Fanta', 'Kuat', 'Papaya', 'Pithula']
+    Cleaning supplies: ['Cloth', 'Soap', 'SteelWool']
+    Pantry items: ['ToothPick', 'Cappuccino', 'Gelatin', 'MilkCream', 'TomatoSauce']
+    Fruits: ['Apple', 'Kiwi', 'Lemon', 'Sicilian_Lemon']
+    Snacks: ['fillet', 'Onion', 'Pepperoni', 'Wafer']
 
 all_classes:
-  - 'apple'
-  - 'chocolate'
-  - 'cloth'
-  - 'cononut water'
-  - 'detergent'
-  - 'fanta'
-  - 'gelatin'
-  - 'kuat'
-  - 'mustard'
-  - 'nescau'
-  - 'peanut'
-  - 'pear'
-  - 'sauce'
-  - 'shoyo'
-  - 'sponge'
-  - 'tangerine'
-  - 'tea'
-  - 'treloso'
+  - "Apple"
+  - "Banana"
+  - "Cappuccino"
+  - "Cloth"
+  - "Coke"
+  - "Fanta"
+  - "Gelatin"
+  - "Kiwi"
+  - "Kuat"
+  - "Lemon"
+  - "MilkCream"
+  - "Onion"
+  - "Papaya"
+  - "Pepperoni"
+  - "Pithula"
+  - "Sicilian_Lemon"
+  - "Soap"
+  - "SteelWool"
+  - "TomatoSauce"
+  - "ToothPick"
+  - "Wafer"
+  - "fillet"
   
 max_sizes:
     - [0.05, 0.05, 0.05]
 
-model_file: yolov8-larc2023.pt
+model_file: yolox_CBR24_full_v1.pt
 
 subscribers:
   
