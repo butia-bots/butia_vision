@@ -1,12 +1,12 @@
 #!/usr/bin/env python
+import rospy
+import cv2 as cv
+import ros_numpy
+import rospkg
+import torch
 
 from butia_recognition import BaseRecognition, ifState
 from ReIDManager import ReIDManager
-import rospy
-import cv2 as cv
-import numpy as np
-import ros_numpy
-import rospkg
 
 from pathlib import Path
 from time import perf_counter
@@ -16,11 +16,9 @@ from ultralytics import YOLO
 from sensor_msgs.msg import Image
 from std_srvs.srv import EmptyResponse, Empty
 
-from butia_vision_msgs.msg import Recognitions2D, Description2D, KeyPoint2D, Recognitions3D
+from butia_vision_msgs.msg import Recognitions2D, Description2D, KeyPoint2D
 from copy import deepcopy
 
-import gc
-import torch
 
 DeepOCSORT = None
 
@@ -86,7 +84,7 @@ class YoloTrackerRecognition(BaseRecognition):
         return
     
     def unLoadTrackerModel(self):
-        del self.reid_manager
+        self.reid_manager.clean()
         return
             
     
