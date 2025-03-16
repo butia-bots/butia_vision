@@ -1,0 +1,3 @@
+# Install
+
+Follow the instructions at [GroundingDINO](https://github.com/IDEA-Research/GroundingDINO), [SAM-HQ](https://github.com/SysCV/sam-hq) and [Recognize Anything](https://github.com/xinyu1205/recognize-anything) to install the required libraries. Also install [transformers](https://github.com/huggingface/transformers). Then, download the weights and configs from the releases page of butia_vision into the respective config folders (you can skip downloading ram and tag2text weights if you leave them not enabled in the config).

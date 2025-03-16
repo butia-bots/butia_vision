@@ -11,7 +11,7 @@ import open3d as o3d
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2
 
 from multipledispatch import dispatch
-from collections import Iterable
+from collections.abc import Iterable
 
 class VisionBridge:
     SOURCES_TYPES = {
@@ -76,7 +76,7 @@ class VisionBridge:
 
     def pointCloud2XYZRGBtoArrays(data: PointCloud2):
         pc = ros_numpy.numpify(data)
-        xyz = np.zeros((pc.shape[0], pc.shape[1], 3), dtype=np.float)
+        xyz = np.zeros((pc.shape[0], pc.shape[1], 3), dtype=np.float64)
         rgb = np.zeros((pc.shape[0], pc.shape[1], 3), dtype=np.uint32)
         xyz[:, :, 0] = pc['x']
         xyz[:, :, 1] = pc['y']
@@ -111,7 +111,7 @@ class VisionBridge:
         width, height = size
         header = data.header
         xyz, rgb = VisionBridge.pointCloud2XYZRGBtoArrays(data)
-        points = np.append(xyz, rgb.astype(np.float), axis=2)
+        points = np.append(xyz, rgb.astype(np.float64), axis=2)
         points = cv2.resize(points, (width, height), cv2.INTER_LINEAR)
         data = VisionBridge.arrays2toPointCloud2XYZRGB(points[:, :, :3], points[:, :, 3:], header)
         return data
